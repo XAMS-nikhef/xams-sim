@@ -6,7 +6,7 @@ PMT photocathodes.
 
 ## Status
 
-- 2026-10-04: geometry sheet `geometry.yaml` (draft, values from the drawings, the thesis and the SR-2026.2 analysis;
+- 2026-10-04: implementation plan `PLAN.md`; geometry sheet `geometry.yaml` (draft, values from the drawings, the thesis and the SR-2026.2 analysis;
   open values marked `null` with a question). No simulation code yet.
 
 ## Model v1
