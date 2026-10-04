@@ -1,0 +1,140 @@
+# XAMS optical simulation — geometry and optical parameters (model v1)
+#
+# Model v1 contains only: (1) the meshes as real bars, (2) the PMT photocathodes (+ windows), (3) liquid xenon,
+# (4) gas xenon, (5) the inner PTFE cylinder. Everything else is a perfect absorber.
+# The Geant4 simulation will read this file directly: fill in the `null` values (each has a question in the comment),
+# correct anything that is wrong, and keep the `source:` notes up to date.
+#
+# Coordinate system: z = 0 at the gate mesh (mid-plane of the foil), z up. x, y in the plane of the meshes,
+# x along the edge of the top-PMT anode sectors (the frame of the position reconstruction: anodes in the 4 quadrants).
+# Units: mm, degrees.
+#
+# Sources used: P = reference/XAMS design/XAMS_projections_annotated.pdf (section A–A),
+#               G = reference/XAMS design/XAMS_XAMS grid.pdf and XAMS_XAMS grid assy.pdf,
+#               T = reference/papers/Thesis_Maricke_Flierman.pdf (ch. 4–5),
+#               R = analysis_SR2026.2 (posrec v2: outputs/posrec2_template.json, posrec2_fit.json; drift note).
+
+meta:
+  version: 1
+  date: 2026-10-04
+  status: draft — to be completed by AP
+
+# ------------------------------------------------------------------------------------------------ liquid level
+liquid:
+  level_above_gate_mm:
+    sr2026_2: 4.0          # 4 mm LXe + 4 mm GXe between gate and anode (user, 2026-10-01)
+    oct_2024: 2.0          # user: 2 mm LXe + 6 mm GXe. NOTE: thesis T p.145 says "3 mm above the gate" — which is right?
+  scenarios_to_simulate: [2.0, 3.0, 4.0]   # cover the doubt and the change
+
+# ------------------------------------------------------------------------------------------------ meshes
+mesh_common:                 # all five meshes identical (user, 2026-10-01; etched stainless steel)
+  material: stainless_steel
+  foil_thickness_mm: 0.15    # G
+  hole_size_mm: 2.45         # G, square holes
+  bar_width_mm: 0.15         # G (pitch 2.6 mm = 2.45 + 0.15)
+  pitch_mm: 2.60             # G, T p.102, R (2.5997)
+  foil_diameter_mm: 80.0     # G
+  etched_pattern: R:outputs/posrec2_template.json   # 456 hole centres (disc-centred, drawing frame) — use as the exact pattern
+  open_fraction_normal: 0.888  # (2.45/2.60)^2, perpendicular incidence (derived)
+  ring:
+    outer_diameter_mm: 92.6  # G
+    thickness_mm: 1.8        # G
+    inner_diameter_mm: null  # ? inner diameter of the stainless ring (is it covered by the PTFE, i.e. invisible to light?)
+    foil_position: null      # ? foil on top of / below / in the middle of the ring
+
+meshes:                      # z = foil mid-plane
+  - name: top_screen
+    z_mm: null               # ? height above the anode (P: section A–A)
+    angle_to_anodes_deg: null  # ? orientation of the bars relative to the top-PMT anode edges (gate: 29.4°)
+  - name: anode
+    z_mm: 8.0                # P (gate–anode 8 mm), T p.145
+    angle_to_anodes_deg: null
+  - name: gate
+    z_mm: 0.0                # definition
+    angle_to_anodes_deg: 29.4  # R: posrec2_fit.json mesh_angle_to_anodes_deg (mod 90°)
+  - name: cathode
+    z_mm: -51.8              # P (gate–cathode 51.8 mm)
+    angle_to_anodes_deg: null
+  - name: bottom_screen
+    z_mm: -61.8              # P: 10 mm below the cathode (check: is the "10" in section A–A cathode–bottom screen?)
+    angle_to_anodes_deg: null
+
+# ------------------------------------------------------------------------------------------------ PTFE cylinder
+ptfe_cylinder:
+  inner_diameter_mm: 61.94   # P (T: 6.2 cm)
+  wall_thickness_mm: null    # ? (only matters if light can pass the PTFE: v1 treats the outside as absorbing)
+  z_bottom_mm: null          # ? lower end: at the cathode, or down to the bottom screen / bottom PMT?
+  z_top_mm: null             # ? upper end: at the gate, the anode, the top screen or up to the top PMT?
+  sections: null             # ? if the cylinder is several parts with gaps (e.g. at the gate / anode ring), list them:
+                             #   [{z_from_mm, z_to_mm, inner_diameter_mm}]
+  # field-shaping rings: outside the PTFE (T: five copper rings) -> not in v1
+
+# ------------------------------------------------------------------------------------------------ PMTs
+pmt_common:
+  type: Hamamatsu R12699-406-M4   # T p.99: both PMTs
+  outer_square_mm: 56.0      # T p.133
+  photocathode_square_mm: 48.5   # T p.133
+  sectors: 2x2 of 24.25 mm   # T p.134
+  height_mm: 14.8            # T table 5.3 (excluding pins)
+  window_material: null      # ? synthetic silica / quartz (datasheet)
+  window_thickness_mm: null  # ? (datasheet)
+  qe_178nm: null             # ? datasheet / measured (free parameter in the fit, separately top and bottom)
+
+pmts:
+  - name: top
+    readout: 4 sectors (ch1–ch4)
+    window_z_mm: null        # ? height of the outside of the top-PMT window (above the top screen by how much?)
+    rotation_deg: 0.0        # defines the frame (anode edges along x / y)
+    sector_to_channel: null  # ? which quadrant is ch1, ch2, ch3, ch4 (posrec v2 / channel map)
+    medium: gas
+  - name: bottom
+    readout: 4 sectors joined (ch0)
+    window_z_mm: null        # ? depth of the outside of the bottom-PMT window (below the bottom screen by how much?)
+    rotation_deg: null       # ? orientation of the bottom PMT relative to the top PMT (only for the light pattern)
+    medium: liquid
+
+# ------------------------------------------------------------------------------------------------ SiPMs (optional in v1)
+sipms:
+  type: Hamamatsu S13370-3025CN (VUV-MPPC)
+  active_mm: [3.0, 3.0]
+  mounting: inside the inner PTFE cylinder, looking inward   # user
+  azimuth_deg: [null, null]  # ? positions (90° apart; relative to the top-PMT anode frame)
+  z_mm: [null, null]         # ? heights (in liquid or gas?)
+  filter:
+    material: null           # ? VUV filter in front of the SiPMs: material, thickness, transmission curve
+    thickness_mm: null
+
+# ------------------------------------------------------------------------------------------------ optical properties
+# Values with a range are free parameters, fitted to the data (targets below).
+optics:
+  wavelength_nm: 178
+  lxe:
+    refractive_index: 1.69
+    rayleigh_length_cm: [30, 60]   # literature range; free
+    absorption_length_cm: [100, 1000]   # purity-dependent; free (large)
+  gxe:
+    refractive_index: 1.00
+  ptfe_in_liquid:
+    reflectivity: [0.90, 0.99]  # free
+    specular_fraction: [0.0, 0.2]
+  ptfe_in_gas:
+    reflectivity: [0.60, 0.90]  # free; lower than in liquid
+    specular_fraction: [0.0, 0.3]
+  stainless_steel_reflectivity: [0.2, 0.5]   # meshes, free
+  pmt_window_refractive_index: 1.60          # fused silica at 178 nm (check with the window material)
+
+# ------------------------------------------------------------------------------------------------ light sources
+sources:
+  s2: uniform in the gas gap (liquid level to anode), x-y on a grid within r < 25 mm
+  s1: liquid, z from the cathode to the liquid level in 2 mm steps, same x-y grid
+
+# ------------------------------------------------------------------------------------------------ comparison with data
+targets:
+  s2_top_fraction:
+    cs137_29_09: 0.29        # median, S2 > 20 kPE — depressed by the top-PMT gain drop under load
+    na22_28_29_09: 0.38
+    no_source_28_29_09: 0.52 # lowest load: closest to the true geometric value (S2s larger / other positions: check)
+    note: compare with the low-load value or with load-corrected cS2 top/bottom; the Cs value is not geometric
+  s1_top_fraction_vs_depth: from data per drift-time slice (to be extracted)
+  top_anode_pattern: R: posrec2_lrf.json (light-response model of the 4 anodes versus position)
+  oct_2024_vs_now: same quantities for run 6786 (2 + 6 mm) versus SR-2026.2 (4 + 4 mm)
