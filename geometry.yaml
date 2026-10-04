@@ -34,7 +34,7 @@ mesh_common:                 # all five meshes identical (user, 2026-10-01; etch
   bar_width_mm: 0.15         # G (pitch 2.6 mm = 2.45 + 0.15)
   pitch_mm: 2.60             # G, T p.102, R (2.5997)
   foil_diameter_mm: 80.0     # G
-  etched_pattern: R:outputs/posrec2_template.json   # 456 hole centres (disc-centred, drawing frame) — use as the exact pattern
+  etched_pattern: "R: outputs/posrec2_template.json"   # 456 hole centres (disc-centred, drawing frame) — use as the exact pattern
   open_fraction_normal: 0.888  # (2.45/2.60)^2, perpendicular incidence (derived)
   ring:
     outer_diameter_mm: 92.6  # G
@@ -134,7 +134,7 @@ targets:
     cs137_29_09: 0.29        # median, S2 > 20 kPE — depressed by the top-PMT gain drop under load
     na22_28_29_09: 0.38
     no_source_28_29_09: 0.52 # lowest load: closest to the true geometric value (S2s larger / other positions: check)
-    note: compare with the low-load value or with load-corrected cS2 top/bottom; the Cs value is not geometric
+    note: "compare with the low-load value or with load-corrected cS2 top/bottom; the Cs value is not geometric"
   s1_top_fraction_vs_depth: from data per drift-time slice (to be extracted)
-  top_anode_pattern: R: posrec2_lrf.json (light-response model of the 4 anodes versus position)
+  top_anode_pattern: "R: posrec2_lrf.json (light-response model of the 4 anodes versus position)"
   oct_2024_vs_now: same quantities for run 6786 (2 + 6 mm) versus SR-2026.2 (4 + 4 mm)
