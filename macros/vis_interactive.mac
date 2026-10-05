@@ -2,8 +2,10 @@
 /vis/open TSG
 /vis/drawVolume
 /vis/geometry/set/visibility World 0 false
-/vis/geometry/set/visibility Liquid 0 false
-/vis/geometry/set/visibility Gas 0 false
+/vis/geometry/set/visibility Liquid 0 true
+/vis/geometry/set/visibility Gas 0 true
+/vis/geometry/set/colour Liquid 0 0.15 0.35 0.85 0.18
+/vis/geometry/set/colour Gas 0 0.55 0.75 1.0 0.08
 /vis/geometry/set/visibility top_screenLayer 0 false
 /vis/geometry/set/visibility anodeLayer 0 false
 /vis/geometry/set/visibility gateLayer 0 false
