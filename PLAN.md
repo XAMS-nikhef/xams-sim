@@ -17,7 +17,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 | 4 Optical surfaces | **done** | 2026-10-05 | see "Done" under step 4 |
 | 5 Sources and runs | **done** | 2026-10-05 | see "Done" under step 5 |
 | 6 First physics results | **done** | 2026-10-05 | see "Done" under step 6 and `results/step6/README.md` |
-| 7 Targets from the data | open | | |
+| 7 Targets from the data | **done** | 2026-10-05 | see "Done" under step 7 and `results/step7/README.md` |
 | 8 Comparison and fit | open | | |
 | 9 Write-up | open | | |
 
@@ -215,6 +215,16 @@ the scans `s2_optics` (27 points), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸), 
 - Oct 2024 (run 6786, 2 + 6 mm) versus SR-2026.2 (4 + 4 mm): the same quantities.
 - Gains / QE: LED gains per sector; QE top versus bottom is a free parameter (only their ratio matters for the top
   fraction).
+
+**Done (2026-10-05).** `analysis_SR2026.2/studies/optsim_targets.py` (stbc-i2, read-only, central v4) →
+`targets/data_2026-10-05.json`; `tools/step7_compare.py` → `results/step7/compare.png`; details in
+`results/step7/README.md`.
+- Top-sector pattern (u, v vs position, posrec v2): data inside the simulation band over ±24 mm, same for every
+  source — the geometry is right.
+- S2 area fraction top (LED gains): falls with source rate and with S2 size up to ~20 kPE (no source 0.68 → 0.50);
+  vs r a dip at the centre (r < 5 mm) not in the simulation; outside it data/simulation top/bottom ratio 1.0–1.2.
+- S1 area fraction top vs z: same shape as the simulation, top/bottom ratio data/simulation 0.72 at every z.
+- Not done: Oct 2024 (run 6786); QE ratio left free for step 8.
 
 ## 8. Comparison and fit (1 day)
 
