@@ -182,8 +182,8 @@ def main(out):
         "Data: Δ750 V runs of 28/29-09 (central processing v4), no source / Na-22 / Cs-137, r &lt; 25 mm, area fractions "
         "with the LED gains only (the v2 load correction f_top undone). Simulation band: all optics points at the 4 mm "
         "level, equal QE top and bottom.")]
-    st.append(img(RES / "step7" / "compare.png", W, "Data vs simulation: S2 area fraction top vs S2 size and vs r, S1 "
-                  "vs z, and the top-sector asymmetries u(x), v(y)."))
+    st.append(img(RES / "step7" / "compare.png", W, "Data (points) vs simulation (bands: all optics settings): S2 area "
+                  "fraction top vs S2 size and vs r, S1 vs z, and the top-sector asymmetries u(x), v(y)."))
     st += bullets([
         "<b>Sector pattern:</b> data inside the simulation band over ±24 mm, identical for all sources — geometry right.",
         "<b>S2 versus size and source:</b> no source 0.68 (3–5 kPE) → 0.49 (&gt; 100 kPE); Na-22 0.53 → 0.36; Cs-137 0.40 → "
@@ -203,7 +203,8 @@ def main(out):
         "0.2/0.35/0.5 × Rayleigh length 30/45/60 cm) for S2 and S1, binned like the data. Per point two efficiency factors "
         "multiply the top/bottom ratio (ε<sub>S2</sub>, ε<sub>S1</sub>); the optical parameters are constrained by the shapes "
         "(S2 vs r for r ≥ 5 mm, S1 vs z, u/v), with a systematic floor on each observable.")]
-    st.append(img(RES / "step8" / "best_fit.png", W, "Best grid point vs data (no source) and χ² profiles."))
+    st.append(img(RES / "step8" / "best_fit.png", W, "Fit: simulation band = the 10 best grid points (each scaled with its own ε), "
+                  "data = points (no source); χ² profiles of the four optical parameters."))
     st += bullets([
         f"Best point: PTFE R {b8['PTFE R']}, specular {b8['PTFE specular']}, steel R {b8['steel R']}, Rayleigh "
         f"{b8['Rayleigh [cm]']} cm; χ² {b8['chi2_s2r']:.1f} / {b8['chi2_s1z']:.1f} / {b8['chi2_uv']:.1f} for 7 / 11 / 45 dof "
@@ -229,7 +230,26 @@ def main(out):
            "is a factor ~1.4. Not studied: high voltage (PTFE across 5 kV gate–anode, charge-up in the extraction region), "
            "mechanics.", small)]
 
-    st += [P("7. Limitations and next steps", h2)]
+    ar = json.load(open(RES / "anode_rotation" / "summary.json"))
+    a0, a1 = ar["29.4"], ar["149.4"]
+    st += [P("7. Anode mesh rotated by 120°", h2), P(
+        "A square mesh repeats every 90°, so a 120° rotation of the anode relative to the gate is a 30° rotation. "
+        "Simulated with the anode as now (aligned with the gate) and rotated (4·10<super>7</super> photons each):")]
+    st.append(table([
+        ["", "anode as now", "anode +120°"],
+        ["S2 top fraction", f"{a0['s2_top_fraction']:.4f} ± {a0['s2_err']:.4f}", f"{a1['s2_top_fraction']:.4f} ± {a1['s2_err']:.4f}"],
+        ["S2 light collection top / bottom", f"{100 * a0['s2_lce_top']:.2f} / {100 * a0['s2_lce_bottom']:.2f} %",
+         f"{100 * a1['s2_lce_top']:.2f} / {100 * a1['s2_lce_bottom']:.2f} %"],
+        ["S2 light absorbed on the anode foil", pc(a0["anode_foil_absorbed_s2"]), pc(a1["anode_foil_absorbed_s2"])],
+        ["S1 top fraction", f"{a0['s1_top_fraction']:.4f}", f"{a1['s1_top_fraction']:.4f}"],
+        ["fine structure of the top light vs S2 position (1 mm, beyond statistics)",
+         pc(a0["fine_structure_rel_rms"]), pc(a1["fine_structure_rel_rms"])],
+    ], [80 * mm, (W - 80 * mm) / 2, (W - 80 * mm) / 2]))
+    st += [Spacer(1, 3), P("Optically nothing changes (radial and depth profiles and the sector pattern coincide as well). "
+           "Not covered: the electric field — a rotation changes where gate and anode bars cross, and with it the local "
+           "extraction and electroluminescence field.", small)]
+
+    st += [P("8. Limitations and next steps", h2)]
     st.append(box(bullets([
         "Everything outside |x|, |y| &lt; 60 mm is black and the three gate–anode pillars are missing: ~22 % of the S2 light "
         "leaves the model sideways. The surrounding structure (holders, field-cage parts, cryostat wall) is next (TODO) — it "
