@@ -20,11 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 # values the v1 simulation cannot run without (dotted paths into the YAML)
 REQUIRED = ["mesh_common.foil_thickness_mm", "mesh_common.hole_size_mm", "mesh_common.bar_width_mm",
             "mesh_common.pitch_mm", "mesh_common.foil_diameter_mm", "ptfe_cylinder.inner_diameter_mm",
-            "ptfe_cylinder.z_bottom_mm", "ptfe_cylinder.z_top_mm", "pmt_common.photocathode_square_mm",
+            "ptfe_cylinder.length_mm", "ptfe_cylinder.z_top_mm", "mesh_common.ring.inner_diameter_mm", "pmt_common.photocathode_square_mm",
             "pmt_common.window_thickness_mm", "pmt_common.window_face_square_mm"]
 # second-order values with a default if still open
-DEFAULTS = {"mesh_common.ring.inner_diameter_mm": 64.0,      # just outside the PTFE cylinder (61.94 mm)
-            "mesh_common.ring.foil_position": "middle"}
+DEFAULTS = {}   # all geometry values now come from the drawings (2026-10-05); kept for future open values
 
 
 def get(d, path):
@@ -85,7 +84,7 @@ def main():
         print("MISSING (fill in geometry.yaml):", *missing, sep="\n  ")
         return 1
 
-    cfg = {k: g[k] for k in ("mesh_common", "meshes", "ptfe_cylinder", "pmt_common", "pmts", "sipms")}
+    cfg = {k: g[k] for k in ("mesh_common", "meshes", "ptfe_cylinder", "field_shaping_rings", "pmt_common", "pmts", "sipms")}
     cfg["optics"] = pick_free(g["optics"])
     cfg["liquid"] = {"level_above_gate_mm": args.level, "surface_z_mm": args.level}
     cfg["meshes"] = sorted(cfg["meshes"], key=lambda m: -m["z_mm"])

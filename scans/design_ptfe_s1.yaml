@@ -12,16 +12,16 @@ grid:
   - []
   - - &id001
       name: gate_anode
-      z_bottom_mm: 0.9
-      z_top_mm: 7.1
+      z_bottom_mm: 0.075
+      z_top_mm: 7.925
   - - &id002
       name: anode_topscreen
-      z_bottom_mm: 8.9
-      z_top_mm: 17.1
+      z_bottom_mm: 8.075
+      z_top_mm: 17.925
   - - &id003
       name: cathode_bottomscreen
-      z_bottom_mm: -58.7
-      z_top_mm: -52.7
+      z_bottom_mm: -59.525
+      z_top_mm: -51.875
   - - *id001
     - *id002
   - - *id001

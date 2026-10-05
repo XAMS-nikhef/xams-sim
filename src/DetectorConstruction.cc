@@ -127,6 +127,8 @@ void DetectorConstruction::ApplySurfaces() {
     if (n == "PTFE") MakeReflector(lv, rPtfe, fPtfe);
     else if (n == "PTFE_gas")
       MakeReflector(lv, c.Num("optics/ptfe_in_gas/reflectivity", 0.75), c.Num("optics/ptfe_in_gas/specular_fraction", 0.15));
+    else if (n == "CopperRing")
+      MakeReflector(lv, c.Num("optics/copper_reflectivity", 0.3), 0.);  // copper: Lambertian
     else if (n == "MeshBar" || n == "MeshRing") {
       MakeReflector(lv, rSteel, 0.);  // steel: Lambertian
       nBar += n == "MeshBar";

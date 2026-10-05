@@ -12,6 +12,7 @@
 #include <G4SubtractionSolid.hh>
 #include <G4SystemOfUnits.hh>
 #include <G4Transform3D.hh>
+#include <G4NistManager.hh>
 #include <G4Tubs.hh>
 
 #include <algorithm>
@@ -176,35 +177,66 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
 
   auto region = [&](double z) { return z < zl ? std::make_pair(liqL, liqC) : std::make_pair(gasL, gasC); };
 
-  // meshes + rings
-  auto* ringS = new G4Tubs("MeshRing", rRingIn, rRingOut, ringHalf, 0., 360. * deg);
-  auto* ringL = new G4LogicalVolume(ringS, StainlessSteel(), "MeshRing");
+  // mesh assemblies (drawing "XAMS_XAMS grid assy.pdf"): foil mid-plane at the mesh z; inside the ring bore the foil is
+  // the etched mesh (bar layer), from the bore to the foil edge it lies on the ring face (foil rim); the ring body
+  // (assembly thickness minus foil) is on the other side of the foil ("foil_side" up: body below, down: body above)
+  const double tFoil = c.Num("mesh_common/foil_thickness_mm", 0.15) * mm;
+  const double rFoil = 0.5 * c.Num("mesh_common/foil_diameter_mm", 80.0) * mm;
+  const double bodyT = 2 * ringHalf - tFoil;
+  auto* bodyL = new G4LogicalVolume(new G4Tubs("MeshRingBody", rRingIn, rRingOut, 0.5 * bodyT, 0., 360. * deg),
+                                    StainlessSteel(), "MeshRing");
+  auto* rimL = new G4LogicalVolume(new G4Tubs("MeshFoilRim", rRingIn, rFoil, 0.5 * tFoil, 0., 360. * deg),
+                                   StainlessSteel(), "MeshRing");
   double zGate = 0., zCath = -51.8 * mm;
   for (const auto& m : j["meshes"]) {
     const std::string name = m["name"].get<std::string>();
     const double z = m["z_mm"].get<double>() * mm;
     const double ang = m.value("angle_to_anodes_deg", 0.0);
-    if (std::abs(z - zl) < ringHalf + 0.01 * mm)
-      G4Exception("BuildXams", "GEOM010", FatalException, ("mesh ring " + name + " crosses the liquid surface").c_str());
+    const std::string side = m.value("foil_side", std::string("up"));
+    const double zBody = z + (side == "up" ? -1. : 1.) * 0.5 * (tFoil + bodyT);
+    const double lo = std::min(z - 0.5 * tFoil, zBody - 0.5 * bodyT), hi = std::max(z + 0.5 * tFoil, zBody + 0.5 * bodyT);
+    if (lo < zl + 0.01 * mm && hi > zl - 0.01 * mm)
+      G4Exception("BuildXams", "GEOM010", FatalException, ("mesh assembly " + name + " crosses the liquid surface").c_str());
     auto [mL, mC] = region(z);
     const int nb = BuildMesh(mL, name, z - mC, ang, rRingIn);
-    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, z - mC), ringL, name + "Ring", mL, false, 0, kCheck);
-    G4cout << "mesh " << name << " at z = " << z / mm << " mm (" << (z < zl ? "liquid" : "gas") << "), " << nb
+    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, z - mC), rimL, name + "Rim", mL, false, 0, kCheck);
+    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, zBody - mC), bodyL, name + "Ring", mL, false, 0, kCheck);
+    G4cout << "mesh " << name << " at z = " << z / mm << " mm (" << (z < zl ? "liquid" : "gas") << "), foil " << side
+           << ", ring body " << (zBody - 0.5 * bodyT) / mm << " to " << (zBody + 0.5 * bodyT) / mm << " mm, " << nb
            << " bar pieces, " << ang << " deg" << G4endl;
     if (name == "gate") zGate = z;
     if (name == "cathode") zCath = z;
   }
 
-  // PTFE cylinder between the cathode ring and the gate ring (all in the liquid)
-  const double rIn = 0.5 * c.Num("ptfe_cylinder/inner_diameter_mm", 61.94) * mm;
+  // PTFE cylinder (drawing "PTFE_cylinder.pdf"): in the bores of the gate and cathode rings, from z_top down over its
+  // length (all in the liquid)
+  const double rIn = 0.5 * c.Num("ptfe_cylinder/inner_diameter_mm", 62.0) * mm;
   const double wall = c.Num("ptfe_cylinder/wall_thickness_mm", 5.0) * mm;
-  const double zb = std::max(c.Num("ptfe_cylinder/z_bottom_mm", -51.8) * mm, zCath + ringHalf);
-  const double zt = std::min(c.Num("ptfe_cylinder/z_top_mm", 0.0) * mm, zGate - ringHalf);
+  const double zt = c.Num("ptfe_cylinder/z_top_mm", -0.075) * mm;
+  const double zb = zt - c.Num("ptfe_cylinder/length_mm", 50.85) * mm;
+  if (zt > zGate - 0.5 * tFoil + 1e-6 * mm || zb < zCath + 0.5 * tFoil - 1e-6 * mm)
+    G4Exception("BuildXams", "GEOM011", FatalException, "PTFE cylinder does not fit between the gate and cathode foils");
   auto* ptfeL = new G4LogicalVolume(new G4Tubs("PTFE", rIn, rIn + wall, 0.5 * (zt - zb), 0., 360. * deg), Ptfe(),
                                     "PTFE");
   new G4PVPlacement(nullptr, G4ThreeVector(0, 0, 0.5 * (zt + zb) - liqC), ptfeL, "PTFE", liqL, false, 0, kCheck);
   G4cout << "PTFE cylinder r = " << rIn / mm << "-" << (rIn + wall) / mm << " mm, z = " << zb / mm << " to "
-         << zt / mm << " mm" << G4endl;
+         << zt / mm << " mm (gap to the cathode foil " << (zb - zCath - 0.5 * tFoil) / mm << " mm)" << G4endl;
+
+  // copper field-shaping rings (drawing "XAMS_field_shaper.pdf"), around the PTFE cylinder
+  if (j.contains("field_shaping_rings")) {
+    const auto& f = j["field_shaping_rings"];
+    const double fi = 0.5 * f["inner_diameter_mm"].get<double>() * mm, fo = 0.5 * f["outer_diameter_mm"].get<double>() * mm;
+    const double ft = f["thickness_mm"].get<double>() * mm;
+    auto* cuL = new G4LogicalVolume(new G4Tubs("CopperRing", fi, fo, 0.5 * ft, 0., 360. * deg),
+                                    G4NistManager::Instance()->FindOrBuildMaterial("G4_Cu"), "CopperRing");
+    int k = 0;
+    for (const auto& zc : f["z_center_mm"]) {
+      const double z = zc.get<double>() * mm;
+      new G4PVPlacement(nullptr, G4ThreeVector(0, 0, z - liqC), cuL, "CopperRing", liqL, false, k++, kCheck);
+      G4cout << "copper field-shaping ring " << k << ": z " << (z - 0.5 * ft) / mm << " to " << (z + 0.5 * ft) / mm
+             << " mm, r " << fi / mm << "-" << fo / mm << " mm" << G4endl;
+    }
+  }
 
   // optional extra PTFE cylinders (design study; config "extra_ptfe": [{"name", "z_bottom_mm", "z_top_mm"}], same radii
   // as the main cylinder), split at the liquid surface: liquid part "PTFE", gas part "PTFE_gas"

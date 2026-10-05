@@ -17,6 +17,7 @@
 /vis/geometry/set/colour PTFE_gas 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour MeshRing 0 0.45 0.45 0.55 1
 /vis/geometry/set/colour MeshBar 0 0.25 0.25 0.30 1
+/vis/geometry/set/colour CopperRing 0 0.78 0.45 0.23 1
 /vis/geometry/set/colour TopPMTWindow 0 0.70 0.88 1.00 1
 /vis/geometry/set/colour BottomPMTWindow 0 0.70 0.88 1.00 1
 /vis/geometry/set/colour TopPMTSector 0 0.95 0.60 0.10 1

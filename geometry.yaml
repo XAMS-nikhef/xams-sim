@@ -39,42 +39,55 @@ mesh_common:                 # all five meshes identical and aligned the same wa
   foil_diameter_mm: 80.0     # G
   etched_pattern: "R: outputs/posrec2_template.json"   # 456 hole centres (disc-centred, drawing frame) — use as the exact pattern
   open_fraction_normal: 0.888  # (2.45/2.60)^2, perpendicular incidence (derived)
-  ring:
-    outer_diameter_mm: 92.6  # G
-    thickness_mm: 1.8        # G
-    inner_diameter_mm: null  # ? inner diameter of the stainless ring. Matters: T p.131 sees 'partial optical shielding
-                             #   from the mesh frame' at the edges of the reconstructed positions
-    foil_position: null      # ? foil on top of / below / in the middle of the ring
+  ring:                      # mesh support ring (drawing "XAMS_XAMS grid assy.pdf", 2026-10-05)
+    outer_diameter_mm: 92.6  # G, drawing
+    inner_diameter_mm: 72.0  # drawing: bore R36 = open mesh aperture; the PTFE cylinder (outer Ø72) fits in it
+    thickness_mm: 1.8        # drawing: whole assembly (ring + foil); the foil (Ø80) lies on one face, overlapping the
+                             #   ring from R36 to R40 (4.1 mm)
+  # which face of its ring carries the foil (user, 2026-10-05): the ring body lies on the other side of the foil
 
 meshes:                      # z = foil mid-plane
   - name: top_screen
     z_mm: 18.0               # P: 10 mm above the anode
     angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: down          # user, 2026-10-05 (ring body on the other side)
   - name: anode
     z_mm: 8.0                # P (gate–anode 8 mm), T p.145
     angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: down          # user, 2026-10-05 (ring body on the other side)
   - name: gate
     z_mm: 0.0                # definition
     angle_to_anodes_deg: 29.4  # R: posrec2_fit.json mesh_angle_to_anodes_deg (mod 90°)
+    foil_side: up          # user, 2026-10-05 (ring body on the other side)
   - name: cathode
     z_mm: -51.8              # P (gate–cathode 51.8 mm)
     angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: down          # user, 2026-10-05 (ring body on the other side)
   - name: bottom_screen
     z_mm: -59.6              # P: 7.8 mm below the cathode (2026-10-05; the earlier -61.8 was a misread "10")
     angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: up          # user, 2026-10-05 (ring body on the other side)
 
 # ------------------------------------------------------------------------------------------------ PTFE cylinder
-ptfe_cylinder:
-  inner_diameter_mm: 61.94   # P (T: 6.2 cm)
-  wall_thickness_mm: 5.0     # user, 2026-10-05
-  z_bottom_mm: -51.8         # user, 2026-10-05: the PTFE cylinder only exists between gate and cathode
-  z_top_mm: 0.0              # user, 2026-10-05: up to the gate
-  sections: one piece
+ptfe_cylinder:                 # drawing "PTFE_cylinder.pdf" (2026-10-05)
+  inner_diameter_mm: 62.0    # drawing
+  wall_thickness_mm: 5.0     # drawing: outer Ø72, fits in the bores of the gate and cathode rings
+  length_mm: 50.85           # drawing
+  z_top_mm: -0.075           # against the gate foil (lower face); the bottom end is then at -50.925 mm.
+                             # Gate–cathode 51.8 mm is correct (user, 2026-10-05): the 0.8 mm gap between the PTFE
+                             # bottom and the cathode foil is real (copper ring 4 -> cathode ring 9.15 mm here).
   above_gate: >-
-    Between gate and anode only three PTFE pillars (user, 2026-10-05), ignored in v1. So in v1 there is no PTFE
-    above the gate or below the cathode: light leaving the cylinder radius there is absorbed (pessimistic for the S2
-    light; first candidate for v2 if the comparison asks for it).
-  # field-shaping rings: outside the PTFE (T: five copper rings) -> not in v1
+    Between gate and anode only three PTFE pillars (user, 2026-10-05), ignored. No PTFE above the gate or below the
+    cathode.
+
+field_shaping_rings:         # drawing "XAMS_field_shaper.pdf" (2026-10-05): copper, around the PTFE cylinder
+  material: copper
+  inner_diameter_mm: 72.0    # around the PTFE (outer Ø72)
+  outer_diameter_mm: 92.6    # drawn as wide as the mesh rings
+  thickness_mm: 1.8          # drawing
+  # gaps between faces from the gate ring downwards: gate ring -> ring 1 not dimensioned (assumed 8), then 8, 8, 8;
+  # ring 4 -> cathode ring 8.2 (drawing). Gate ring body: -1.725 to -0.075 mm -> ring centres:
+  z_center_mm: [-10.625, -20.425, -30.225, -40.025]
 
 # ------------------------------------------------------------------------------------------------ PMTs
 pmt_common:
@@ -129,6 +142,7 @@ optics:
     reflectivity: [0.60, 0.90]  # free; lower than in liquid
     specular_fraction: [0.0, 0.3]
   stainless_steel_reflectivity: [0.2, 0.5]   # meshes, free
+  copper_reflectivity: [0.2, 0.4]            # field-shaping rings at 178 nm, free (Lambertian)
   pmt_window_refractive_index: 1.60          # fused silica at 178 nm (check with the window material)
 
 # ------------------------------------------------------------------------------------------------ light sources
