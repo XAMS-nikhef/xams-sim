@@ -10,7 +10,8 @@
 # +y towards sectors I, II (thesis T, Fig. 5.10).
 # Units: mm, degrees.
 #
-# Sources used: P = reference/XAMS design/XAMS_projections_annotated.pdf (section A–A),
+# Sources used: P = reference/XAMS design/XAMS_projections_annotated.pdf (section A–A; dimension chain added by AP
+#                   2026-10-05: top PMT window 4.5 top screen 10 anode 8 gate 51.8 cathode 7.8 bottom screen 4.5 bottom PMT window),
 #               G = reference/XAMS design/XAMS_XAMS grid.pdf and XAMS_XAMS grid assy.pdf,
 #               T = reference/papers/Thesis_Maricke_Flierman.pdf (ch. 4–5),
 #               R = analysis_SR2026.2 (posrec v2: outputs/posrec2_template.json, posrec2_fit.json; drift note),
@@ -47,7 +48,7 @@ mesh_common:                 # all five meshes identical and aligned the same wa
 
 meshes:                      # z = foil mid-plane
   - name: top_screen
-    z_mm: null               # ? height above the anode (P: section A–A)
+    z_mm: 18.0               # P: 10 mm above the anode
     angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
   - name: anode
     z_mm: 8.0                # P (gate–anode 8 mm), T p.145
@@ -59,7 +60,7 @@ meshes:                      # z = foil mid-plane
     z_mm: -51.8              # P (gate–cathode 51.8 mm)
     angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
   - name: bottom_screen
-    z_mm: -61.8              # P: 10 mm below the cathode (check: is the "10" in section A–A cathode–bottom screen?)
+    z_mm: -59.6              # P: 7.8 mm below the cathode (2026-10-05; the earlier -61.8 was a misread "10")
     angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
 
 # ------------------------------------------------------------------------------------------------ PTFE cylinder
@@ -91,15 +92,15 @@ pmt_common:
 pmts:
   - name: top
     readout: 4 sectors (ch1–ch4)
-    window_z_mm: null        # ? height of the outside of the top-PMT window (above the top screen by how much?)
+    window_z_mm: 22.5        # P: outside of the window 4.5 mm above the top screen
     rotation_deg: 0.0        # defines the frame (anode edges along x / y)
     sector_to_channel: {ch1: I, ch2: II, ch3: III, ch4: IV}   # user, 2026-10-05: as in T (Fig. 5.10, Eq. 5.2)
     sector_layout: "I II / III IV seen from the TPC; +x towards II and IV, +y towards I and II (T: eta_x = (Q_II+Q_IV)/Q, eta_y = (Q_I+Q_II)/Q)"
     medium: gas
   - name: bottom
     readout: 4 sectors joined (ch0)
-    window_z_mm: null        # ? depth of the outside of the bottom-PMT window (below the bottom screen by how much?)
-    rotation_deg: null       # ? orientation of the bottom PMT relative to the top PMT (only for the light pattern)
+    window_z_mm: -64.1       # P: outside of the window 4.5 mm below the bottom screen
+    rotation_deg: 0.0        # default (only matters for the bottom light pattern, which is read out as one channel)
     medium: liquid
 
 # ------------------------------------------------------------------------------------------------ SiPMs (optional in v1)
