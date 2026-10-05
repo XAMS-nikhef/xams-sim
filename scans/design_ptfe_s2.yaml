@@ -1,0 +1,29 @@
+# Design study (s2): extra PTFE cylinders; written by scans/make_design_ptfe.py
+name: design_ptfe_s2
+source: s2
+rmax_mm: 30
+photons: 8000000
+chunks: 8
+seed: 50000
+base:
+  level: 4.0
+grid:
+  extra_ptfe:
+  - []
+  - - &id001
+      name: gate_anode
+      z_bottom_mm: 0.9
+      z_top_mm: 7.1
+  - - &id002
+      name: anode_topscreen
+      z_bottom_mm: 8.9
+      z_top_mm: 17.1
+  - - &id003
+      name: cathode_bottomscreen
+      z_bottom_mm: -58.7
+      z_top_mm: -52.7
+  - - *id001
+    - *id002
+  - - *id001
+    - *id002
+    - *id003

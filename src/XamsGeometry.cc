@@ -206,6 +206,28 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
   G4cout << "PTFE cylinder r = " << rIn / mm << "-" << (rIn + wall) / mm << " mm, z = " << zb / mm << " to "
          << zt / mm << " mm" << G4endl;
 
+  // optional extra PTFE cylinders (design study; config "extra_ptfe": [{"name", "z_bottom_mm", "z_top_mm"}], same radii
+  // as the main cylinder), split at the liquid surface: liquid part "PTFE", gas part "PTFE_gas"
+  if (j.contains("extra_ptfe")) {
+    for (const auto& x : j["extra_ptfe"]) {
+      const std::string nm = x["name"].get<std::string>();
+      const double b = x["z_bottom_mm"].get<double>() * mm, t = x["z_top_mm"].get<double>() * mm;
+      const std::vector<std::pair<double, double>> parts = {{b, std::min(t, zl)}, {std::max(b, zl), t}};
+      for (size_t k = 0; k < 2; ++k) {
+        const auto [lo, hi] = parts[k];
+        if (hi - lo < 0.01 * mm) continue;
+        const bool gas = k == 1;
+        const std::string ln = gas ? "PTFE_gas" : "PTFE";
+        auto* l = new G4LogicalVolume(new G4Tubs(nm + (gas ? "_gas" : "_liq"), rIn, rIn + wall, 0.5 * (hi - lo), 0.,
+                                                 360. * deg), Ptfe(), ln);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, 0.5 * (hi + lo) - (gas ? gasC : liqC)), l, ln, gas ? gasL : liqL,
+                          false, 0, kCheck);
+        G4cout << "extra PTFE " << nm << (gas ? " (gas)" : " (liquid)") << ": z " << lo / mm << " to " << hi / mm << " mm"
+               << G4endl;
+      }
+    }
+  }
+
   // PMTs
   for (const auto& pm : j["pmts"]) {
     const std::string name = pm["name"].get<std::string>();
