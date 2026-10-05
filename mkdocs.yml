@@ -1,0 +1,58 @@
+site_name: XAMS optical simulation
+site_description: Geant4 optical simulation of the XAMS TPC — how it works, how to run it, how to analyse it
+docs_dir: docs
+strict: true
+exclude_docs: |
+  .DS_Store
+  results/**/*.json
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Use dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Use light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Using it:
+      - How it works: concepts.md
+      - Setup: setup.md
+      - Running: running.md
+      - Output files: output.md
+      - Your own analysis: analysis.md
+      - Pitfalls: pitfalls.md
+  - The model:
+      - Geometry: geometry.md
+      - Optics and parameters: optics.md
+      - Validation: validation.md
+  - Results:
+      - Summary: results.md
+      - First physics (step 6): results/step6/README.md
+      - Data comparison (step 7): results/step7/README.md
+      - Design study (extra PTFE): results/design_ptfe/README.md
+  - Reference:
+      - File map: files.md
+      - Implementation plan: plan.md

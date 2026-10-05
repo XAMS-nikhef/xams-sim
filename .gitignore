@@ -2,3 +2,4 @@ run/
 build/
 __pycache__/
 examples/*.png
+site/

@@ -4,8 +4,9 @@ Geant4 optical simulation of the XAMS TPC, to find out how much of the observed 
 low S2 light on the top PMT) follows from the geometry: the etched meshes, the liquid surface, the PTFE cylinder and the
 PMT photocathodes.
 
-**How to use it: [`GUIDE.md`](GUIDE.md)** (what every file is, how to run, output format, reading it in Python;
-example analysis `examples/my_first_analysis.py`).
+**Documentation: MkDocs site in [`docs/`](docs/index.md)** — `../xams-handbook/.venv/bin/mkdocs serve` and open
+http://127.0.0.1:8000 (how it works, running, output format, your own analysis, geometry, optics, validation,
+results). **Findings: PDF note `notes/XAMS_optical_simulation_2026-10-05.pdf`** (`python notes/make_note.py`).
 
 ## Status
 
@@ -18,7 +19,7 @@ example analysis `examples/my_first_analysis.py`).
   (data at low load 0.52; Cs/Na values are load effects); liquid level hardly matters.
 - 2026-10-05: geometry v2 from the drawings (grid assembly, PTFE cylinder, copper field-shaping rings): ring bore
   Ø72 with the ring body on the side of the foil as built, PTFE 50.85 mm in the gate/cathode ring bores, four copper
-  rings around the PTFE. Results in `results/` still from v1 until regenerated.
+  rings around the PTFE. All scans rerun and `results/` regenerated with v2 (v1 outputs in `run/scans_v1_20261005`).
 
 ## Build and run
 

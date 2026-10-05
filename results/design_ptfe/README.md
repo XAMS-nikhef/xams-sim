@@ -1,40 +1,40 @@
-# Design study: extra PTFE cylinders (2026-10-05)
+# Design study: extra PTFE cylinders (2026-10-05, geometry v2)
 
-Simulation (model v1, level 4 mm, middle optics: PTFE R 0.945 in liquid / 0.75 in gas, steel R 0.35, QE 0.33).
-Extra cylinders: same radii as the drift-region PTFE (r 30.97–35.97 mm), between the mesh rings: gate–anode
-z 0.9–7.1 mm (split at the liquid surface, gas part with the gas reflectivity), anode–top screen 8.9–17.1 mm,
-cathode–bottom screen −58.7 to −52.7 mm. Scans `scans/design_ptfe_s2.yaml`, `_s1.yaml` (8·10⁶ photons each).
-Light collection = detected / emitted, QE included.
+Simulation (geometry v2 from the drawings, level 4 mm, middle optics: PTFE R 0.945 in liquid / 0.75 in gas,
+steel R 0.35, copper R 0.3, QE 0.33). Extra cylinders with the radii of the drift-region PTFE (r 31–36 mm,
+inside the ring bores): gate–anode z 0.075–7.925 mm (foil to foil, split at the liquid surface, gas part with
+the gas reflectivity), anode–top screen 8.075–17.925 mm, cathode–bottom screen −59.525 to −51.875 mm. Scans
+`scans/design_ptfe_s2.yaml`, `_s1.yaml` (8·10⁶ photons each). Light collection = detected / emitted, QE
+included.
 
 ## S2 (gas gap)
 
-| extra PTFE | top | bottom | total | gain vs now | top fraction | rings | leaves | PTFE absorbed |
+| extra PTFE | top | bottom | total | gain vs now | top fraction | rings (steel + copper) | leaves | PTFE absorbed |
 |---|---|---|---|---|---|---|---|---|
-| none (as built) | 4.38 % | 3.35 % | 7.73 % | +0 % | 0.567 | 23.1 % | 18.3 % | 2.8 % |
-| gate–anode | 4.93 % | 3.90 % | 8.83 % | +14 % | 0.558 | 16.2 % | 12.0 % | 3.5 % |
-| anode–top screen | 5.13 % | 3.58 % | 8.71 % | +13 % | 0.589 | 16.8 % | 14.1 % | 3.0 % |
-| cathode–bottom screen | 4.39 % | 3.64 % | 8.02 % | +4 % | 0.547 | 21.0 % | 18.0 % | 3.2 % |
-| gate–anode + anode–top screen | 5.79 % | 4.15 % | 9.94 % | +29 % | 0.582 | 9.2 % | 7.2 % | 3.6 % |
-| gate–anode + anode–top screen + cathode–bottom screen | 5.80 % | 4.49 % | 10.29 % | +33 % | 0.563 | 6.6 % | 6.7 % | 4.1 % |
+| none (as built) | 4.34 % | 3.31 % | 7.65 % | +0 % | 0.568 | 13.2 % | 25.7 % | 3.1 % |
+| gate–anode | 4.99 % | 3.98 % | 8.98 % | +17 % | 0.556 | 7.7 % | 16.8 % | 3.6 % |
+| anode–top screen | 5.24 % | 3.61 % | 8.85 % | +16 % | 0.592 | 7.4 % | 19.0 % | 3.3 % |
+| cathode–bottom screen | 4.36 % | 3.67 % | 8.03 % | +5 % | 0.542 | 12.2 % | 23.8 % | 3.6 % |
+| gate–anode + anode–top screen | 6.04 % | 4.33 % | 10.38 % | +36 % | 0.582 | 1.9 % | 9.4 % | 3.9 % |
+| gate–anode + anode–top screen + cathode–bottom screen | 6.09 % | 4.79 % | 10.88 % | +42 % | 0.560 | 0.6 % | 7.1 % | 4.5 % |
 
 ## S1 (drift region)
 
-| extra PTFE | top | bottom | total | gain vs now | top fraction | rings | leaves | PTFE absorbed |
+| extra PTFE | top | bottom | total | gain vs now | top fraction | rings (steel + copper) | leaves | PTFE absorbed |
 |---|---|---|---|---|---|---|---|---|
-| none (as built) | 1.35 % | 6.25 % | 7.60 % | +0 % | 0.178 | 20.9 % | 8.8 % | 9.7 % |
-| gate–anode | 1.48 % | 6.63 % | 8.11 % | +7 % | 0.182 | 14.9 % | 7.5 % | 11.0 % |
-| anode–top screen | 1.48 % | 6.29 % | 7.77 % | +2 % | 0.191 | 19.6 % | 8.4 % | 9.7 % |
-| cathode–bottom screen | 1.39 % | 7.01 % | 8.40 % | +11 % | 0.165 | 15.2 % | 7.7 % | 10.7 % |
-| gate–anode + anode–top screen | 1.64 % | 6.69 % | 8.33 % | +10 % | 0.197 | 13.4 % | 7.0 % | 11.0 % |
-| gate–anode + anode–top screen + cathode–bottom screen | 1.70 % | 7.51 % | 9.21 % | +21 % | 0.184 | 6.9 % | 5.8 % | 12.1 % |
+| none (as built) | 1.39 % | 6.28 % | 7.67 % | +0 % | 0.181 | 11.5 % | 14.8 % | 10.1 % |
+| gate–anode | 1.53 % | 6.73 % | 8.26 % | +8 % | 0.185 | 6.7 % | 12.2 % | 11.5 % |
+| anode–top screen | 1.53 % | 6.32 % | 7.85 % | +2 % | 0.195 | 10.3 % | 13.8 % | 10.1 % |
+| cathode–bottom screen | 1.45 % | 7.31 % | 8.76 % | +14 % | 0.166 | 7.4 % | 10.4 % | 11.6 % |
+| gate–anode + anode–top screen | 1.71 % | 6.80 % | 8.51 % | +11 % | 0.201 | 5.6 % | 11.1 % | 11.5 % |
+| gate–anode + anode–top screen + cathode–bottom screen | 1.82 % | 7.94 % | 9.76 % | +27 % | 0.186 | 0.8 % | 6.1 % | 13.3 % |
 
 ## Reading
 
-- S2: light collection +14 % (gate–anode) / +13 % (anode–top screen) alone, **+29 % with both**, +33 % with all three;
-  the light that now dies in the rings and leaves the TPC sideways (41 %) drops to 13 %. The top fraction hardly
-  changes (0.56–0.59). Cathode–bottom screen matters little for S2 (+4 %).
-- S1: +7 % / +2 % / +11 % alone, +21 % with all three; cathode–bottom screen helps S1 most (bottom PMT).
-- Caveats: model v1 treats everything outside |x|, |y| < 60 mm as black, so the real sideways loss may be smaller and
-  the gain somewhat smaller; PTFE reflectivity in gas (0.75) is a free parameter (range 0.60–0.90); the three pillars
-  between gate and anode are not modelled. Not looked at: HV (PTFE across 5 kV gate–anode: surface paths, charge-up of
-  PTFE in the extraction region and its effect on the field near the edge), mechanics.
+- S2: light collection +17 % (gate–anode) / +16 % (anode–top screen) alone, **+36 % with both**, +42 % with all three; the light leaving sideways or ending on the rings drops from 39 % to 8 %. The top fraction hardly changes (0.54–0.59).
+- S1: +8 / +2 / +14 % alone, +27 % with all three; cathode–bottom screen helps S1 most (bottom PMT).
+- In absolute terms: S2 detected light goes from 7.6 % to 10.9 % of the emitted photons (factor 1.42) — most rescued photons still end on meshes, PMT frames or in the photocathode (QE).
+- Caveats: everything outside |x|, |y| < 60 mm is black (the real sideways loss may be smaller, and the gain
+  with it); PTFE reflectivity in gas (0.75) is free (0.60–0.90); the three gate–anode pillars are not modelled.
+  Not looked at: HV (PTFE across 5 kV gate–anode: surface paths, charge-up in the extraction region), mechanics.
+

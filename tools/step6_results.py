@@ -84,8 +84,10 @@ def category(code, vol):
         return "photocathode, not converted (1 - QE)"
     if vol.endswith("Bar"):
         return f"mesh bars: {vol[:-3]}"
-    if vol.endswith("Ring"):
-        return "mesh rings"
+    if vol == "CopperRing":
+        return "copper field-shaping rings"
+    if vol.endswith("Ring") or vol.endswith("Rim"):
+        return "mesh rings (+ foil rim)"
     if vol == "PTFE":
         return "PTFE"
     if vol.endswith("Frame") or vol.endswith("Body") or vol.endswith("Window"):

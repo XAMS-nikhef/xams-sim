@@ -1,0 +1,98 @@
+# Running
+
+All commands from `optical_sim/`, inside `conda activate g4`.
+
+## Look at the geometry (viewer)
+
+```bash
+python tools/make_config.py --level 4.0 --out run/config_level4.json
+cd build && ./xamsopt -c ../run/config_level4.json -o /tmp/vis.bin
+```
+
+A Qt window opens (drag = rotate, scroll = zoom). Type commands in the box at the bottom:
+
+| command | does |
+|---|---|
+| `/xamsopt/source/shape s2`, `/xamsopt/source/rmax 30 mm`, `/run/beamOn 50` | shoot 50 S2 photons, tracks drawn |
+| `/vis/viewer/set/cutawayMode intersection` then `/vis/viewer/addCutawayPlane 0 0 0 m 1 0 0` | cut the view open (`/vis/viewer/clearCutawayPlanes` to close) |
+| `/vis/viewer/set/viewpointThetaPhi 90 90 deg` / `0 0 deg` | side view / top view |
+| `/vis/viewer/set/style wireframe` | wireframe |
+| `/vis/geometry/set/colour Liquid 0 0.15 0.35 0.85 0.3` | colour + opacity of a volume |
+
+Only the xenon is drawn see-through: in this viewer, see-through volumes inside the see-through xenon are not drawn.
+
+## Exact cross sections
+
+The viewer is a rendering; for the exact geometry ask Geant4's navigator which volume sits at every grid point:
+
+```bash
+cd build && ./xamsopt -c ../run/config_level4.json -o /tmp/s.bin section.mac && cd ..
+python tools/plot_section.py build/section_xz.bin --zoom 25 50 -14 22    # → build/section_xz.png
+```
+
+`section.mac` makes an x–z plane at y = 0 and an x–y plane through the gate; the command is
+`/xamsopt/section <file> <xz|yz|xy> <offset> <u_min> <u_max> <v_min> <v_max> <step>` (mm).
+
+## One run
+
+```bash
+cat > build/my_run.mac <<'MAC'
+/run/initialize
+/xamsopt/source/shape s2
+/xamsopt/source/rmax 30 mm
+/run/beamOn 1000000
+MAC
+cd build && ./xamsopt -c ../run/config_level4.json -o ../run/my_run.bin -s 1 -d my_run.mac && cd ..
+```
+
+| option | meaning |
+|---|---|
+| `-c file` | config (from `make_config.py`) |
+| `-o file` | output file (`.bin` + `.bin.summary.json` + `.bin.volumes.json`) |
+| `-s n` | random seed |
+| `-d` | records only for detected photons (all photons still counted in the summary); without it every photon gets a record of 36 bytes |
+| `-v` | allow pictures in batch mode |
+| no macro | interactive viewer |
+
+Source commands: `/xamsopt/source/shape` `s2 | s1 | point | cylinder | beam | beam_disc`, `/xamsopt/source/rmax`,
+`/xamsopt/source/position`, `/xamsopt/source/direction`, `/xamsopt/source/zmin`, `/xamsopt/source/zmax`.
+Speed: ~1.5·10⁵ photons per second per process.
+
+## A scan (recommended)
+
+Write a YAML file, e.g. `scans/my_scan.yaml`:
+
+```yaml
+name: my_scan                 # output goes to run/scans/my_scan/
+source: s2                    # s2 = gas gap, s1 = drift region
+rmax_mm: 30                   # photons start at r < 30 mm
+photons: 10000000             # per point (~10 s on the Mac for S2; S1 slices in z need ~1e8)
+chunks: 8                     # parallel parts per point
+seed: 70000                   # change it for an independent repetition
+base:
+  level: 4.0                  # liquid level above the gate (mm) for every point
+  set: {optics.lxe.rayleigh_length_cm: 45}     # fixed overrides (any path in config.json)
+grid:                         # every combination is one point
+  optics.ptfe_in_liquid.reflectivity: [0.90, 0.95, 0.99]
+  optics.copper_reflectivity: [0.2, 0.4]
+```
+
+```bash
+python tools/run_scan.py scans/my_scan.yaml --jobs 8
+```
+
+Interrupted? Run it again: finished parts are skipped. To redo a scan from scratch, first move `run/scans/my_scan/`
+away. Existing scan files: `scans/s2_optics.yaml`, `s1_optics.yaml`, `s2_rayleigh.yaml`, `design_ptfe_*.yaml`
+(written by `scans/make_design_ptfe.py`), `step5_reference*.yaml`.
+
+## Changing parameters or the design
+
+- One value for one run: `python tools/make_config.py --level 3.0 --set optics.stainless_steel_reflectivity=0.5 --out run/my.json`.
+- Permanent geometry / optics changes: edit `geometry.yaml` (every value has its source written next to it).
+- Design options without changing the code: `extra_ptfe` (extra PTFE cylinders, see `scans/make_design_ptfe.py`).
+- New kinds of parts need C++ in `src/XamsGeometry.cc`.
+
+## Checks
+
+`python tools/check_step1.py` … `check_step5.py` re-validate the program (each prints `PASSED` / `FAILED`); run them
+after changing C++ code. See [Validation](validation.md).
