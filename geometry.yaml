@@ -138,11 +138,20 @@ sources:
 
 # ------------------------------------------------------------------------------------------------ comparison with data
 targets:
+  # measured 2026-10-05 (analysis_SR2026.2/scratch/aft_check.py -> outputs/aft_check.json; central v4, Δ750 V,
+  # r < 25 mm, drift 2-36 µs; medians). "v2" = processed (top / f_top, bottom / b_hv); "LED" = LED gains only.
   s2_top_fraction:
-    cs137_29_09: 0.29        # median, S2 > 20 kPE — depressed by the top-PMT gain drop under load
-    na22_28_29_09: 0.38
-    no_source_28_29_09: 0.52 # lowest load: closest to the true geometric value (S2s larger / other positions: check)
-    note: "compare with the low-load value or with load-corrected cS2 top/bottom; the Cs value is not geometric"
-  s1_top_fraction_vs_depth: from data per drift-time slice (to be extracted)
+    #                      S2 3-20 kPE (v2 / LED)   S2 > 20 kPE (v2 / LED)
+    no_source_28_09:      [0.64, 0.57,              0.56, 0.49]
+    no_source_29_09:      [0.61, 0.59,              0.52, 0.49]
+    na22_28_09:           [0.50, 0.45,              0.41, 0.36]
+    na22_29_09:           [0.49, 0.47,              0.40, 0.37]
+    cs137_28_09:          [0.38, 0.34,              0.31, 0.27]
+    cs137_29_09:          [0.39, 0.34,              0.32, 0.28]
+    note: "falls with source rate AND with S2 size (same geometry) -> not geometric; compare with no source, 3-20 kPE"
+  s1_top_fraction_vs_drift_us:   # mean, S1 > 20 PE; no source 28/29-09 (v2 / LED); Cs is 2.5-3x lower
+    4:  [0.26, 0.23]
+    16: [0.18, 0.15]
+    32: [0.12, 0.10]
   top_anode_pattern: "R: posrec2_lrf.json (light-response model of the 4 anodes versus position)"
   oct_2024_vs_now: same quantities for run 6786 (2 + 6 mm) versus SR-2026.2 (4 + 4 mm)
