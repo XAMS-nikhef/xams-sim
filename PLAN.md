@@ -11,7 +11,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 | Step | Status | Date | Notes |
 |---|---|---|---|
 | 0 Environment | **done** | 2026-10-05 | see "Done" under step 0 |
-| 1 Skeleton | open | | |
+| 1 Skeleton | **done** | 2026-10-05 | see "Done" under step 1 |
 | 2 Materials | open | | |
 | 3 Geometry v1 | open | | |
 | 4 Optical surfaces | open | | |
@@ -54,6 +54,23 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   polarisation, position sampler), sensitive photocathodes, per-photon output, macro commands for source type and
   position, number of photons, random seed.
 - **Check:** a box of liquid xenon with one photocathode; detected fraction equals the solid angle.
+
+**Done (2026-10-05).**
+- Code (C++17, Geant4 11.3, CMake): `xamsopt.cc` (`xamsopt -c config.json -o out.bin [-s seed] [macro]`; without a
+  macro an interactive session with visualisation), `src/` + `include/`: `Config` (reads the JSON from
+  `make_config.py`), `DetectorConstruction` (geometry_mode `test_box` now; `xams` = step 3), `PhysicsList`
+  (G4OpticalPhysics only; scintillation, Cherenkov, WLS, Mie off; e−/e+/γ/p defined because G4OpticalPhysics looks
+  them up), `PrimaryGeneratorAction` (one 178 nm photon per event, isotropic, random polarisation; shapes `point` and
+  `cylinder` via `/xamsopt/source/...`), `PhotonActions` (per-photon record: origin, end point, end code detected /
+  bulk-absorbed / surface-absorbed / escaped, sensor id, end volume, number of reflections), `Output` (binary records
+  + `<file>.volumes.json`). Sequential run manager (fast enough; per-thread output would be needed for MT).
+- Photocathodes: optical surface dielectric_metal, REFLECTIVITY 0, EFFICIENCY = QE; sensor id = copy number
+  (0 bottom, 1–4 top sectors I–IV, 6/7 SiPMs, 10 test cathode).
+- Python: `tools/read_output.py` (numpy reader, summary), `tools/check_step1.py` (the check below).
+- Build: `conda activate g4; mkdir build; cd build; cmake ..; make` (macros are copied into `build/`).
+- **Check passed:** point source, 48.5 mm square cathode (QE 1) at 10 / 30 / 60 mm, 2·10⁵ photons each: detected
+  fraction 0.32626 / 0.12946 / 0.04435 against the solid angle 0.32624 / 0.12932 / 0.04484 (pulls 0.02, 0.19, −1.06);
+  every photon ends detected or escaped. Speed: ~6·10⁵ photons per second in this geometry.
 
 ## 2. Materials and optical properties (½ day)
 

@@ -7,7 +7,17 @@ PMT photocathodes.
 ## Status
 
 - 2026-10-04: implementation plan `PLAN.md`; geometry sheet `geometry.yaml` (draft, values from the drawings, the thesis and the SR-2026.2 analysis;
-  open values marked `null` with a question). No simulation code yet.
+  open values marked `null` with a question).
+- 2026-10-05: step 0 (environment) and step 1 (skeleton application, solid-angle check passed) done; progress in `PLAN.md`.
+
+## Build and run
+
+```bash
+conda activate g4
+mkdir -p build && cd build && cmake .. && make -j8 && cd ..
+python tools/make_config.py --level 4.0 --out run/config.json
+build/xamsopt -c run/config.json -o run/photons.bin build/<macro>.mac
+```
 
 ## Model v1
 
