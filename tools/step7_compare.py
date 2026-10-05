@@ -82,7 +82,7 @@ def main():
     lo, hi = min(s["s2_aft_r25"] for s in S2), max(s["s2_aft_r25"] for s in S2)
     a.axhspan(lo, hi, color="C0", alpha=0.3, label="simulation (optics ranges)")
     for k in COL:
-        a.plot(xs, arr(D[k]["s2_aft_vs_size_led"]), "o-", color=COL[k], label=LAB[k])
+        a.plot(xs, arr(D[k]["s2_aft_vs_size_led"]), "o", ls="none", color=COL[k], label=LAB[k])
     a.set_xscale("log")
     a.set_xlabel("S2 area [PE]")
     a.set_ylabel("S2 area fraction top")
@@ -94,7 +94,7 @@ def main():
     sr = np.array([s["s2_aft_vs_r"] for s in S2])
     a.fill_between(rc, sr.min(0), sr.max(0), color="C0", alpha=0.3, label="simulation")
     for k in COL:
-        a.plot(rc, arr(D[k]["s2_aft_vs_r_led"]), "o-", color=COL[k], label=LAB[k])
+        a.plot(rc, arr(D[k]["s2_aft_vs_r_led"]), "o", ls="none", color=COL[k], label=LAB[k])
     a.set_xlabel("r [mm]")
     a.set_ylabel("S2 area fraction top")
     a.set_title("S2 AFT vs r (S2 3-20 kPE)", fontsize=10)
@@ -105,7 +105,7 @@ def main():
     s1a = np.array(S1)
     a.fill_between(zc, s1a.min(0), s1a.max(0), color="C0", alpha=0.3, label="simulation (PTFE R 0.90-0.99)")
     for k in COL:
-        a.plot(zc, arr(D[k]["s1_aft_vs_z_led"]), "o-", color=COL[k], label=LAB[k])
+        a.plot(zc, arr(D[k]["s1_aft_vs_z_led"]), "o", ls="none", color=COL[k], label=LAB[k])
     a.set_xlabel("z [mm] (gate 0, cathode -51.8)")
     a.set_ylabel("S1 area fraction top")
     a.set_title("S1 AFT vs z (S1 > 20 PE, r < 25 mm)", fontsize=10)
@@ -117,8 +117,8 @@ def main():
     sv = np.array([s["v_vs_y"] for s in S2])
     a.fill_between(pc, su.min(0), su.max(0), color="C0", alpha=0.3, label="simulation u(x)")
     a.fill_between(pc, sv.min(0), sv.max(0), color="C2", alpha=0.3, label="simulation v(y)")
-    a.plot(pc, arr(D["none"]["u_vs_x"]), "ko-", ms=3, label="data u(x), no source")
-    a.plot(pc, arr(D["none"]["v_vs_y"]), "ks--", ms=3, label="data v(y), no source")
+    a.plot(pc, arr(D["none"]["u_vs_x"]), "ko", ls="none", ms=4, label="data u(x), no source")
+    a.plot(pc, arr(D["none"]["v_vs_y"]), "s", ls="none", mfc="none", mec="k", ms=4, label="data v(y), no source")
     a.set_xlabel("position along the axis [mm] (posrec v2)")
     a.set_ylabel("top-array asymmetry")
     a.set_title("top-sector pattern: u = (1+3-2-4)/top, v = (1+2-3-4)/top", fontsize=10)

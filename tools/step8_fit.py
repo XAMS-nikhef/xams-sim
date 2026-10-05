@@ -14,6 +14,7 @@ depend on that choice, differences between grid points are what matter.
 """
 import csv
 import json
+import pickle
 import sys
 from pathlib import Path
 
@@ -114,15 +115,19 @@ def main():
     m_s1z = (zc < -4) & np.isfinite(d_s1z)          # last slice (gate) excluded: events above the gate in the data
     m_u, m_v = np.isfinite(d_u), np.isfinite(d_v)
 
+    cache = ROOT / "run" / "step8_cache.pkl"            # binned curves per point; delete it after rerunning the scans
+    replot = cache.exists() and "--refit" not in sys.argv
     idx2 = json.load(open(SCANS / "fit_s2" / "points.json"))["points"]
     idx1 = json.load(open(SCANS / "fit_s1" / "points.json"))["points"]
     key = lambda p: tuple(p["params"][k] for k in PARAMS)  # noqa: E731
     s1_by = {key(p): p for p in idx1}
     rows, store = [], {}
+    binned = pickle.load(open(cache, "rb")) if replot else {}
     for i, p in enumerate(idx2):
         k = key(p)
-        b2 = bin_s2(point_records("fit_s2", p), ed)
-        b1 = bin_s1(point_records("fit_s1", s1_by[k]), ed)
+        if k not in binned:
+            binned[k] = (bin_s2(point_records("fit_s2", p), ed), bin_s1(point_records("fit_s1", s1_by[k]), ed))
+        b2, b1 = binned[k]
         e2 = np.hypot(b2["aft_e"], SYS["s2r"])
         eps2, c2 = fit_eps(b2["aft"], e2, d_s2r, m_s2r)
         e1 = np.hypot(b1["aft_e"], SYS["s1z"])
@@ -133,6 +138,7 @@ def main():
                          chi2_uv=cu + cv, chi2=c2 + c1 + cu + cv))
         store[k] = (b2, b1, eps2, eps1)
         print(f"{i + 1}/{len(idx2)} {k} eps_S2 {eps2:.3f} eps_S1 {eps1:.3f} chi2 {c2:.1f} {c1:.1f} {cu + cv:.1f}", flush=True)
+    pickle.dump(binned, open(cache, "wb"))
     ndf = dict(s2r=int(m_s2r.sum()) - 1, s1z=int(m_s1z.sum()) - 1, uv=int(m_u.sum() + m_v.sum()))
     rows.sort(key=lambda r: r["chi2"])
     with open(OUT / "fit_table.csv", "w", newline="") as f:
@@ -150,23 +156,31 @@ def main():
                           for v in sorted({r[SHORT[q]] for r in rows})}
 
     # figure 1: best fit vs data
+    # simulation band = range over the 10 best grid points (each scaled with its own eps), data = points
+    top10 = [tuple(r[SHORT[q]] for q in PARAMS) for r in rows[:10]]
+    s2c = np.array([scale(store[k][0]["aft"], store[k][2]) for k in top10])
+    s1c = np.array([scale(store[k][1]["aft"], store[k][3]) for k in top10])
+    uc = np.array([store[k][0]["u"] for k in top10])
+    vc = np.array([store[k][0]["v"] for k in top10])
+    band = dict(alpha=0.35, lw=0)
+    dpt = dict(ls="none", marker="o", ms=5, color="k")
     fig, ax = plt.subplots(2, 2, figsize=(11, 8))
     a = ax[0, 0]
-    a.errorbar(rc, scale(b2["aft"], eps2), b2["aft_e"], fmt="o-", color="C0", label=f"simulation × ε_S2 = {eps2:.2f}")
-    a.plot(rc, d_s2r, "ks-", label="data, no source (3–20 kPE)")
-    a.axvspan(0, 5, color="0.9", label="not in the fit (central dip)")
-    a.set(xlabel="r [mm]", ylabel="S2 area fraction top", title="S2 vs r")
+    a.fill_between(rc, s2c.min(0), s2c.max(0), color="C0", label="simulation, 10 best grid points (each × its ε_S2)", **band)
+    a.plot(rc, d_s2r, label="data, no source (S2 3–20 kPE)", **dpt)
+    a.axvspan(0, 5, color="0.9", zorder=0, label="not in the fit (central dip)")
+    a.set(xlabel="r [mm]", ylabel="S2 area fraction top", title=f"S2 vs r (best ε_S2 = {eps2:.2f})")
     a.legend(fontsize=7)
     a = ax[0, 1]
-    a.errorbar(zc, scale(b1["aft"], eps1), b1["aft_e"], fmt="o-", color="C0", label=f"simulation × ε_S1 = {eps1:.2f}")
-    a.plot(zc, d_s1z, "ks-", label="data, no source (S1 > 20 PE)")
-    a.set(xlabel="z [mm]", ylabel="S1 area fraction top", title="S1 vs z")
+    a.fill_between(zc, s1c.min(0), s1c.max(0), color="C0", label="simulation, 10 best grid points (each × its ε_S1)", **band)
+    a.plot(zc, d_s1z, label="data, no source (S1 > 20 PE)", **dpt)
+    a.set(xlabel="z [mm]", ylabel="S1 area fraction top", title=f"S1 vs z (best ε_S1 = {eps1:.2f})")
     a.legend(fontsize=7)
     a = ax[1, 0]
-    a.plot(pc, b2["u"], "o-", color="C0", ms=3, label="simulation u(x)")
-    a.plot(pc, d_u, "ks-", ms=3, label="data u(x)")
-    a.plot(pc, b2["v"], "o--", color="C2", ms=3, label="simulation v(y)")
-    a.plot(pc, d_v, "k^--", ms=3, label="data v(y)")
+    a.fill_between(pc, uc.min(0), uc.max(0), color="C0", label="simulation u(x)", **band)
+    a.fill_between(pc, vc.min(0), vc.max(0), color="C2", label="simulation v(y)", **band)
+    a.plot(pc, d_u, label="data u(x)", **dpt)
+    a.plot(pc, d_v, ls="none", marker="s", ms=5, mfc="none", mec="k", label="data v(y)")
     a.set(xlabel="position [mm]", ylabel="asymmetry", title="top-sector pattern")
     a.legend(fontsize=7)
     a = ax[1, 1]
@@ -194,12 +208,13 @@ def main():
         cv = np.nansum((((b["v"] - d_v) / np.hypot(b["v_e"], SYS["uv"])) ** 2)[m_v])
         dc[str(wv)] = dict(eps=eps, aft_r=model.tolist(), centre_over_ring=float(model[:2].mean() / model[3:6].mean()),
                            chi2_s2r=c, chi2_uv=cu + cv)
-        ax[0].plot(rc, model, "o-", ms=3, label=f"dead cross {wv} mm")
-        ax[1].plot(pc, b["u"], "-", label=f"u(x), {wv} mm")
-    ax[0].plot(rc, d_s2r, "ks-", label="data, no source")
+        me = b["aft_e"] * model / np.where(b["aft"] > 0, b["aft"], 1)
+        ax[0].fill_between(rc, model - me, model + me, alpha=0.4, lw=0, label=f"simulation, dead cross {wv} mm")
+        ax[1].fill_between(pc, b["u"] - b["u_e"], b["u"] + b["u_e"], alpha=0.4, lw=0, label=f"simulation, {wv} mm")
+    ax[0].plot(rc, d_s2r, ls="none", marker="o", ms=5, color="k", label="data, no source")
     ax[0].set(xlabel="r [mm]", ylabel="S2 area fraction top", title="S2 vs r (each scaled with its ε_S2)")
     ax[0].legend(fontsize=7)
-    ax[1].plot(pc, d_u, "ks", ms=3, label="data")
+    ax[1].plot(pc, d_u, ls="none", marker="o", ms=5, color="k", label="data")
     ax[1].set(xlabel="x [mm]", ylabel="u", title="u(x) near the centre", xlim=(-12, 12), ylim=(-0.6, 0.6))
     ax[1].legend(fontsize=7)
     fig.tight_layout()
