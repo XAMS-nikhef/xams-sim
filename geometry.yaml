@@ -12,7 +12,8 @@
 # Sources used: P = reference/XAMS design/XAMS_projections_annotated.pdf (section A–A),
 #               G = reference/XAMS design/XAMS_XAMS grid.pdf and XAMS_XAMS grid assy.pdf,
 #               T = reference/papers/Thesis_Maricke_Flierman.pdf (ch. 4–5),
-#               R = analysis_SR2026.2 (posrec v2: outputs/posrec2_template.json, posrec2_fit.json; drift note).
+#               R = analysis_SR2026.2 (posrec v2: outputs/posrec2_template.json, posrec2_fit.json; drift note),
+#               H = reference/LightSensors/R12699.pdf (Hamamatsu datasheet R12699-406-M4, 2017).
 
 meta:
   version: 1
@@ -27,7 +28,7 @@ liquid:
   scenarios_to_simulate: [2.0, 3.0, 4.0]   # cover the doubt and the change
 
 # ------------------------------------------------------------------------------------------------ meshes
-mesh_common:                 # all five meshes identical (user, 2026-10-01; etched stainless steel)
+mesh_common:                 # all five meshes identical and aligned the same way (user, 2026-10-01 / 2026-10-05)
   material: stainless_steel
   foil_thickness_mm: 0.15    # G
   hole_size_mm: 2.45         # G, square holes
@@ -45,19 +46,19 @@ mesh_common:                 # all five meshes identical (user, 2026-10-01; etch
 meshes:                      # z = foil mid-plane
   - name: top_screen
     z_mm: null               # ? height above the anode (P: section A–A)
-    angle_to_anodes_deg: null  # ? orientation of the bars relative to the top-PMT anode edges (gate: 29.4°)
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
   - name: anode
     z_mm: 8.0                # P (gate–anode 8 mm), T p.145
-    angle_to_anodes_deg: null
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
   - name: gate
     z_mm: 0.0                # definition
     angle_to_anodes_deg: 29.4  # R: posrec2_fit.json mesh_angle_to_anodes_deg (mod 90°)
   - name: cathode
     z_mm: -51.8              # P (gate–cathode 51.8 mm)
-    angle_to_anodes_deg: null
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
   - name: bottom_screen
     z_mm: -61.8              # P: 10 mm below the cathode (check: is the "10" in section A–A cathode–bottom screen?)
-    angle_to_anodes_deg: null
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
 
 # ------------------------------------------------------------------------------------------------ PTFE cylinder
 ptfe_cylinder:
@@ -78,10 +79,12 @@ pmt_common:
   outer_square_mm: 56.0      # T p.133
   photocathode_square_mm: 48.5   # T p.133
   sectors: 2x2 of 24.25 mm   # T p.134
-  height_mm: 14.8            # T table 5.3 (excluding pins)
-  window_material: null      # ? synthetic silica / quartz (datasheet)
-  window_thickness_mm: null  # ? (datasheet)
-  qe_178nm: null             # ? datasheet / measured (free parameter in the fit, separately top and bottom)
+  height_mm: 14.8            # T table 5.3, H (excluding pins)
+  window_face_square_mm: 54.6  # H (outline 56.0; window front 54.6)
+  sector_numbering: "top view: 1 2 / 3 4 (H, start mark at sector 1)"
+  window_material: silica glass   # H
+  window_thickness_mm: 2.5   # H
+  qe_178nm: 0.33             # H: typ. 33 % at 175 nm (min 30 %); free parameter in the fit, separately top and bottom
 
 pmts:
   - name: top
@@ -103,9 +106,7 @@ sipms:
   mounting: inside the inner PTFE cylinder, looking inward   # user
   azimuth_deg: [0, 90]       # user, 2026-10-05 (relative to the top-PMT anode frame)
   z_mm: [-25.0, -25.0]       # user, 2026-10-05 (in the liquid, mid drift region)
-  filter:
-    material: null           # ? VUV filter in front of the SiPMs: material, thickness, transmission curve
-    thickness_mm: null
+  filter: not modelled in v1 (user, 2026-10-05)
 
 # ------------------------------------------------------------------------------------------------ optical properties
 # Values with a range are free parameters, fitted to the data (targets below).
