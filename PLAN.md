@@ -15,7 +15,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 | 2 Materials | **done** | 2026-10-05 | see "Done" under step 2 |
 | 3 Geometry v1 | **done** | 2026-10-05 | see "Done" under step 3 |
 | 4 Optical surfaces | **done** | 2026-10-05 | see "Done" under step 4 |
-| 5 Sources and runs | open | | |
+| 5 Sources and runs | **done** | 2026-10-05 | see "Done" under step 5 |
 | 6 First physics results | open | | |
 | 7 Targets from the data | open | | |
 | 8 Comparison and fit | open | | |
@@ -167,6 +167,25 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - S1: in the liquid, z from the cathode to the surface in 2 mm steps, same x–y grid.
 - Run sets as config + macro (parameter scans as separate runs), 10⁶–10⁷ photons per point.
 - **Check:** statistical precision of the top fraction per point < 0.5 %; run time per scan point measured.
+
+**Done (2026-10-05).**
+- Sources (`/xamsopt/source/shape s2 | s1`, z range from the config, so every liquid level is right automatically):
+  S2 uniform from the liquid surface to 0.01 mm below the anode foil (z 4.0–7.915 mm at the 4 mm level); S1 uniform
+  from just above the cathode foil to just below the gate foil (z −51.715 to −0.085 mm); both r < rmax (30 mm).
+  Instead of a grid of source points, photons start uniformly and every record keeps its origin: maps (r, sector
+  pattern, z slices) are made by binning afterwards, one run per parameter point.
+- Output for production (`xamsopt -d`): records only for detected photons; every photon is counted in
+  `<file>.summary.json` (end code × end volume, detected per sensor, seed, config).
+- `tools/run_scan.py scans/<name>.yaml`: parameter grid (liquid level and any config path) → one config per point,
+  each point split into parallel parts with their own seeds; resumable; output in `run/scans/<name>/`.
+  `tools/scan_data.py`: reads a scan (records, tallies, timing), `top_fraction()`.
+- Scan sets ready for step 6: `s2_optics` (level × PTFE reflectivity × steel reflectivity, 27 points × 10⁷),
+  `s2_rayleigh` (Rayleigh length × PTFE specular fraction, 9 × 10⁷), `s1_optics` (PTFE reflectivity, 3 × 10⁸).
+- **Check passed** (`tools/check_step5.py`): source z ranges as expected for levels 2 and 4 and for S1; z, r², φ
+  uniform (KS p ≥ 0.01); every photon counted once, one record per detected photon. Reference runs (4·10⁶ photons,
+  middle-of-range optics, level 4): S2 top fraction 0.5663 ± 0.0009 (0.16 %), S1 0.1775 ± 0.0007 (0.39 %) — below
+  0.5 % per point. Speed 1.5–1.6·10⁵ photons/s per process; 8 in parallel on the Mac → 4·10⁶ photons in 3 s.
+  For 0.5 % in every bin: S2 in 5 mm rings of r needs 10⁷ photons per point, S1 in 2 mm slices of z 10⁸ (~2 min).
 
 ## 6. First physics results (1 day)
 

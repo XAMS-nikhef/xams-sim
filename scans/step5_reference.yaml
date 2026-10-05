@@ -1,0 +1,11 @@
+# Step 5 reference: S2 and S1 light at the default (middle-of-range) optics, SR-2026.2 liquid level.
+name: step5_reference
+source: s2
+rmax_mm: 30
+photons: 4000000
+chunks: 8
+seed: 5000
+base:
+  level: 4.0
+grid:
+  level: [4.0]

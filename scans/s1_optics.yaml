@@ -1,0 +1,11 @@
+# Step 6: S1 top fraction vs z (2 mm slices) for PTFE reflectivity, level 4 mm. 3 points x 1e8 photons.
+name: s1_optics
+source: s1
+rmax_mm: 30
+photons: 100000000
+chunks: 8
+seed: 30000
+base:
+  level: 4.0
+grid:
+  optics.ptfe_in_liquid.reflectivity: [0.90, 0.95, 0.99]

@@ -1,5 +1,6 @@
 // XAMS optical simulation.
-//   xamsopt -c run/config.json -o run/photons.bin [-s seed] [-v] [macro.mac]
+//   xamsopt -c run/config.json -o run/photons.bin [-s seed] [-d] [-v] [macro.mac]
+// -d: records only for detected photons (every photon still counted in <out>.summary.json).
 // Without a macro: interactive session with visualisation (Qt). -v: visualisation also in batch (offscreen images).
 #include <G4RunManagerFactory.hh>
 #include <G4UIExecutive.hh>
@@ -20,17 +21,18 @@
 int main(int argc, char** argv) {
   std::string config, out = "photons.bin", macro;
   long seed = 12345;
-  bool vis = false;
+  bool vis = false, detectedOnly = false;
   for (int i = 1; i < argc; ++i) {
     std::string a = argv[i];
     if (a == "-c" && i + 1 < argc) config = argv[++i];
     else if (a == "-o" && i + 1 < argc) out = argv[++i];
     else if (a == "-s" && i + 1 < argc) seed = std::stol(argv[++i]);
     else if (a == "-v") vis = true;
+    else if (a == "-d") detectedOnly = true;
     else macro = a;
   }
   if (config.empty()) {
-    std::cerr << "usage: xamsopt -c config.json [-o out.bin] [-s seed] [macro.mac]\n";
+    std::cerr << "usage: xamsopt -c config.json [-o out.bin] [-s seed] [-d] [-v] [macro.mac]\n";
     return 1;
   }
   Config::Get().Load(config);
@@ -40,7 +42,10 @@ int main(int argc, char** argv) {
   rm->SetUserInitialization(new DetectorConstruction());
   rm->SetUserInitialization(new PhysicsList());
   rm->SetUserInitialization(new ActionInitialization());
-  Output::Get().Open(out);
+  Output::Get().Open(out, detectedOnly);
+  Output::Get().SetInfo("config", config);
+  Output::Get().SetInfo("seed", std::to_string(seed));
+  Output::Get().SetInfo("macro", macro);
   SectionScan scanner;  // /xamsopt/section
 
   auto* ui = G4UImanager::GetUIpointer();

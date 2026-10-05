@@ -27,17 +27,25 @@ struct PhotonRecord {
 };
 #pragma pack(pop)
 
+// Every photon is counted in a tally (end code x end volume, sensor) written to <file>.summary.json at Close;
+// with detected_only only detected photons get a record (production runs: the origin of each detected photon).
 class Output {
  public:
   static Output& Get();
-  void Open(const std::string& path);
+  void Open(const std::string& path, bool detected_only = false);
   void Write(const PhotonRecord& r);
   void Close();
   int16_t VolumeIndex(const std::string& name);  // stable index per volume name
+  void SetInfo(const std::string& key, const std::string& value) { fInfo[key] = value; }
 
  private:
   Output() = default;
   std::ofstream fOut;
   std::string fPath;
+  bool fDetectedOnly = false;
+  long fN = 0;
   std::map<std::string, int16_t> fVolumes;
+  std::map<std::pair<int16_t, int16_t>, long> fTally;  // (end code, volume) -> photons
+  std::map<int16_t, long> fSensors;                    // sensor -> detected photons
+  std::map<std::string, std::string> fInfo;
 };

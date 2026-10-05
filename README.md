@@ -8,8 +8,9 @@ PMT photocathodes.
 
 - 2026-10-04: implementation plan `PLAN.md`; geometry sheet `geometry.yaml` (draft, values from the drawings, the thesis and the SR-2026.2 analysis;
   open values marked `null` with a question).
-- 2026-10-05: steps 0–4 done (environment, skeleton with solid-angle check, materials with Fresnel check, XAMS
-  geometry v1 with mesh-transparency check, optical surfaces of PTFE and steel); progress in `PLAN.md`.
+- 2026-10-05: steps 0–5 done (environment, skeleton with solid-angle check, materials with Fresnel check, XAMS
+  geometry v1 with mesh-transparency check, optical surfaces of PTFE and steel, S1/S2 sources and scan runner);
+  progress in `PLAN.md`.
 
 ## Build and run
 
@@ -28,7 +29,14 @@ cd build && ./xamsopt -c ../run/config.json -o /tmp/vis.bin section.mac  # exact
 python tools/plot_section.py build/section_xz.bin                      # -> build/section_xz.png (--zoom u0 u1 v0 v1)
 ```
 
-Checks: `python tools/check_step1.py`, `check_step2.py`, `check_step3.py`, `check_step4.py` (each prints PASSED / FAILED).
+Production scans (parameter grid in `scans/<name>.yaml`, output in `run/scans/<name>/`):
+
+```bash
+python tools/run_scan.py scans/s2_optics.yaml --jobs 8
+python -c "import sys; sys.path.insert(0, 'tools'); from scan_data import load, top_fraction; ..."
+```
+
+Checks: `python tools/check_step1.py`, `check_step2.py`, `check_step3.py`, `check_step4.py`, `check_step5.py` (each prints PASSED / FAILED).
 
 ## Model v1
 

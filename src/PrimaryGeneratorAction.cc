@@ -1,5 +1,7 @@
 #include "PrimaryGeneratorAction.hh"
 
+#include "Config.hh"
+
 #include <G4Event.hh>
 #include <G4GenericMessenger.hh>
 #include <G4OpticalPhoton.hh>
@@ -17,7 +19,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction() : fGun(std::make_unique<G4Parti
   fGun->SetParticleEnergy(kPhotonEnergy);
 
   fMessenger = std::make_unique<G4GenericMessenger>(this, "/xamsopt/source/", "photon source");
-  fMessenger->DeclareProperty("shape", fShape, "point | cylinder | beam | beam_disc");
+  fMessenger->DeclareProperty("shape", fShape, "point | cylinder | beam | beam_disc | s1 | s2");
   fMessenger->DeclareProperty("direction", fDirection, "beam direction (beam shape only)");
   fMessenger->DeclarePropertyWithUnit("position", "mm", fPosition, "point source position");
   fMessenger->DeclarePropertyWithUnit("rmax", "mm", fRmax, "cylinder radius");
@@ -27,8 +29,32 @@ PrimaryGeneratorAction::PrimaryGeneratorAction() : fGun(std::make_unique<G4Parti
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction() = default;
 
-G4ThreeVector PrimaryGeneratorAction::SamplePosition() const {
-  if (fShape == "cylinder") {
+void PrimaryGeneratorAction::SetZRangeFromConfig() {
+  const auto& c = Config::Get();
+  const double half = 0.5 * c.Num("mesh_common/foil_thickness_mm", 0.15) * mm + 0.01 * mm;
+  double anode = 0, gate = 0, cathode = 0;
+  for (const auto& m : c.J()["meshes"]) {
+    const auto n = m["name"].get<std::string>();
+    const double z = m["z_mm"].get<double>() * mm;
+    if (n == "anode") anode = z;
+    if (n == "gate") gate = z;
+    if (n == "cathode") cathode = z;
+  }
+  if (fShape == "s2") {
+    fZmin = c.Num("liquid/surface_z_mm", 4.0) * mm;
+    fZmax = anode - half;
+  } else {
+    fZmin = cathode + half;
+    fZmax = gate - half;
+  }
+  fZFor = fShape;
+  G4cout << "source " << fShape << ": z " << fZmin / mm << " to " << fZmax / mm << " mm, r < " << fRmax / mm << " mm"
+         << G4endl;
+}
+
+G4ThreeVector PrimaryGeneratorAction::SamplePosition() {
+  if ((fShape == "s1" || fShape == "s2") && fZFor != fShape) SetZRangeFromConfig();
+  if (fShape == "cylinder" || fShape == "s1" || fShape == "s2") {
     const G4double r = fRmax * std::sqrt(G4UniformRand());
     const G4double phi = twopi * G4UniformRand();
     return {r * std::cos(phi), r * std::sin(phi), fZmin + (fZmax - fZmin) * G4UniformRand()};
