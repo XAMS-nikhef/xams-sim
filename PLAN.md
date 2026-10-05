@@ -16,7 +16,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 | 3 Geometry v1 | **done** | 2026-10-05 | see "Done" under step 3 |
 | 4 Optical surfaces | **done** | 2026-10-05 | see "Done" under step 4 |
 | 5 Sources and runs | **done** | 2026-10-05 | see "Done" under step 5 |
-| 6 First physics results | open | | |
+| 6 First physics results | **done** | 2026-10-05 | see "Done" under step 6 and `results/step6/README.md` |
 | 7 Targets from the data | open | | |
 | 8 Comparison and fit | open | | |
 | 9 Write-up | open | | |
@@ -195,6 +195,16 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - Light pattern of the 4 top sectors versus S2 position.
 - Where the light is lost (meshes, PTFE, liquid surface, escape) — this answers *why*.
 - **Check:** results stable against the photon number and the seed; sensible limits (black walls, perfect walls).
+
+**Done (2026-10-05).** Results and figures in `results/step6/` (`README.md`), made by `tools/step6_results.py` from
+the scans `s2_optics` (27 points), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸), `s2_ring` (4; ring inner Ø robustness).
+- S2 top fraction 0.53–0.59 over all parameter ranges (data at low load 0.52); liquid level hardly matters (+0.009
+  from 2 to 4 mm); strongest knobs PTFE specular fraction, steel and PTFE reflectivity. Ring inner Ø (open value)
+  changes it by < 0.004.
+- S2 light collection 4.4 % top / 3.4 % bottom (QE 0.33 included); ~40 % of the S2 light goes sideways into the rings
+  or out of the TPC region; mesh bars take ~25 %.
+- S1 top fraction 0.11 (cathode) → 0.26 (gate).
+- **Check passed:** halves of every point with independent seeds agree (worst pull 2.2); limits as in step 4.
 
 ## 7. Targets from the data (1 day, analysis_SR2026.2)
 

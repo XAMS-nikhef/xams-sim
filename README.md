@@ -11,6 +11,8 @@ PMT photocathodes.
 - 2026-10-05: steps 0–5 done (environment, skeleton with solid-angle check, materials with Fresnel check, XAMS
   geometry v1 with mesh-transparency check, optical surfaces of PTFE and steel, S1/S2 sources and scan runner);
   progress in `PLAN.md`.
+- 2026-10-05: step 6 — first results in `results/step6/README.md`: S2 top fraction from geometry and optics 0.53–0.59
+  (data at low load 0.52; Cs/Na values are load effects); liquid level hardly matters.
 
 ## Build and run
 
