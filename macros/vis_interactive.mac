@@ -11,8 +11,12 @@
 /vis/geometry/set/colour PTFE 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour PTFE_gas 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour MeshRing 0 0.45 0.45 0.55 1
-/vis/geometry/set/visibility MeshHole 0 false
+# mesh foils: solid disc with the etched holes as daughters -> draw both as outlines, so the hole pattern shows
 /vis/geometry/set/colour MeshFoil 0 0.25 0.25 0.30 1
+/vis/geometry/set/forceWireframe MeshFoil 0 true
+/vis/geometry/set/visibility MeshHole 0 true
+/vis/geometry/set/colour MeshHole 0 0.20 0.20 0.25 1
+/vis/geometry/set/forceWireframe MeshHole 0 true
 /vis/geometry/set/colour CopperRing 0 0.78 0.45 0.23 1
 /vis/geometry/set/colour TopPMTWindow 0 0.70 0.88 1.00 1
 /vis/geometry/set/colour BottomPMTWindow 0 0.70 0.88 1.00 1
