@@ -6,7 +6,8 @@
 # correct anything that is wrong, and keep the `source:` notes up to date.
 #
 # Coordinate system: z = 0 at the gate mesh (mid-plane of the foil), z up. x, y in the plane of the meshes,
-# x along the edge of the top-PMT anode sectors (the frame of the position reconstruction: anodes in the 4 quadrants).
+# x along the edge of the top-PMT anode sectors (the frame of the position reconstruction): +x towards sectors II, IV,
+# +y towards sectors I, II (thesis T, Fig. 5.10).
 # Units: mm, degrees.
 #
 # Sources used: P = reference/XAMS design/XAMS_projections_annotated.pdf (section A–A),
@@ -40,7 +41,8 @@ mesh_common:                 # all five meshes identical and aligned the same wa
   ring:
     outer_diameter_mm: 92.6  # G
     thickness_mm: 1.8        # G
-    inner_diameter_mm: null  # ? inner diameter of the stainless ring (is it covered by the PTFE, i.e. invisible to light?)
+    inner_diameter_mm: null  # ? inner diameter of the stainless ring. Matters: T p.131 sees 'partial optical shielding
+                             #   from the mesh frame' at the edges of the reconstructed positions
     foil_position: null      # ? foil on top of / below / in the middle of the ring
 
 meshes:                      # z = foil mid-plane
@@ -91,7 +93,8 @@ pmts:
     readout: 4 sectors (ch1–ch4)
     window_z_mm: null        # ? height of the outside of the top-PMT window (above the top screen by how much?)
     rotation_deg: 0.0        # defines the frame (anode edges along x / y)
-    sector_to_channel: {ch1: 1, ch2: 2, ch3: 3, ch4: 4}   # ASSUMED: analysis convention "ch1 ch2 / ch3 ch4" (lib/xams_sr.py s2_uv) = datasheet sectors 1 2 / 3 4 (H); verify wiring
+    sector_to_channel: {ch1: I, ch2: II, ch3: III, ch4: IV}   # user, 2026-10-05: as in T (Fig. 5.10, Eq. 5.2)
+    sector_layout: "I II / III IV seen from the TPC; +x towards II and IV, +y towards I and II (T: eta_x = (Q_II+Q_IV)/Q, eta_y = (Q_I+Q_II)/Q)"
     medium: gas
   - name: bottom
     readout: 4 sectors joined (ch0)
