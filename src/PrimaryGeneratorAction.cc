@@ -17,7 +17,8 @@ PrimaryGeneratorAction::PrimaryGeneratorAction() : fGun(std::make_unique<G4Parti
   fGun->SetParticleEnergy(kPhotonEnergy);
 
   fMessenger = std::make_unique<G4GenericMessenger>(this, "/xamsopt/source/", "photon source");
-  fMessenger->DeclareProperty("shape", fShape, "point | cylinder");
+  fMessenger->DeclareProperty("shape", fShape, "point | cylinder | beam");
+  fMessenger->DeclareProperty("direction", fDirection, "beam direction (beam shape only)");
   fMessenger->DeclarePropertyWithUnit("position", "mm", fPosition, "point source position");
   fMessenger->DeclarePropertyWithUnit("rmax", "mm", fRmax, "cylinder radius");
   fMessenger->DeclarePropertyWithUnit("zmin", "mm", fZmin, "cylinder lower z");
@@ -40,7 +41,8 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
   const G4double cost = 2. * G4UniformRand() - 1.;
   const G4double sint = std::sqrt(1. - cost * cost);
   const G4double phi = twopi * G4UniformRand();
-  const G4ThreeVector dir(sint * std::cos(phi), sint * std::sin(phi), cost);
+  G4ThreeVector dir(sint * std::cos(phi), sint * std::sin(phi), cost);
+  if (fShape == "beam") dir = fDirection.unit();
   // random linear polarisation perpendicular to the direction
   const G4ThreeVector perp = dir.orthogonal().unit();
   const G4ThreeVector perp2 = dir.cross(perp).unit();

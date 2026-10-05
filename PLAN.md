@@ -12,7 +12,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 |---|---|---|---|
 | 0 Environment | **done** | 2026-10-05 | see "Done" under step 0 |
 | 1 Skeleton | **done** | 2026-10-05 | see "Done" under step 1 |
-| 2 Materials | open | | |
+| 2 Materials | **done** | 2026-10-05 | see "Done" under step 2 |
 | 3 Geometry v1 | open | | |
 | 4 Optical surfaces | open | | |
 | 5 Sources and runs | open | | |
@@ -78,6 +78,18 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   (PMT window, n ≈ 1.6), stainless steel (meshes, rings), PTFE (only as a surface), photocathode (efficiency = QE).
 - **Check:** a beam onto a liquid–gas boundary reproduces the Fresnel reflection versus angle and total internal
   reflection beyond 36° (from the liquid side), against the formulas.
+
+**Done (2026-10-05).**
+- Materials in `DetectorConstruction`: liquid xenon (n, absorption and Rayleigh length from the config), gas xenon
+  (n = 1.00), silica for the PMT windows (n from the config; window transmission folded into the QE), stainless steel
+  (G4_STAINLESS-STEEL; optics via its surface, step 4), photocathode (G4_Al; detection via its surface). All optical
+  properties flat over 6–8 eV (178 nm).
+- Test geometry `test_interface` (liquid below z = 0, gas above, plain boundary) and a `beam` source
+  (`/xamsopt/source/direction`); `tools/check_step2.py`, macro `step2_interface.mac`.
+- **Check passed:** beam from the liquid onto the surface at 0–80°, 10⁵ photons per angle, random linear polarisation:
+  reflected fraction equals (Rs + Rp)/2 from 6.6 % at normal incidence to 37.7 % at 35.5°, and 100 % (total internal
+  reflection) from 37° on (critical angle 36.3°). All pulls within ±1.4 except 30° (+2.5), which a rerun with 4·10⁵
+  photons and another seed gives −0.66 (fluctuation).
 
 ## 3. Geometry v1 (1–1½ days)
 

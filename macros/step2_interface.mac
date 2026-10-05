@@ -1,0 +1,8 @@
+# Step 2 check: beam from inside the liquid onto the liquid-gas surface at z = 0 (angle set by tools/check_step2.py
+# through the aliases {px}, {pz}, {dx}, {dz}). Reflected photons end at the bottom, transmitted ones at the top.
+/run/verbose 0
+/run/initialize
+/xamsopt/source/shape beam
+/xamsopt/source/position {px} 0 {pz} mm
+/xamsopt/source/direction {dx} 0 {dz}
+/run/beamOn 100000

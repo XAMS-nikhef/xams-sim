@@ -35,6 +35,40 @@ G4Material* DetectorConstruction::LiquidXenon() {
   return mat;
 }
 
+G4Material* DetectorConstruction::GasXenon() {
+  static G4Material* mat = nullptr;
+  if (mat) return mat;
+  const auto& cfg = Config::Get();
+  // ~1.7 bar at 175 K; the density does not matter optically (n = 1.00)
+  mat = new G4Material("GXe", 54., 131.29 * g / mole, 0.0155 * g / cm3, kStateGas, 175. * kelvin);
+  auto* mpt = new G4MaterialPropertiesTable();
+  mpt->AddProperty("RINDEX", kEnergies, Flat(cfg.Num("optics/gxe/refractive_index", 1.00)));
+  mpt->AddProperty("ABSLENGTH", kEnergies, Flat(1e9 * cm));
+  mat->SetMaterialPropertiesTable(mpt);
+  return mat;
+}
+
+G4Material* DetectorConstruction::Silica() {
+  static G4Material* mat = nullptr;
+  if (mat) return mat;
+  mat = new G4Material("Silica", 2.2 * g / cm3, 2);
+  auto* nist = G4NistManager::Instance();
+  mat->AddElement(nist->FindOrBuildElement("Si"), 1);
+  mat->AddElement(nist->FindOrBuildElement("O"), 2);
+  auto* mpt = new G4MaterialPropertiesTable();
+  mpt->AddProperty("RINDEX", kEnergies, Flat(Config::Get().Num("optics/pmt_window_refractive_index", 1.60)));
+  mpt->AddProperty("ABSLENGTH", kEnergies, Flat(1e9 * cm));  // window transmission is folded into the QE
+  mat->SetMaterialPropertiesTable(mpt);
+  return mat;
+}
+
+G4Material* DetectorConstruction::StainlessSteel() {
+  // opaque: optical behaviour is set by the surface (reflectivity from the config)
+  static G4Material* mat = nullptr;
+  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+  return mat;
+}
+
 G4Material* DetectorConstruction::Photocathode() {
   // the bulk is irrelevant: photons stop at its surface (detected with probability QE, else absorbed)
   static G4Material* mat = nullptr;
@@ -70,9 +104,21 @@ G4VPhysicalVolume* DetectorConstruction::BuildTestBox() {
   return worldP;
 }
 
+G4VPhysicalVolume* DetectorConstruction::BuildTestInterface() {
+  const double half = 200. * mm;
+  auto* worldS = new G4Box("World", half, half, half);
+  auto* worldL = new G4LogicalVolume(worldS, GasXenon(), "World");
+  auto* worldP = new G4PVPlacement(nullptr, {}, worldL, "World", nullptr, false, 0, true);
+  auto* liqS = new G4Box("Liquid", half, half, 0.5 * half);
+  auto* liqL = new G4LogicalVolume(liqS, LiquidXenon(), "Liquid");
+  new G4PVPlacement(nullptr, G4ThreeVector(0, 0, -0.5 * half), liqL, "Liquid", worldL, false, 0, true);
+  return worldP;
+}
+
 G4VPhysicalVolume* DetectorConstruction::Construct() {
   const auto mode = Config::Get().Str("geometry_mode", "xams");
   if (mode == "test_box") return BuildTestBox();
+  if (mode == "test_interface") return BuildTestInterface();
   G4Exception("DetectorConstruction", "GEOM001", FatalException,
               ("geometry_mode '" + mode + "' not implemented yet (XAMS geometry: step 3)").c_str());
   return nullptr;
