@@ -13,7 +13,7 @@ runs, LED gains.
 - Per grid point two efficiency factors are fitted: ε_S2 and ε_S1 multiply the top/bottom ratio AFT/(1 − AFT). They
   absorb the QE ratio of the two PMTs and the top-PMT efficiency for S2 / for small S1 signals. The optical
   parameters are then constrained by the **shapes** only.
-- χ² = simulation statistics plus a systematic floor (S2 0.010, S1 0.004, u/v 0.010 absolute). The floors are a
+- χ² = simulation statistics, data statistics (σ/√n, ×1.25 for medians) plus a systematic floor (S2 0.010, S1 0.004, u/v 0.010 absolute). The floors are a
   choice: absolute χ² values depend on them, differences between points are what matter. Degrees of freedom: 7 (S2),
   11 (S1), 45 (u, v).
 
@@ -22,18 +22,18 @@ runs, LED gains.
 | | value |
 |---|---|
 | best grid point | PTFE R 0.99, PTFE specular 0.1, steel R 0.2, Rayleigh 60 cm |
-| χ² (S2 vs r / S1 vs z / u, v) | 15.1 / 1.6 / 41.4 for 7 / 11 / 45 dof |
-| **ε_S2** (top/bottom data ÷ simulation, S2) | **1.13** (1.07–1.22 over the 10 best points) |
+| χ² (S2 vs r / S1 vs z / u, v) | 11.2 / 1.6 / 40.6 for 7 / 11 / 45 dof |
+| **ε_S2** (top/bottom data ÷ simulation, S2) | **1.13** (1.06–1.21 over the 10 best points) |
 | **ε_S1** (same for S1) | **0.77** (0.71–0.80) |
 
 Profiles (minimum χ² over the other parameters, Δχ² vs the best point):
 
 | parameter | low | middle | high |
 |---|---|---|---|
-| PTFE reflectivity 0.90 / 0.95 / 0.99 | +4.5 | +9.1 | 0 |
-| PTFE specular 0 / 0.1 / 0.2 | +35 | 0 | +4.5 |
-| steel reflectivity 0.2 / 0.35 / 0.5 | 0 | +4.5 | +34 |
-| Rayleigh 30 / 45 / 60 cm | +7.4 | +15 | 0 |
+| PTFE reflectivity 0.90 / 0.95 / 0.99 | +4.2 | +10.0 | 0 |
+| PTFE specular 0 / 0.1 / 0.2 | +35 | 0 | +4.2 |
+| steel reflectivity 0.2 / 0.35 / 0.5 | 0 | +4.2 | +33 |
+| Rayleigh 30 / 45 / 60 cm | +7.6 | +15.5 | 0 |
 
 ## Reading
 
@@ -52,7 +52,8 @@ Profiles (minimum χ² over the other parameters, Δχ² vs the best point):
   hardly depend on any of the four parameters inside their ranges.
 - **The dead cross is not the cause of the central dip.** An insensitive cross between the top sectors of 1.5 / 3 /
   6 mm lowers the centre by at most 3 % (centre / ring 1.03 → 1.00) — the data have 0.79 — and a 6 mm cross spoils
-  u(x), v(y) (χ² 146 vs 81). The dip must come from elsewhere: position reconstruction near u = v = 0, or a real
-  effect not in the model.
+  u(x), v(y). The dip must come from elsewhere — see the S2-size test in `results/step7/README.md` (the centre stays at
+  ≈ 0.50 for every S2 size while the ring value falls with size: a signal-processing / per-channel effect of the top
+  PMT is more likely than geometry).
 
 Figures: `best_fit.png` (best point vs data, profiles), `dead_cross.png`. Table of all points: `fit_table.csv`.

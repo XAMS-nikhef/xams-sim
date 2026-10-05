@@ -182,8 +182,10 @@ def main(out):
         "Data: Δ750 V runs of 28/29-09 (central processing v4), no source / Na-22 / Cs-137, r &lt; 25 mm, area fractions "
         "with the LED gains only (the v2 load correction f_top undone). Simulation band: all optics points at the 4 mm "
         "level, equal QE top and bottom.")]
-    st.append(img(RES / "step7" / "compare.png", W, "Data (points) vs simulation (bands: all optics settings): S2 area "
-                  "fraction top vs S2 size and vs r, S1 vs z, and the top-sector asymmetries u(x), v(y)."))
+    st.append(img(RES / "step7" / "compare.png", W, "Data (points, statistical errors) vs simulation (bands: all optics "
+                  "settings): S2 area fraction top vs S2 size and vs r, S1 vs z, and the top-sector asymmetries u(x), v(y)."))
+    st.append(img(RES / "step7" / "central_dip_vs_size.png", W, "Central dip of the S2 area fraction top versus S2 size "
+                  "(data, no source): per size class versus r (left), and centre / ring ratio (right)."))
     st += bullets([
         "<b>Sector pattern:</b> data inside the simulation band over ±24 mm, identical for all sources — geometry right.",
         "<b>S2 versus size and source:</b> no source 0.68 (3–5 kPE) → 0.49 (&gt; 100 kPE); Na-22 0.53 → 0.36; Cs-137 0.40 → "
@@ -217,6 +219,10 @@ def main(out):
         "PTFE reflectivity and Rayleigh length are not constrained.",
         "Dead cross on the top PMT (1.5 / 3 / 6 mm): centre / ring at most 1.03 → 1.00, data 0.79 — not the cause of the "
         "central dip.",
+        "Central dip versus S2 size (data): centre / ring 0.68 (3–5 kPE) → 0.93 (&gt; 50 kPE), but because the ring value "
+        "falls with size (0.82 → 0.55) while the centre stays ≈ 0.50 at every size. A pure threshold loss from sharing the "
+        "charge over four channels would make the centre rise with size; not seen. Likely a top-PMT signal-processing / "
+        "per-channel effect rather than geometry (to check with fully integrated waveforms).",
     ])
 
     st += [P("6. Design study: extra PTFE cylinders", h2), P(

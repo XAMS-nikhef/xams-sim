@@ -108,6 +108,8 @@ def main():
     ed, dn = D["edges"], D["none"]
     d_s2r, d_s1z = arr(dn["s2_aft_vs_r_led"]), arr(dn["s1_aft_vs_z_led"])
     d_u, d_v = arr(dn["u_vs_x"]), arr(dn["v_vs_y"])
+    de_s2r, de_s1z = arr(dn["s2_aft_vs_r_led_err"]), arr(dn["s1_aft_vs_z_led_err"])
+    de_u, de_v = np.nan_to_num(arr(dn["u_vs_x_err"])), np.nan_to_num(arr(dn["v_vs_y_err"]))
     rc = 0.5 * (np.asarray(ed["r"])[1:] + np.asarray(ed["r"])[:-1])
     zc = 0.5 * (np.asarray(ed["z"])[1:] + np.asarray(ed["z"])[:-1])
     pc = 0.5 * (np.asarray(ed["pos"])[1:] + np.asarray(ed["pos"])[:-1])
@@ -128,12 +130,12 @@ def main():
         if k not in binned:
             binned[k] = (bin_s2(point_records("fit_s2", p), ed), bin_s1(point_records("fit_s1", s1_by[k]), ed))
         b2, b1 = binned[k]
-        e2 = np.hypot(b2["aft_e"], SYS["s2r"])
+        e2 = np.sqrt(b2["aft_e"] ** 2 + SYS["s2r"] ** 2 + de_s2r ** 2)
         eps2, c2 = fit_eps(b2["aft"], e2, d_s2r, m_s2r)
-        e1 = np.hypot(b1["aft_e"], SYS["s1z"])
+        e1 = np.sqrt(b1["aft_e"] ** 2 + SYS["s1z"] ** 2 + de_s1z ** 2)
         eps1, c1 = fit_eps(b1["aft"], e1, d_s1z, m_s1z)
-        cu = np.nansum((((b2["u"] - d_u) / np.hypot(b2["u_e"], SYS["uv"])) ** 2)[m_u])
-        cv = np.nansum((((b2["v"] - d_v) / np.hypot(b2["v_e"], SYS["uv"])) ** 2)[m_v])
+        cu = np.nansum((((b2["u"] - d_u) / np.sqrt(b2["u_e"] ** 2 + SYS["uv"] ** 2 + de_u ** 2)) ** 2)[m_u])
+        cv = np.nansum((((b2["v"] - d_v) / np.sqrt(b2["v_e"] ** 2 + SYS["uv"] ** 2 + de_v ** 2)) ** 2)[m_v])
         rows.append(dict(zip([SHORT[q] for q in PARAMS], k), eps_s2=eps2, eps_s1=eps1, chi2_s2r=c2, chi2_s1z=c1,
                          chi2_uv=cu + cv, chi2=c2 + c1 + cu + cv))
         store[k] = (b2, b1, eps2, eps1)
@@ -167,20 +169,20 @@ def main():
     fig, ax = plt.subplots(2, 2, figsize=(11, 8))
     a = ax[0, 0]
     a.fill_between(rc, s2c.min(0), s2c.max(0), color="C0", label="simulation, 10 best grid points (each × its ε_S2)", **band)
-    a.plot(rc, d_s2r, label="data, no source (S2 3–20 kPE)", **dpt)
+    a.errorbar(rc, d_s2r, de_s2r, fmt="ko", ms=5, label="data, no source (S2 3–20 kPE)")
     a.axvspan(0, 5, color="0.9", zorder=0, label="not in the fit (central dip)")
     a.set(xlabel="r [mm]", ylabel="S2 area fraction top", title=f"S2 vs r (best ε_S2 = {eps2:.2f})")
     a.legend(fontsize=7)
     a = ax[0, 1]
     a.fill_between(zc, s1c.min(0), s1c.max(0), color="C0", label="simulation, 10 best grid points (each × its ε_S1)", **band)
-    a.plot(zc, d_s1z, label="data, no source (S1 > 20 PE)", **dpt)
+    a.errorbar(zc, d_s1z, de_s1z, fmt="ko", ms=5, label="data, no source (S1 > 20 PE)")
     a.set(xlabel="z [mm]", ylabel="S1 area fraction top", title=f"S1 vs z (best ε_S1 = {eps1:.2f})")
     a.legend(fontsize=7)
     a = ax[1, 0]
     a.fill_between(pc, uc.min(0), uc.max(0), color="C0", label="simulation u(x)", **band)
     a.fill_between(pc, vc.min(0), vc.max(0), color="C2", label="simulation v(y)", **band)
-    a.plot(pc, d_u, label="data u(x)", **dpt)
-    a.plot(pc, d_v, ls="none", marker="s", ms=5, mfc="none", mec="k", label="data v(y)")
+    a.errorbar(pc, d_u, de_u, fmt="ko", ms=5, label="data u(x)")
+    a.errorbar(pc, d_v, de_v, fmt="s", ms=5, mfc="none", mec="k", ecolor="k", label="data v(y)")
     a.set(xlabel="position [mm]", ylabel="asymmetry", title="top-sector pattern")
     a.legend(fontsize=7)
     a = ax[1, 1]
@@ -201,20 +203,20 @@ def main():
     for p in sorted(dcd, key=lambda p: p["params"]["pmt_common.top_dead_cross_mm"]):
         wv = p["params"]["pmt_common.top_dead_cross_mm"]
         b = bin_s2(point_records("deadcross_s2", p), ed)
-        e = np.hypot(b["aft_e"], SYS["s2r"])
+        e = np.sqrt(b["aft_e"] ** 2 + SYS["s2r"] ** 2 + de_s2r ** 2)
         eps, c = fit_eps(b["aft"], e, d_s2r, m_s2r)
         model = scale(b["aft"], eps)
-        cu = np.nansum((((b["u"] - d_u) / np.hypot(b["u_e"], SYS["uv"])) ** 2)[m_u])
-        cv = np.nansum((((b["v"] - d_v) / np.hypot(b["v_e"], SYS["uv"])) ** 2)[m_v])
+        cu = np.nansum((((b["u"] - d_u) / np.sqrt(b["u_e"] ** 2 + SYS["uv"] ** 2 + de_u ** 2)) ** 2)[m_u])
+        cv = np.nansum((((b["v"] - d_v) / np.sqrt(b["v_e"] ** 2 + SYS["uv"] ** 2 + de_v ** 2)) ** 2)[m_v])
         dc[str(wv)] = dict(eps=eps, aft_r=model.tolist(), centre_over_ring=float(model[:2].mean() / model[3:6].mean()),
                            chi2_s2r=c, chi2_uv=cu + cv)
         me = b["aft_e"] * model / np.where(b["aft"] > 0, b["aft"], 1)
         ax[0].fill_between(rc, model - me, model + me, alpha=0.4, lw=0, label=f"simulation, dead cross {wv} mm")
         ax[1].fill_between(pc, b["u"] - b["u_e"], b["u"] + b["u_e"], alpha=0.4, lw=0, label=f"simulation, {wv} mm")
-    ax[0].plot(rc, d_s2r, ls="none", marker="o", ms=5, color="k", label="data, no source")
+    ax[0].errorbar(rc, d_s2r, de_s2r, fmt="ko", ms=5, label="data, no source")
     ax[0].set(xlabel="r [mm]", ylabel="S2 area fraction top", title="S2 vs r (each scaled with its ε_S2)")
     ax[0].legend(fontsize=7)
-    ax[1].plot(pc, d_u, ls="none", marker="o", ms=5, color="k", label="data")
+    ax[1].errorbar(pc, d_u, de_u, fmt="ko", ms=5, label="data")
     ax[1].set(xlabel="x [mm]", ylabel="u", title="u(x) near the centre", xlim=(-12, 12), ylim=(-0.6, 0.6))
     ax[1].legend(fontsize=7)
     fig.tight_layout()

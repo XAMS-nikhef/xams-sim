@@ -22,9 +22,30 @@ simulation band over ±24 mm, the same for every source. **The geometry is right
 
 - Falls with source rate (load on the top PMT) and with S2 size up to ~20 kPE: not geometric.
 - Vs r (no source, 3–20 kPE): **dip at the centre** (0.50 at r < 2.5 mm, 0.63–0.65 at 5–15 mm, 0.54 at 24 mm), same
-  shape for every source; the simulation falls smoothly 0.62 → 0.52. Top/bottom ratio data/simulation 0.61, 0.68
+  shape for every source (statistical errors 0.003–0.009); the simulation falls smoothly 0.62 → 0.52. Top/bottom ratio data/simulation 0.61, 0.68
   (r < 5 mm), 1.07–1.21 (5–20 mm), 1.02 at the edge. An insensitive cross between the four anodes of the top PMT is
   excluded as the cause (step 8); position-reconstruction bias near the centre remains the candidate.
+
+### Central dip versus S2 size (threshold test, `central_dip_vs_size.png`)
+
+Idea (user): at the centre the top charge is shared over four channels, so more of each channel's S2 tail falls below
+the hit threshold, lowering the top area. Such a loss shrinks with S2 size. Data (no source, LED gains, ± statistical):
+
+| S2 size | AFT r < 2.5 mm | AFT r 7.5–12.5 mm | centre / ring |
+|---|---|---|---|
+| 3–5 kPE | 0.53 | 0.74–0.82 | 0.68 ± 0.02 |
+| 5–10 kPE | 0.50 | 0.67–0.68 | 0.73 ± 0.01 |
+| 10–20 kPE | 0.49 | 0.62–0.63 | 0.79 ± 0.01 |
+| 20–50 kPE | 0.48 | 0.51–0.55 | 0.91 ± 0.004 |
+| 50–300 kPE | 0.51 | 0.55–0.56 | 0.93 ± 0.005 |
+| simulation | | | 1.01–1.04 |
+
+The dip shrinks with S2 size, but because the **ring** value falls with size (0.82 → 0.55); the **centre stays at
+≈ 0.50 for every size**. A pure threshold loss from charge sharing would make the centre rise with S2 size, which is
+not seen. Two size effects seem to overlap: the area fraction top falls with S2 size where the light is concentrated
+on one top channel (per-channel non-linearity at large signals?), and the centre, where the light is shared, is low
+and flat. To settle it: compare per channel the peak area with the fully integrated waveform (raw records) for central
+and off-centre events.
 
 ## S1 area fraction top vs z
 

@@ -35,6 +35,11 @@ top PMT does not explain the central dip.
 
 ![Data vs simulation](results/step7/compare.png)
 
+The central dip versus S2 size: the centre stays at ≈ 0.50 for every size while the ring value falls with size —
+more likely a top-PMT signal-processing effect than geometry.
+
+![Central dip vs S2 size](results/step7/central_dip_vs_size.png)
+
 ## Design study
 
 Extra PTFE cylinders in the gate–anode and anode–top-screen gaps: S2 light collection +37 % (+43 % with the

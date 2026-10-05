@@ -82,7 +82,7 @@ def main():
     lo, hi = min(s["s2_aft_r25"] for s in S2), max(s["s2_aft_r25"] for s in S2)
     a.axhspan(lo, hi, color="C0", alpha=0.3, label="simulation (optics ranges)")
     for k in COL:
-        a.plot(xs, arr(D[k]["s2_aft_vs_size_led"]), "o", ls="none", color=COL[k], label=LAB[k])
+        a.errorbar(xs, arr(D[k]["s2_aft_vs_size_led"]), arr(D[k]["s2_aft_vs_size_led_err"]), fmt="o", ms=5, color=COL[k], label=LAB[k])
     a.set_xscale("log")
     a.set_xlabel("S2 area [PE]")
     a.set_ylabel("S2 area fraction top")
@@ -94,7 +94,7 @@ def main():
     sr = np.array([s["s2_aft_vs_r"] for s in S2])
     a.fill_between(rc, sr.min(0), sr.max(0), color="C0", alpha=0.3, label="simulation")
     for k in COL:
-        a.plot(rc, arr(D[k]["s2_aft_vs_r_led"]), "o", ls="none", color=COL[k], label=LAB[k])
+        a.errorbar(rc, arr(D[k]["s2_aft_vs_r_led"]), arr(D[k]["s2_aft_vs_r_led_err"]), fmt="o", ms=5, color=COL[k], label=LAB[k])
     a.set_xlabel("r [mm]")
     a.set_ylabel("S2 area fraction top")
     a.set_title("S2 AFT vs r (S2 3-20 kPE)", fontsize=10)
@@ -105,7 +105,7 @@ def main():
     s1a = np.array(S1)
     a.fill_between(zc, s1a.min(0), s1a.max(0), color="C0", alpha=0.3, label="simulation (PTFE R 0.90-0.99)")
     for k in COL:
-        a.plot(zc, arr(D[k]["s1_aft_vs_z_led"]), "o", ls="none", color=COL[k], label=LAB[k])
+        a.errorbar(zc, arr(D[k]["s1_aft_vs_z_led"]), arr(D[k]["s1_aft_vs_z_led_err"]), fmt="o", ms=5, color=COL[k], label=LAB[k])
     a.set_xlabel("z [mm] (gate 0, cathode -51.8)")
     a.set_ylabel("S1 area fraction top")
     a.set_title("S1 AFT vs z (S1 > 20 PE, r < 25 mm)", fontsize=10)
@@ -117,16 +117,42 @@ def main():
     sv = np.array([s["v_vs_y"] for s in S2])
     a.fill_between(pc, su.min(0), su.max(0), color="C0", alpha=0.3, label="simulation u(x)")
     a.fill_between(pc, sv.min(0), sv.max(0), color="C2", alpha=0.3, label="simulation v(y)")
-    a.plot(pc, arr(D["none"]["u_vs_x"]), "ko", ls="none", ms=4, label="data u(x), no source")
-    a.plot(pc, arr(D["none"]["v_vs_y"]), "s", ls="none", mfc="none", mec="k", ms=4, label="data v(y), no source")
+    a.errorbar(pc, arr(D["none"]["u_vs_x"]), arr(D["none"]["u_vs_x_err"]), fmt="ko", ms=4, label="data u(x), no source")
+    a.errorbar(pc, arr(D["none"]["v_vs_y"]), arr(D["none"]["v_vs_y_err"]), fmt="s", mfc="none", mec="k", ecolor="k", ms=4, label="data v(y), no source")
     a.set_xlabel("position along the axis [mm] (posrec v2)")
     a.set_ylabel("top-array asymmetry")
     a.set_title("top-sector pattern: u = (1+3-2-4)/top, v = (1+2-3-4)/top", fontsize=10)
     a.legend(fontsize=7)
-    fig.suptitle("Step 7: data (LED gains, Δ750 V) vs optical simulation (level 4 mm, equal QE)")
+    fig.suptitle("Step 7: data (LED gains, Δ750 V; points with statistical errors) vs optical simulation (bands; level 4 mm, equal QE)")
     fig.tight_layout()
     fig.savefig(OUT / "compare.png", dpi=130)
     print("written", OUT / "compare.png")
+
+    # threshold test: S2 AFT vs r per S2 size (no source); a per-channel threshold loss shrinks with S2 size
+    bys = D["none"]["s2_aft_vs_r_by_size_led"]
+    fig, ax = plt.subplots(1, 2, figsize=(11, 4.2))
+    ratios = []
+    for (lab, v), col in zip(bys.items(), plt.cm.viridis(np.linspace(0, 0.9, len(bys)))):
+        lo, hi = (float(x) for x in lab.split("-"))
+        y, e = arr(v["aft"]), arr(v["err"])
+        ax[0].errorbar(rc, y, e, fmt="o", ms=5, color=col, label=f"S2 {lo / 1e3:.0f}–{hi / 1e3:.0f} kPE")
+        ring = np.nanmean(y[3:5])                       # r 7.5-12.5 mm
+        r0, e0 = y[0] / ring, e[0] / ring
+        ratios.append((np.sqrt(lo * hi), r0, e0))
+    ax[0].fill_between(rc, sr.min(0), sr.max(0), color="C0", alpha=0.25, lw=0, label="simulation (geometry, any S2 size)")
+    ax[0].set(xlabel="r [mm]", ylabel="S2 area fraction top", title="data, no source, per S2 size")
+    ax[0].legend(fontsize=7)
+    ratios = np.array(ratios)
+    ax[1].errorbar(ratios[:, 0], ratios[:, 1], ratios[:, 2], fmt="ko", ms=5, label="data")
+    simr = sr[:, 0] / sr[:, 3:5].mean(1)
+    ax[1].axhspan(simr.min(), simr.max(), color="C0", alpha=0.3, lw=0, label="simulation")
+    ax[1].set(xscale="log", xlabel="S2 area [PE]", ylabel="AFT(r < 2.5 mm) / AFT(r 7.5–12.5 mm)",
+              title="central dip vs S2 size")
+    ax[1].legend(fontsize=7)
+    fig.tight_layout()
+    fig.savefig(OUT / "central_dip_vs_size.png", dpi=130)
+    json.dump(dict(central_over_ring=ratios.tolist(), sim=[float(simr.min()), float(simr.max())]),
+              open(OUT / "central_dip_vs_size.json", "w"), indent=1)
 
 
 if __name__ == "__main__":
