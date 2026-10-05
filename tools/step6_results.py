@@ -83,7 +83,7 @@ def category(code, vol):
     if vol in ("TopPMTSector", "BottomPMTCathode", "SiPM"):
         return "photocathode, not converted (1 - QE)"
     if vol.endswith("Foil"):
-        return f"mesh bars: {vol[:-4]}"
+        return f"mesh foil: {vol[:-4]}"
     if vol == "CopperRing":
         return "copper field-shaping rings"
     if vol.endswith("Ring") or vol.endswith("Rim"):

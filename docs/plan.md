@@ -18,7 +18,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 | 5 Sources and runs | **done** | 2026-10-05 | see "Done" under step 5 |
 | 6 First physics results | **done** | 2026-10-05 | see "Done" under step 6 and `results/step6/README.md` |
 | 7 Targets from the data | **done** | 2026-10-05 | see "Done" under step 7 and `results/step7/README.md` |
-| 8 Comparison and fit | open | | |
+| 8 Comparison and fit | **done** | 2026-10-05 | see "Done" under step 8 and `results/step8/README.md` |
 | 9 Write-up | open | | |
 
 ## 0. Environment (½ day)
@@ -233,6 +233,15 @@ the scans `s2_optics` (27 points), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸), 
 - **Outcome:** does a realistic parameter set reproduce the S2 top fraction (and S1 versus z, the sector pattern, the
   2024 → 2026 change)? If yes: the top light is geometry; if no: which observable fails, and by how much (QE / gain
   calibration of the top PMT, mesh transparency, a missing part).
+
+**Done (2026-10-05).** First the geometry was completed from the drawings (v3: grid assemblies, PTFE cylinder, copper
+field-shaping rings, mesh foils as built with 456 etched holes) and every scan rerun. Then `tools/step8_fit.py`: 81-point
+grid (PTFE R × PTFE specular × steel R × Rayleigh) for S2 and S1, two efficiency factors per point (ε_S2, ε_S1 on the
+top/bottom ratio), shapes fitted to the no-source data (S2 vs r, S1 vs z, u/v). Result: shapes reproduced;
+ε_S2 = 1.13 (1.07–1.22), ε_S1 = 0.77 (0.71–0.80) — two different factors, the S1 one consistent with the top-PMT
+small-signal loss; steel reflectivity low (0.2) and a small PTFE specular part preferred, PTFE reflectivity and Rayleigh
+length not constrained. An insensitive cross on the top PMT (up to 6 mm) cannot make the central S2 dip of the data.
+Details: `results/step8/README.md`.
 
 ## 9. Write-up (½ day)
 

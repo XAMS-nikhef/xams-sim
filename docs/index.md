@@ -7,14 +7,15 @@ from the geometry.
 
 ![XAMS geometry, cut open](results/geometry/view_cut.png){ width="420" }
 
-## Main findings so far (geometry v2, 5 October 2026)
+## Main findings so far (geometry v3 from the drawings, 5 October 2026)
 
-- **Geometry and optics give an S2 top fraction of 0.54–0.59**, almost independent of the liquid level. Data without a
+- **Geometry and optics give an S2 top fraction of 0.53–0.58**, almost independent of the liquid level. Data without a
   source are close (0.55 at 10–20 kPE); the much lower Cs-137 / Na-22 values are the load effect of the top PMT.
 - **The top-sector light pattern matches the data** over ±24 mm for every source: the geometry is right.
-- **S1 top fraction vs depth:** same shape as the data, one constant factor 0.70 in the top/bottom ratio (small-signal
-  efficiency of the top PMT / QE ratio).
-- Only ~23 % of the S2 photons reach a photocathode; PTFE also between gate, anode and top screen would give ~+36 %.
+- **Fit (step 8):** the shapes of S2 vs r, S1 vs z and the sector pattern are reproduced with two efficiency factors
+  on the top/bottom ratio, ε_S2 = 1.13 and ε_S1 = 0.77 (QE ratio and the top-PMT small-signal loss); low steel
+  reflectivity preferred. The central dip of the S2 top fraction in the data is not an insensitive cross on the PMT.
+- Only ~23 % of the S2 photons reach a photocathode; PTFE also between gate, anode and top screen would give ~+37 %.
 
 Full write-up: the PDF note `notes/XAMS_optical_simulation_2026-10-05.pdf` and the [Results](results.md) pages.
 

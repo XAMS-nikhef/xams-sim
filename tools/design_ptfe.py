@@ -31,19 +31,19 @@ def row(p):
     loss = defaultdict(float)
     for (code, vol), k in p["tally"].items():
         c = category(code, vol)
-        if c.startswith("mesh bars"):
-            c = "mesh bars"
+        if c.startswith("mesh foil"):
+            c = "mesh foils"
         loss[c] += k / n
     return dict(config=label(p), top=t, bottom=b, sipm=si, total=t + b, top_fraction=top_fraction(rec)[0],
                 rings=loss["mesh rings (+ foil rim)"] + loss["copper field-shaping rings"], leaves=loss["leaves the TPC region"], ptfe=loss["PTFE"],
-                bars=loss["mesh bars"], pmt_frame=loss["PMT frame / body"])
+                bars=loss["mesh foils"], pmt_frame=loss["PMT frame / body"])
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     res = {}
-    lines = ["# Design study: extra PTFE cylinders (2026-10-05, geometry v2)", "",
-             "Simulation (geometry v2 from the drawings, level 4 mm, middle optics: PTFE R 0.945 in liquid / 0.75 in gas,",
+    lines = ["# Design study: extra PTFE cylinders (2026-10-05, geometry v3)", "",
+             "Simulation (geometry v3: drawings incl. the 456-hole mesh pattern, level 4 mm, middle optics: PTFE R 0.945 in liquid / 0.75 in gas,",
              "steel R 0.35, copper R 0.3, QE 0.33). Extra cylinders with the radii of the drift-region PTFE (r 31–36 mm,",
              "inside the ring bores): gate–anode z 0.075–7.925 mm (foil to foil, split at the liquid surface, gas part with",
              "the gas reflectivity), anode–top screen 8.075–17.925 mm, cathode–bottom screen −59.525 to −51.875 mm. Scans",
