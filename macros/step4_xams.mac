@@ -1,0 +1,8 @@
+# Step 4 check: S2-like light in the gas gap of the XAMS geometry (cylinder r < 25 mm, z 4.0-7.9 mm, below the anode foil), isotropic.
+/run/verbose 0
+/run/initialize
+/xamsopt/source/shape cylinder
+/xamsopt/source/rmax 25 mm
+/xamsopt/source/zmin 4 mm
+/xamsopt/source/zmax 7.9 mm
+/run/beamOn {n}

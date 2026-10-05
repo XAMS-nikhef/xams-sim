@@ -4,5 +4,5 @@
 /xamsopt/source/shape cylinder
 /xamsopt/source/rmax 25 mm
 /xamsopt/source/zmin 4 mm
-/xamsopt/source/zmax 8 mm
+/xamsopt/source/zmax 7.9 mm
 /run/beamOn 1000

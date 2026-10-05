@@ -4,7 +4,12 @@
 //   "test_interface" (step 2): liquid xenon below z = 0, gas xenon above (a plain boundary: Fresnel + total internal
 //                            reflection from the refractive indices); photons escape at the top or the bottom
 //   "test_mesh"      (step 3): one mesh (no ring) in liquid xenon at z = 0, axes along x / y, for the transparency check
+//   "test_surface"   (step 4): liquid xenon above a reflecting slab (top face at z = 0) of PTFE or steel
+//                            (config "test_surface_material": ptfe | steel); reflected photons escape
 //   "xams"           (step 3): model v1 of the XAMS TPC (src/XamsGeometry.cc)
+// Optical surfaces (step 4): PTFE, mesh bars and rings reflect (unified model, ground: Lambertian + specular spike;
+// reflectivity and specular fraction from the config; the rest absorbed). Config "surfaces": 0 makes them black.
+// test_mesh keeps black bars (step-3 transparency check).
 #pragma once
 
 #include <G4VUserDetectorConstruction.hh>
@@ -23,6 +28,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   G4VPhysicalVolume* BuildTestBox();
   G4VPhysicalVolume* BuildTestInterface();
   G4VPhysicalVolume* BuildTestMesh();
+  G4VPhysicalVolume* BuildTestSurface();
   G4VPhysicalVolume* BuildXams();
   // one etched mesh: square holes, bars along the local x and y axes clipped to radius r_vis, foil thickness t,
   // centred at z in mother, rotated by angle_deg about z; returns the number of bar pieces
@@ -37,4 +43,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   G4Material* Ptfe();
   G4Material* Absorber();
   void MakeSensor(G4LogicalVolume* lv, G4VPhysicalVolume* from, G4VPhysicalVolume* to, double qe);
+  // reflecting skin on every face of lv: probability `reflectivity` to reflect, of which a fraction `specular` as a
+  // mirror (spike) and the rest Lambertian; otherwise absorbed
+  void MakeReflector(G4LogicalVolume* lv, double reflectivity, double specular);
+  // PTFE (liquid values), all mesh bars and rings (stainless steel, Lambertian)
+  void ApplySurfaces();
 };

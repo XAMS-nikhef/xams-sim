@@ -3,6 +3,8 @@
 #include <G4Box.hh>
 #include <G4Exception.hh>
 #include <G4LogicalBorderSurface.hh>
+#include <G4LogicalSkinSurface.hh>
+#include <G4LogicalVolumeStore.hh>
 #include <G4LogicalVolume.hh>
 #include <G4Material.hh>
 #include <G4MaterialPropertiesTable.hh>
@@ -99,6 +101,54 @@ void DetectorConstruction::MakeSensor(G4LogicalVolume*, G4VPhysicalVolume* from,
   new G4LogicalBorderSurface("Border_" + from->GetName() + "_" + to->GetName(), from, to, surf);
 }
 
+void DetectorConstruction::MakeReflector(G4LogicalVolume* lv, double reflectivity, double specular) {
+  auto* surf = new G4OpticalSurface("Reflector_" + lv->GetName(), unified, ground, dielectric_metal, 0.);
+  auto* mpt = new G4MaterialPropertiesTable();
+  mpt->AddProperty("REFLECTIVITY", kEnergies, Flat(reflectivity));
+  mpt->AddProperty("SPECULARSPIKECONSTANT", kEnergies, Flat(specular));
+  mpt->AddProperty("SPECULARLOBECONSTANT", kEnergies, Flat(0.));
+  mpt->AddProperty("BACKSCATTERCONSTANT", kEnergies, Flat(0.));
+  surf->SetMaterialPropertiesTable(mpt);
+  new G4LogicalSkinSurface("Skin_" + lv->GetName(), lv, surf);
+}
+
+void DetectorConstruction::ApplySurfaces() {
+  const auto& c = Config::Get();
+  if (c.Num("surfaces", 1) == 0) {
+    G4cout << "optical surfaces off: PTFE and steel absorb" << G4endl;
+    return;
+  }
+  const double rPtfe = c.Num("optics/ptfe_in_liquid/reflectivity", 0.95);
+  const double fPtfe = c.Num("optics/ptfe_in_liquid/specular_fraction", 0.1);
+  const double rSteel = c.Num("optics/stainless_steel_reflectivity", 0.35);
+  int nBar = 0;
+  for (auto* lv : *G4LogicalVolumeStore::GetInstance()) {
+    const auto& n = lv->GetName();
+    if (n == "PTFE") MakeReflector(lv, rPtfe, fPtfe);
+    else if (n == "MeshBar" || n == "MeshRing") {
+      MakeReflector(lv, rSteel, 0.);  // steel: Lambertian
+      nBar += n == "MeshBar";
+    }
+  }
+  G4cout << "optical surfaces: PTFE R = " << rPtfe << " (specular " << fPtfe << "), steel R = " << rSteel
+         << " Lambertian (" << nBar << " bar volumes + rings)" << G4endl;
+}
+
+G4VPhysicalVolume* DetectorConstruction::BuildTestSurface() {
+  const auto& cfg = Config::Get();
+  const std::string m = cfg.Str("test_surface_material", "ptfe");
+  auto* worldS = new G4Box("World", 200. * mm, 200. * mm, 200. * mm);
+  auto* worldL = new G4LogicalVolume(worldS, LiquidXenon(), "World");
+  auto* worldP = new G4PVPlacement(nullptr, {}, worldL, "World", nullptr, false, 0, true);
+  auto* slabL = new G4LogicalVolume(new G4Box("Slab", 150. * mm, 150. * mm, 5. * mm), m == "steel" ? StainlessSteel() : Ptfe(),
+                                    "Slab");
+  new G4PVPlacement(nullptr, G4ThreeVector(0, 0, -5. * mm), slabL, "Slab", worldL, false, 0, true);
+  if (m == "steel") MakeReflector(slabL, cfg.Num("optics/stainless_steel_reflectivity", 0.35), 0.);
+  else MakeReflector(slabL, cfg.Num("optics/ptfe_in_liquid/reflectivity", 0.95),
+                     cfg.Num("optics/ptfe_in_liquid/specular_fraction", 0.1));
+  return worldP;
+}
+
 G4VPhysicalVolume* DetectorConstruction::BuildTestBox() {
   const auto& cfg = Config::Get();
   const double half = 200. * mm;
@@ -134,7 +184,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
   if (mode == "test_box") return BuildTestBox();
   if (mode == "test_interface") return BuildTestInterface();
   if (mode == "test_mesh") return BuildTestMesh();
-  if (mode == "xams") return BuildXams();
+  if (mode == "test_surface") return BuildTestSurface();
+  if (mode == "xams") {
+    auto* w = BuildXams();
+    ApplySurfaces();
+    return w;
+  }
   G4Exception("DetectorConstruction", "GEOM001", FatalException,
               ("geometry_mode '" + mode + "' not implemented yet (XAMS geometry: step 3)").c_str());
   return nullptr;

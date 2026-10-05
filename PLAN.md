@@ -14,7 +14,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 | 1 Skeleton | **done** | 2026-10-05 | see "Done" under step 1 |
 | 2 Materials | **done** | 2026-10-05 | see "Done" under step 2 |
 | 3 Geometry v1 | **done** | 2026-10-05 | see "Done" under step 3 |
-| 4 Optical surfaces | open | | |
+| 4 Optical surfaces | **done** | 2026-10-05 | see "Done" under step 4 |
 | 5 Sources and runs | open | | |
 | 6 First physics results | open | | |
 | 7 Targets from the data | open | | |
@@ -139,6 +139,27 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - Photocathodes: absorb with probability QE (detected), else absorbed (no reflection in v1).
 - **Check:** with PTFE reflectivity 0 the result equals the step-3 geometry with black walls; with reflectivity → 1 and
   no other losses every photon ends on a sensor or a mesh (bookkeeping closes).
+
+**Done (2026-10-05).**
+- `DetectorConstruction::MakeReflector` / `ApplySurfaces` (geometry_mode `xams`): skin surfaces, UNIFIED model,
+  ground, dielectric_metal. PTFE: reflectivity and specular fraction from `optics.ptfe_in_liquid` (specular part as a
+  mirror spike, the rest Lambertian). Steel (all mesh bars and rings): `optics.stainless_steel_reflectivity`, fully
+  Lambertian. Not reflected = absorbed. `ptfe_in_gas` is not used: the PTFE cylinder lies entirely in the liquid.
+  Config `"surfaces": 0` makes PTFE and steel black. `test_mesh` keeps black bars (step-3 check).
+- Liquid–gas surface and PMT windows: plain boundaries from the refractive indices (step 2). Photocathodes as before
+  (QE, no reflection).
+- New test geometry `test_surface` (beam in liquid xenon onto a PTFE or steel slab); macros `step4_surface.mac`,
+  `step4_xams.mac`; S2-like test source: cylinder r < 25 mm, z 4.0–7.9 mm (a first version up to 8.0 mm started
+  photons inside the anode foil — they were absorbed at birth; the source must stay below the foil, 7.925 mm).
+- **Checks passed** (`tools/check_step4.py`):
+  (a) single surface, 2·10⁵ photons, θ = 0 / 30 / 60°: reflected fraction = R (PTFE 0.95 and 0.90, steel 0.35; pulls
+  ≤ 1.1); specular fraction 0.199 for f = 0.2 (pull −0.9), none for f = 0; diffuse part Lambertian (⟨cos⟩ = 0.667,
+  KS p ≥ 0.1).
+  (b) XAMS, S2-like source: black surfaces and reflectivity 0 give the same light per sensor (pulls within ±1.0).
+  (c) XAMS with PTFE and steel reflectivity 1, no bulk losses: every photon ends detected (15.5 %) or on an absorber
+  (world 41 %, photocathodes beyond QE, PMT frames/bodies); none on PTFE or steel, none undefined, none in the bulk.
+- First look (not a result; no absorption / Rayleigh, QE 0.33 everywhere): S2 top fraction 0.69 with black PTFE and
+  steel, 0.47 with reflectivity 1. The data (low load) give ≈ 0.52 — reflections matter; step 6 does this properly.
 
 ## 5. Sources and production runs (½ day)
 
