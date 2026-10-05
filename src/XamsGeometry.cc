@@ -8,6 +8,7 @@
 #include <G4Box.hh>
 #include <G4Exception.hh>
 #include <G4LogicalVolume.hh>
+#include <G4IntersectionSolid.hh>
 #include <G4PVPlacement.hh>
 #include <G4SubtractionSolid.hh>
 #include <G4SystemOfUnits.hh>
@@ -18,6 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "Config.hh"
@@ -30,44 +32,101 @@ constexpr bool kCheck = true;  // overlap check at every placement
 
 int DetectorConstruction::BuildMesh(G4LogicalVolume* mother, const std::string& name, double z, double angle_deg,
                                     double r_vis) {
-  // drawing "XAMS_XAMS grid.pdf": a solid steel foil (thickness t) with square holes etched only at the cells of the
-  // hole pattern (config mesh_common/holes: (i, j) -> centre ((i + 1/2) p, (j + 1/2) p) in the mesh frame; two bars
-  // cross on the axis). Built as a steel disc of radius r_vis with the holes as daughters of the surrounding medium.
+  // drawing "XAMS_XAMS grid.pdf": a steel foil (thickness t) with square holes etched only at the cells of the hole
+  // pattern (config mesh_common/holes: (i, j) -> centre ((i + 1/2) p, (j + 1/2) p) in the mesh frame; two bars cross
+  // on the axis); the rest of the foil is solid. Built from steel pieces in a thin disc of the surrounding medium
+  // (radius r_vis): the bars (x bars as full chords, y bars in pieces between them) and a solid square in every cell
+  // that is not etched (clipped at r_vis). The holes are then real openings (also in the viewer).
   // Without a hole list (test geometries) every cell fully inside r_vis is a hole.
   const auto& c = Config::Get();
   const double t = c.Num("mesh_common/foil_thickness_mm", 0.15) * mm;
-  const double h = c.Num("mesh_common/hole_size_mm", 2.45) * mm;
+  const double w = c.Num("mesh_common/bar_width_mm", 0.15) * mm;
   const double p = c.Num("mesh_common/pitch_mm", 2.60) * mm;
+  const double h = p - w;  // hole / cell side
+  const double eps = 1e-4 * mm;
 
-  auto* foilL = new G4LogicalVolume(new G4Tubs(name + "Foil", 0., r_vis, 0.5 * t, 0., 360. * deg), StainlessSteel(),
-                                    "MeshFoil");
+  auto* layerL = new G4LogicalVolume(new G4Tubs(name + "Layer", 0., r_vis, 0.5 * t, 0., 360. * deg),
+                                     mother->GetMaterial(), name + "Layer");
   G4RotationMatrix rot;
   rot.rotateZ(angle_deg * deg);
-  new G4PVPlacement(G4Transform3D(rot, G4ThreeVector(0, 0, z)), foilL, name + "Foil", mother, false, 0, kCheck);
+  // physical name "<mesh>Hole": a photon inside the layer but not in steel is in an (etched) opening
+  new G4PVPlacement(G4Transform3D(rot, G4ThreeVector(0, 0, z)), layerL, name + "Hole", mother, false, 0, kCheck);
 
-  std::vector<std::pair<int, int>> cells;
+  std::set<std::pair<int, int>> holes;
   const auto& j = c.J();
-  if (j.contains("mesh_common") && j["mesh_common"].contains("holes")) {
-    for (const auto& ij : j["mesh_common"]["holes"]) cells.emplace_back(ij[0].get<int>(), ij[1].get<int>());
-  } else {
-    const int n = static_cast<int>(r_vis / p) + 1;
-    for (int a = -n; a < n; ++a)
-      for (int b = -n; b < n; ++b)
-        if (std::hypot(std::abs(a + 0.5) * p + 0.5 * h, std::abs(b + 0.5) * p + 0.5 * h) < r_vis) cells.emplace_back(a, b);
+  const bool haveList = j.contains("mesh_common") && j["mesh_common"].contains("holes");
+  if (haveList)
+    for (const auto& ij : j["mesh_common"]["holes"]) holes.insert({ij[0].get<int>(), ij[1].get<int>()});
+
+  auto steelLV = [&](G4VSolid* s) { return new G4LogicalVolume(s, StainlessSteel(), "MeshFoil"); };
+  static std::map<long, G4LogicalVolume*> barCache;  // one volume per distinct bar length
+  auto barLV = [&](double len) {
+    const long key = std::lround(len * 1e4);
+    if (!barCache.count(key)) barCache[key] = steelLV(new G4Box("MeshBarS", 0.5 * len, 0.5 * w, 0.5 * t));
+    return barCache[key];
+  };
+
+  // bar centre lines at k p
+  std::vector<double> lines;
+  for (int k = -200; k <= 200; ++k)
+    if (std::abs(k * p) + 0.5 * w < r_vis) lines.push_back(k * p);
+  int nPieces = 0;
+  std::vector<double> halfLen;
+  for (double y : lines) {  // bars along x (full chords)
+    const double hl = std::sqrt(r_vis * r_vis - std::pow(std::abs(y) + 0.5 * w, 2)) - eps;
+    halfLen.push_back(hl);
+    new G4PVPlacement(nullptr, G4ThreeVector(0, y, 0), barLV(2 * hl), name + "Foil", layerL, false, nPieces++, false);
   }
-  // one hole volume per medium (shared by all meshes in that medium)
-  static std::map<G4Material*, G4LogicalVolume*> holeL;
-  auto* med = mother->GetMaterial();
-  if (!holeL.count(med))
-    holeL[med] = new G4LogicalVolume(new G4Box("MeshHole", 0.5 * h, 0.5 * h, 0.5 * t), med, "MeshHole");
-  int n = 0;
-  for (const auto& [a, b] : cells) {
-    const double x = (a + 0.5) * p, y = (b + 0.5) * p;
-    if (std::hypot(std::abs(x) + 0.5 * h, std::abs(y) + 0.5 * h) >= r_vis)
-      G4Exception("BuildMesh", "GEOM020", FatalException, ("hole outside the foil disc of " + name).c_str());
-    new G4PVPlacement(nullptr, G4ThreeVector(x, y, 0), holeL[med], name + "Hole", foilL, false, n++, false);
+  G4RotationMatrix r90;
+  r90.rotateZ(90. * deg);
+  for (double x : lines) {  // bars along y: pieces between the x bars, clipped to the circle
+    const double cmax = std::sqrt(r_vis * r_vis - std::pow(std::abs(x) + 0.5 * w, 2)) - eps;
+    double lo = -cmax;
+    auto placeY = [&](double a, double b) {
+      if (b - a <= 1e-3 * mm) return;
+      new G4PVPlacement(G4Transform3D(r90, G4ThreeVector(x, 0.5 * (a + b), 0)), barLV(b - a), name + "Foil", layerL,
+                        false, nPieces++, false);
+    };
+    for (size_t k = 0; k < lines.size(); ++k) {
+      if (halfLen[k] <= std::abs(x) - 0.5 * w) continue;
+      const double b0 = lines[k] - 0.5 * w, b1 = lines[k] + 0.5 * w;
+      if (b1 <= lo) continue;
+      placeY(lo, std::min(b0, cmax));
+      lo = std::max(lo, b1);
+      if (lo >= cmax) break;
+    }
+    if (lo < cmax) placeY(lo, cmax);
   }
-  return n;
+
+  // cells: etched (open) or solid fill
+  static G4LogicalVolume* fullCell = nullptr;
+  if (!fullCell) fullCell = steelLV(new G4Box("MeshCellS", 0.5 * h, 0.5 * h, 0.5 * t));
+  auto* disc = new G4Tubs(name + "CellClip", 0., r_vis - eps, t, 0., 360. * deg);
+  const int nc = static_cast<int>(r_vis / p) + 1;
+  int nHoles = 0;
+  for (int a = -nc - 1; a <= nc; ++a) {
+    for (int b = -nc - 1; b <= nc; ++b) {
+      const double cx = (a + 0.5) * p, cy = (b + 0.5) * p;
+      const double rFar = std::hypot(std::abs(cx) + 0.5 * h, std::abs(cy) + 0.5 * h);
+      const double rNear = std::hypot(std::max(std::abs(cx) - 0.5 * h, 0.), std::max(std::abs(cy) - 0.5 * h, 0.));
+      if (rNear >= r_vis - eps) continue;  // cell outside the disc
+      const bool open = haveList ? holes.count({a, b}) > 0 : rFar < r_vis;
+      if (open) {
+        if (rFar >= r_vis)
+          G4Exception("BuildMesh", "GEOM020", FatalException, ("etched hole outside the foil disc of " + name).c_str());
+        ++nHoles;
+        continue;
+      }
+      G4LogicalVolume* lv = fullCell;
+      if (rFar >= r_vis - eps)
+        lv = steelLV(new G4IntersectionSolid("MeshCellClipped", new G4Box("MeshCellB", 0.5 * h, 0.5 * h, 0.5 * t), disc,
+                                             nullptr, G4ThreeVector(-cx, -cy, 0)));
+      new G4PVPlacement(nullptr, G4ThreeVector(cx, cy, 0), lv, name + "Foil", layerL, false, nPieces++, false);
+    }
+  }
+  if (haveList && nHoles != static_cast<int>(holes.size()))
+    G4Exception("BuildMesh", "GEOM021", FatalException, ("not all listed holes placed in " + name).c_str());
+  return nHoles;
 }
 
 void DetectorConstruction::BuildPmt(G4LogicalVolume* mother, G4VPhysicalVolume* motherP, const std::string& name,
