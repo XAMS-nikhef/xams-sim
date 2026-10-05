@@ -1,26 +1,31 @@
-# Interactive viewer (xamsopt -c config.json, no macro): Qt window with the geometry
+# Interactive viewer (xamsopt -c config.json, no macro): Qt window with the geometry.
+# Only the xenon is see-through: in this viewer, see-through volumes inside the see-through xenon are not drawn,
+# so everything else is opaque. Look inside: /vis/viewer/set/cutawayMode intersection
+#                                            /vis/viewer/addCutawayPlane 0 0 0 m 1 0 0
 /vis/open TSG
 /vis/drawVolume
+/vis/viewer/set/background white
 /vis/geometry/set/visibility World 0 false
-/vis/geometry/set/visibility Liquid 0 true
-/vis/geometry/set/visibility Gas 0 true
-/vis/geometry/set/colour Liquid 0 0.15 0.35 0.85 0.18
-/vis/geometry/set/colour Gas 0 0.55 0.75 1.0 0.08
+/vis/geometry/set/colour Liquid 0 0.15 0.40 0.90 0.25
+/vis/geometry/set/colour Gas 0 0.60 0.80 1.00 0.12
 /vis/geometry/set/visibility top_screenLayer 0 false
 /vis/geometry/set/visibility anodeLayer 0 false
 /vis/geometry/set/visibility gateLayer 0 false
 /vis/geometry/set/visibility cathodeLayer 0 false
 /vis/geometry/set/visibility bottom_screenLayer 0 false
-/vis/geometry/set/colour PTFE 0 0.95 0.95 0.95 0.35
+/vis/geometry/set/colour PTFE 0 0.93 0.86 0.66 1
+/vis/geometry/set/colour PTFE_gas 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour MeshRing 0 0.45 0.45 0.55 1
-/vis/geometry/set/colour MeshBar 0 0.25 0.25 0.3 1
-/vis/geometry/set/colour TopPMTWindow 0 0.6 0.8 1.0 0.3
-/vis/geometry/set/colour BottomPMTWindow 0 0.6 0.8 1.0 0.3
-/vis/geometry/set/colour TopPMTSector 0 0.95 0.6 0.1 1
-/vis/geometry/set/colour BottomPMTCathode 0 0.95 0.6 0.1 1
-/vis/geometry/set/colour TopPMTBody 0 0.15 0.15 0.15 0.4
-/vis/geometry/set/colour BottomPMTBody 0 0.15 0.15 0.15 0.4
-/vis/geometry/set/colour SiPM 0 0.1 0.8 0.2 1
+/vis/geometry/set/colour MeshBar 0 0.25 0.25 0.30 1
+/vis/geometry/set/colour TopPMTWindow 0 0.70 0.88 1.00 1
+/vis/geometry/set/colour BottomPMTWindow 0 0.70 0.88 1.00 1
+/vis/geometry/set/colour TopPMTSector 0 0.95 0.60 0.10 1
+/vis/geometry/set/colour BottomPMTCathode 0 0.95 0.60 0.10 1
+/vis/geometry/set/colour TopPMTFrame 0 0.30 0.30 0.30 1
+/vis/geometry/set/colour BottomPMTFrame 0 0.30 0.30 0.30 1
+/vis/geometry/set/colour TopPMTBody 0 0.20 0.20 0.20 1
+/vis/geometry/set/colour BottomPMTBody 0 0.20 0.20 0.20 1
+/vis/geometry/set/colour SiPM 0 0.10 0.70 0.20 1
 /vis/viewer/set/style surface
 /vis/viewer/set/upVector 0 0 1
 /vis/viewer/set/viewpointThetaPhi 70 20 deg
