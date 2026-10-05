@@ -6,6 +6,21 @@ load) follows from the geometry. Geometry and parameters come from `geometry.yam
 
 Each step ends with a check; a step is only done when its check passes. Rough effort in brackets.
 
+## Progress
+
+| Step | Status | Date | Notes |
+|---|---|---|---|
+| 0 Environment | **done** | 2026-10-05 | see "Done" under step 0 |
+| 1 Skeleton | open | | |
+| 2 Materials | open | | |
+| 3 Geometry v1 | open | | |
+| 4 Optical surfaces | open | | |
+| 5 Sources and runs | open | | |
+| 6 First physics results | open | | |
+| 7 Targets from the data | open | | |
+| 8 Comparison and fit | open | | |
+| 9 Write-up | open | | |
+
 ## 0. Environment (½ day)
 
 - Geant4 ≥ 11 with optical physics, CMake, a C++17 compiler. Where: the Mac (`g4` conda environment) or stbc-i2
@@ -15,6 +30,22 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - Output without ROOT: one binary/CSV record per photon (origin x, y, z; end: which sensor or where absorbed; number of
   reflections), analysed in Python (numpy).
 - **Check:** Geant4's optical example (OpNovice2) builds and runs.
+
+**Done (2026-10-05).**
+- Environment: the Mac, conda environment `g4` (`conda activate g4`): Geant4 11.3.2 (conda-forge, GDML and Qt
+  enabled), cmake 4.0.2, clang++ 18, nlohmann/json headers. The Geant4 data sets are installed with the environment
+  (`share/Geant4/data/*`); their paths (`G4ENSDFSTATEDATA` etc.) are set only when the environment is activated, so
+  always build and run inside it.
+- Check passed: OpNovice2 builds and its `fresnel.mac` runs (batch, 5 s, no exceptions); Fresnel reflection, total
+  internal reflection (mean 68°, beyond the 46° critical angle for n = 1.40 / 1.01) and refraction behave as expected.
+  (Its reference output comes from an older Geant4 with other units, so only the physics was compared.)
+- Config: `tools/make_config.py --level <mm> [--set path=value] --out run/<name>.json` turns `geometry.yaml` into the
+  JSON the C++ code will read: one liquid-level scenario, free parameters at the middle of their range unless set,
+  derived liquid-surface z, meshes sorted by z; refuses missing required values and impossible levels; defaults for the
+  two open second-order values (mesh ring inner Ø 64 mm, foil in the middle of the ring).
+- Output format decided: one record per photon (origin, end point / sensor, number of reflections), read in Python;
+  no ROOT.
+- Generated files (`run/`, `build/`) are not tracked in git.
 
 ## 1. Skeleton application (½ day)
 
