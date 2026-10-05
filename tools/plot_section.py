@@ -14,9 +14,9 @@ from matplotlib.patches import Patch
 # volume name (copy suffix and mesh prefix stripped) -> (colour, legend label)
 STYLE = [
     (r"^World$|^outside$", "#ffffff", "world (absorber)"),
-    (r"Layer$|^Liquid$", "#cfe3f7", "liquid xenon"),
+    (r"Hole$|^Liquid$", "#cfe3f7", "liquid xenon"),
     (r"^Gas$", "#f4f4f4", "gas xenon"),
-    (r"Bar$", "#202020", "mesh bars"),
+    (r"Foil$", "#202020", "mesh foil (steel)"),
     (r"^CopperRing$", "#c8743a", "copper field-shaping rings"),
     (r"Ring$|Rim$", "#7a7f8c", "mesh rings (+ foil rim)"),
     (r"^PTFE$|^PTFE_gas$", "#e8d7a8", "PTFE"),
@@ -30,7 +30,7 @@ STYLE = [
 def style_of(name, layer_medium):
     for pat, col, lab in STYLE:
         if re.search(pat, name):
-            if name.endswith("Layer"):  # mesh layer = mother medium between the bars
+            if name.endswith("Hole"):  # mesh hole = medium of the mother
                 return layer_medium[name]
             return col, lab
     return "#ff00ff", name
@@ -51,8 +51,8 @@ def main():
     # mesh layers sit in liquid or gas: gas meshes are above the liquid surface (gate is the topmost liquid mesh)
     layer_medium = {}
     for n in names.values():
-        if n.endswith("Layer"):
-            gas = n.split("Layer")[0] in ("top_screen", "anode")
+        if n.endswith("Hole"):
+            gas = n.split("Hole")[0] in ("top_screen", "anode")
             layer_medium[n] = ("#f4f4f4", "gas xenon") if gas else ("#cfe3f7", "liquid xenon")
 
     cols, labels = [], {}

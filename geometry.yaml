@@ -37,8 +37,11 @@ mesh_common:                 # all five meshes identical and aligned the same wa
   bar_width_mm: 0.15         # G (pitch 2.6 mm = 2.45 + 0.15)
   pitch_mm: 2.60             # G, T p.102, R (2.5997)
   foil_diameter_mm: 80.0     # G
-  etched_pattern: "R: outputs/posrec2_template.json"   # 456 hole centres (disc-centred, drawing frame) — use as the exact pattern
-  open_fraction_normal: 0.888  # (2.45/2.60)^2, perpendicular incidence (derived)
+  hole_pattern_file: mesh_holes.json   # drawing "XAMS_XAMS grid.pdf": a SOLID foil with only 456 square holes etched
+                             #   in a staircase pattern (outermost hole corners at r = 32.8 mm); everything else, up to
+                             #   the ring, is solid steel (from posrec2_template.json; the same pattern for all meshes)
+  open_fraction_normal: 0.888  # (2.45/2.60)^2 inside the etched area, perpendicular incidence (derived); over the
+                             #   whole Ø72 bore 456 × 2.45² / (π 36²) = 0.67
   ring:                      # mesh support ring (drawing "XAMS_XAMS grid assy.pdf", 2026-10-05)
     outer_diameter_mm: 92.6  # G, drawing
     inner_diameter_mm: 72.0  # drawing: bore R36 = open mesh aperture; the PTFE cylinder (outer Ø72) fits in it

@@ -82,15 +82,15 @@ def category(code, vol):
         return "detected"
     if vol in ("TopPMTSector", "BottomPMTCathode", "SiPM"):
         return "photocathode, not converted (1 - QE)"
-    if vol.endswith("Bar"):
-        return f"mesh bars: {vol[:-3]}"
+    if vol.endswith("Foil"):
+        return f"mesh bars: {vol[:-4]}"
     if vol == "CopperRing":
         return "copper field-shaping rings"
     if vol.endswith("Ring") or vol.endswith("Rim"):
         return "mesh rings (+ foil rim)"
     if vol == "PTFE":
         return "PTFE"
-    if vol.endswith("Frame") or vol.endswith("Body") or vol.endswith("Window"):
+    if vol.endswith("Frame") or vol.endswith("Body") or vol.endswith("Window") or vol.endswith("DeadCross"):
         return "PMT frame / body"
     if vol == "World":
         return "leaves the TPC region"

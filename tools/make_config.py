@@ -85,6 +85,9 @@ def main():
         return 1
 
     cfg = {k: g[k] for k in ("mesh_common", "meshes", "ptfe_cylinder", "field_shaping_rings", "pmt_common", "pmts", "sipms")}
+    hp = g["mesh_common"].get("hole_pattern_file")
+    if hp:
+        cfg["mesh_common"]["holes"] = json.load(open(Path(args.geometry).parent / hp))["holes"]
     cfg["optics"] = pick_free(g["optics"])
     cfg["liquid"] = {"level_above_gate_mm": args.level, "surface_z_mm": args.level}
     cfg["meshes"] = sorted(cfg["meshes"], key=lambda m: -m["z_mm"])

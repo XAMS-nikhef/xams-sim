@@ -3,6 +3,7 @@
 | Path | What it is | You edit it? |
 |---|---|---|
 | `geometry.yaml` | **all numbers**: meshes (z, angle, foil side), rings, PTFE, copper rings, PMTs, SiPMs, optics ranges, data targets — each with its source | yes |
+| `mesh_holes.json` | the 456 etched holes of the mesh foils (from the gate drawing) | no |
 | `tools/make_config.py` | `geometry.yaml` → one `config.json` (liquid level, free parameters at mid-range unless `--set`) | no |
 | `xamsopt.cc` | main program (options `-c -o -s -d -v`) | no |
 | `src/XamsGeometry.cc` | builds the XAMS geometry from the config | for new parts |

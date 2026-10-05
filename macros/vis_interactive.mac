@@ -8,15 +8,11 @@
 /vis/geometry/set/visibility World 0 false
 /vis/geometry/set/colour Liquid 0 0.15 0.40 0.90 0.25
 /vis/geometry/set/colour Gas 0 0.60 0.80 1.00 0.12
-/vis/geometry/set/visibility top_screenLayer 0 false
-/vis/geometry/set/visibility anodeLayer 0 false
-/vis/geometry/set/visibility gateLayer 0 false
-/vis/geometry/set/visibility cathodeLayer 0 false
-/vis/geometry/set/visibility bottom_screenLayer 0 false
 /vis/geometry/set/colour PTFE 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour PTFE_gas 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour MeshRing 0 0.45 0.45 0.55 1
-/vis/geometry/set/colour MeshBar 0 0.25 0.25 0.30 1
+/vis/geometry/set/visibility MeshHole 0 false
+/vis/geometry/set/colour MeshFoil 0 0.25 0.25 0.30 1
 /vis/geometry/set/colour CopperRing 0 0.78 0.45 0.23 1
 /vis/geometry/set/colour TopPMTWindow 0 0.70 0.88 1.00 1
 /vis/geometry/set/colour BottomPMTWindow 0 0.70 0.88 1.00 1

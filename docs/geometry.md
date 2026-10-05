@@ -12,7 +12,7 @@ PTFE cylinder, field shaping; thesis; position reconstruction v2; the user). Bui
 | part | model |
 |---|---|
 | liquid / gas | liquid xenon from z = −90 mm up to the level (2 / 3 / 4 mm above the gate), gas above up to +45 mm; ±60 mm in x, y |
-| meshes (5) | 0.15 mm steel foils, square holes 2.45 mm, bars 0.15 mm (pitch 2.6 mm), built as real bars (≈650 pieces per mesh, no overlaps); all at 29.4° to the anodes, two bars crossing on the axis (gate drawing); open aperture Ø72 mm |
+| meshes (5) | solid 0.15 mm steel foils (Ø80) with **456 square holes** of 2.45 mm (pitch 2.6 mm) etched only in a staircase-shaped area (drawing `XAMS_XAMS grid.pdf`; outermost hole corners at r = 32.8 mm; list in `mesh_holes.json`); everything else up to the ring is solid steel. All at 29.4° to the anodes, two bars crossing on the axis. Open area: 0.888 inside the etched area, 0.67 over the Ø72 bore |
 | mesh z | top screen +18, anode +8, gate 0, cathode −51.8, bottom screen −59.6 mm (foil mid-plane) |
 | mesh rings | steel, Ø72–92.6 mm, 1.8 mm assembly; the foil (Ø80) on one face, the ring body on the other side of the foil: below the gate and bottom screen, above the cathode, anode and top screen |
 | PTFE cylinder | Ø62 / Ø72 mm, 50.85 mm long, in the bores of the gate and cathode rings, against the gate foil; 0.8 mm gap above the cathode foil (real) |

@@ -23,7 +23,7 @@ Every run writes three files: `xxx.bin`, `xxx.bin.summary.json`, `xxx.bin.volume
 
 ## `xxx.bin.volumes.json`
 
-Volume index → name. Names: `<mesh>Bar` (mesh bars, mesh = top_screen / anode / gate / cathode / bottom_screen),
+Volume index → name. Names: `<mesh>Foil` (the steel of a mesh foil, mesh = top_screen / anode / gate / cathode / bottom_screen), `<mesh>Hole` (inside a hole),
 `<mesh>Ring` (ring body), `<mesh>Rim` (foil on the ring face), `PTFE`, `PTFE_gas`, `CopperRing`, `TopPMTSector`,
 `BottomPMTCathode`, `TopPMTWindow`, `*Frame`, `*Body`, `SiPM`, `Liquid`, `Gas`, `World` (= left the modelled region).
 

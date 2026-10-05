@@ -113,9 +113,9 @@ def main(out):
         "Every photon is recorded (origin, end point, how it ended, sensor, reflections); maps are made by binning the origins.")]
     st.append(table([
         ["part", "model (geometry v2, from the drawings)"],
-        ["meshes (5)", "0.15 mm steel foils with square holes 2.45 mm, bars 0.15 mm (pitch 2.6 mm), all at 29.4° to the anodes, "
-                       "bars crossing on the axis (gate drawing); open aperture Ø72 mm. z: top screen +18, anode +8, gate 0, "
-                       "cathode −51.8, bottom screen −59.6 mm"],
+        ["meshes (5)", "solid 0.15 mm steel foils (Ø80) with 456 square holes 2.45 mm (pitch 2.6 mm) etched in a staircase-shaped "
+                       "area (gate drawing; outer hole corners at r = 32.8 mm), the rest solid; all at 29.4° to the anodes. "
+                       "z: top screen +18, anode +8, gate 0, cathode −51.8, bottom screen −59.6 mm"],
         ["mesh rings", "steel, Ø72–92.6 mm, 1.8 mm assembly; the foil (Ø80) on one face, the ring body on the other side: "
                        "below the gate and bottom screen, above the cathode, anode and top screen. The gate–anode gap is "
                        "therefore open sideways between r = 36 and 46 mm"],
