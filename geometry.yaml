@@ -62,9 +62,9 @@ meshes:                      # z = foil mid-plane
 # ------------------------------------------------------------------------------------------------ PTFE cylinder
 ptfe_cylinder:
   inner_diameter_mm: 61.94   # P (T: 6.2 cm)
-  wall_thickness_mm: null    # ? (only matters if light can pass the PTFE: v1 treats the outside as absorbing)
-  z_bottom_mm: null          # ? lower end: at the cathode, or down to the bottom screen / bottom PMT?
-  z_top_mm: null             # ? upper end: at the gate, the anode, the top screen or up to the top PMT?
+  wall_thickness_mm: 5.0    # ? (only matters if light can pass the PTFE: v1 treats the outside as absorbing)
+  z_bottom_mm: -51.8          # ? lower end: at the cathode, or down to the bottom screen / bottom PMT?
+  z_top_mm: 0.0             # ? upper end: at the gate, the anode, the top screen or up to the top PMT?
   sections: null             # ? if the cylinder is several parts with gaps (e.g. at the gate / anode ring), list them:
                              #   [{z_from_mm, z_to_mm, inner_diameter_mm}]
   # field-shaping rings: outside the PTFE (T: five copper rings) -> not in v1
@@ -98,8 +98,8 @@ sipms:
   type: Hamamatsu S13370-3025CN (VUV-MPPC)
   active_mm: [3.0, 3.0]
   mounting: inside the inner PTFE cylinder, looking inward   # user
-  azimuth_deg: [null, null]  # ? positions (90° apart; relative to the top-PMT anode frame)
-  z_mm: [null, null]         # ? heights (in liquid or gas?)
+  azimuth_deg: [0, 90]  # ? positions (90° apart; relative to the top-PMT anode frame)
+  z_mm: [-25.0, -25.0]         # ? heights (in liquid or gas?)
   filter:
     material: null           # ? VUV filter in front of the SiPMs: material, thickness, transmission curve
     thickness_mm: null
