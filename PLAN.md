@@ -13,7 +13,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 | 0 Environment | **done** | 2026-10-05 | see "Done" under step 0 |
 | 1 Skeleton | **done** | 2026-10-05 | see "Done" under step 1 |
 | 2 Materials | **done** | 2026-10-05 | see "Done" under step 2 |
-| 3 Geometry v1 | open | | |
+| 3 Geometry v1 | **done** | 2026-10-05 | see "Done" under step 3 |
 | 4 Optical surfaces | open | | |
 | 5 Sources and runs | open | | |
 | 6 First physics results | open | | |
@@ -106,6 +106,30 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - **Checks:** Geant4 overlap check clean; geometry drawn (VRML / image) and compared with section A–A; a collimated beam
   through one mesh gives the open fraction 0.888 at normal incidence and the expected drop with angle (analytic
   formula for a foil of thickness 0.15 mm).
+
+**Done (2026-10-05).**
+- `src/XamsGeometry.cc`, geometry_mode `xams`: absorbing world; liquid xenon box (z −90 mm to the liquid surface) and
+  gas xenon box (surface to +45 mm), ±60 mm in x, y. The PTFE cylinder lies entirely in the liquid (gate is below the
+  surface in every scenario), so no split at the liquid level is needed.
+- Meshes (top screen 18, anode 8 in gas; gate 0, cathode −51.8, bottom screen −59.6 in liquid), all at 29.4° to the
+  anodes: a thin disc of the surrounding medium (r 32 mm, 0.15 mm) holding 531 steel bar pieces (x bars as full chords,
+  y bars in pieces between them, so nothing overlaps); bar centre lines at k·p, so two bars cross on the axis — as in
+  the gate drawing (`posrec2_template.json`: pitch 2.5997 mm, hole 2.45 mm, lattice phase ±0.5 = wire crossing at the
+  centre). Rings: steel annulus r 32–46.3 mm, 1.8 mm thick.
+- PTFE cylinder r 30.97–35.97 mm, z −50.9 to −0.9 mm (between the gate and cathode rings). PMTs: silica window
+  54.6 mm square, 2.5 mm; photocathode 48.5 mm square (top: 4 sectors, copies 1–4; bottom: copy 0); absorbing frame and
+  body. SiPMs (copies 6, 7) on the PTFE inner wall at azimuth 0° / 90°, z −25 mm.
+- Viewing: `xamsopt -c config.json` without a macro opens the Qt viewer (`vis_interactive.mac`: media hidden, colours,
+  axes; `/run/beamOn N` draws photon tracks). `/xamsopt/section file plane offset umin umax vmin vmax step` asks
+  Geant4's navigator for the volume at every point of a grid (`section.mac`), `tools/plot_section.py` draws it
+  (`build/section_xz.png`, `section_xz_zoom.png`, `section_gate_xy.png`).
+- **Checks passed:** overlap check at every placement clean; the cross sections match section A–A (z positions, ring
+  and PTFE radii, liquid surface at +4 mm) and the gate drawing (pitch, hole, crossing at the centre). Mesh
+  transparency (`tools/check_step3.py`, geometry_mode `test_mesh`, black bars, beam over a 25 mm disc, 2·10⁵ photons
+  per point, θ = 0–75°, φ = 0 / 29.4 / 45°): Geant4 agrees photon by photon with an analytic ray trace through the bar
+  lattice (agreement 1.000000 in all 15 settings), and the transmitted fraction follows
+  T = (h − t|tanθ cosφ|)(h − t|tanθ sinφ|)/p² from 0.888 at normal incidence to 0.62 at 75° (pulls within ±2.4).
+- Not done: the exact hole pattern of the drawing as geometry (the generated lattice reproduces it; not needed).
 
 ## 4. Optical surfaces (½ day)
 

@@ -75,6 +75,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step) {
       r.sensor = static_cast<int16_t>(post->GetPhysicalVolume()->GetCopyNo());
       r.volume = Output::Get().VolumeIndex(post->GetPhysicalVolume()->GetName());
       break;
+    case NoRINDEX:  // entered a material without refractive index (world, steel / PTFE without surface, PMT body)
     case Absorption:
       r.end_code = kSurfaceAbsorbed;
       r.volume = Output::Get().VolumeIndex(post->GetPhysicalVolume()->GetName());

@@ -8,7 +8,8 @@ PMT photocathodes.
 
 - 2026-10-04: implementation plan `PLAN.md`; geometry sheet `geometry.yaml` (draft, values from the drawings, the thesis and the SR-2026.2 analysis;
   open values marked `null` with a question).
-- 2026-10-05: step 0 (environment) and step 1 (skeleton application, solid-angle check passed) done; progress in `PLAN.md`.
+- 2026-10-05: steps 0–3 done (environment, skeleton with solid-angle check, materials with Fresnel check, XAMS
+  geometry v1 with mesh-transparency check); progress in `PLAN.md`.
 
 ## Build and run
 
@@ -19,12 +20,22 @@ python tools/make_config.py --level 4.0 --out run/config.json
 build/xamsopt -c run/config.json -o run/photons.bin build/<macro>.mac
 ```
 
+Look at the geometry:
+
+```bash
+cd build && ./xamsopt -c ../run/config.json -o /tmp/vis.bin             # Qt viewer; /run/beamOn 20 draws photons
+cd build && ./xamsopt -c ../run/config.json -o /tmp/vis.bin section.mac  # exact cross sections from Geant4's navigator
+python tools/plot_section.py build/section_xz.bin                      # -> build/section_xz.png (--zoom u0 u1 v0 v1)
+```
+
+Checks: `python tools/check_step1.py`, `check_step2.py`, `check_step3.py` (each prints PASSED / FAILED).
+
 ## Model v1
 
 Only what matters first order:
 
 1. the five meshes (top screen, anode, gate, cathode, bottom screen) as real stainless-steel bars (pitch 2.6 mm,
-   0.15 mm bars, 0.15 mm foil; exact hole pattern from the position reconstruction),
+   0.15 mm bars, 0.15 mm foil; lattice as in the gate drawing, bars crossing on the axis),
 2. the PMT photocathodes (two R12699-406-M4; top read out in 4 sectors) with their windows,
 3. liquid xenon up to the liquid level (Fresnel reflection and total internal reflection at the surface),
 4. gas xenon above,

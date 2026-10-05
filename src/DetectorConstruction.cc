@@ -69,6 +69,20 @@ G4Material* DetectorConstruction::StainlessSteel() {
   return mat;
 }
 
+G4Material* DetectorConstruction::Ptfe() {
+  // opaque (no RINDEX): optical behaviour via its surface (step 4); without a surface photons are absorbed
+  static G4Material* mat = nullptr;
+  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial("G4_TEFLON");
+  return mat;
+}
+
+G4Material* DetectorConstruction::Absorber() {
+  // no RINDEX: every optical photon that enters is stopped (used for the world and the PMT bodies)
+  static G4Material* mat = nullptr;
+  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial("G4_Galactic");
+  return mat;
+}
+
 G4Material* DetectorConstruction::Photocathode() {
   // the bulk is irrelevant: photons stop at its surface (detected with probability QE, else absorbed)
   static G4Material* mat = nullptr;
@@ -119,6 +133,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
   const auto mode = Config::Get().Str("geometry_mode", "xams");
   if (mode == "test_box") return BuildTestBox();
   if (mode == "test_interface") return BuildTestInterface();
+  if (mode == "test_mesh") return BuildTestMesh();
+  if (mode == "xams") return BuildXams();
   G4Exception("DetectorConstruction", "GEOM001", FatalException,
               ("geometry_mode '" + mode + "' not implemented yet (XAMS geometry: step 3)").c_str());
   return nullptr;
