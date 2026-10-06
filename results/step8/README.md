@@ -1,4 +1,13 @@
-# Step 8 — fit to the data and the dead-cross test (geometry v3, 2026-10-05)
+# Step 8 — fit to the data and the dead-cross test (geometry v3, 2026-10-05; single scatters 2026-10-06)
+
+**Since 2026-10-06 the data are single scatters (no alternative S2, `targets/data_2026-10-05_single.json`).**
+Single-scatter result: best point PTFE R 0.99, specular 0.1, steel R 0.2, Rayleigh 60 cm; χ² (S2 vs r / S1 vs z /
+u, v) **2.6 / 10.5 / 21.6** for 7 / 11 / 45 dof; **ε_S2 = 1.23** (1.14–1.29), **ε_S1 = 0.79** (0.71–0.80). Profiles
+(Δχ²): PTFE R 0.90/0.95/0.99 +0.6/+5.7/0; specular 0/0.1/0.2 +2.8/0/+0.6; steel R 0.2/0.35/0.5 0/+0.6/+10.5;
+Rayleigh 30/45/60 +0.6/+3.9/0 — with single scatters only a low steel reflectivity is still preferred. Dead cross:
+centre / ring 1.03 → 1.00 for 0 → 6 mm, data 0.82 — still not the cause of the central dip. The sections below give
+the first fit with all events.
+
 
 `tools/step8_fit.py` on the scans `fit_s2` / `fit_s1` (81 points each: PTFE reflectivity 0.90 / 0.95 / 0.99 ×
 PTFE specular fraction 0 / 0.1 / 0.2 × steel reflectivity 0.2 / 0.35 / 0.5 × Rayleigh length 30 / 45 / 60 cm,

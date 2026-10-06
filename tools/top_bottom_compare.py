@@ -23,7 +23,8 @@ TOP = (1, 2, 3, 4)
 
 
 def main():
-    D = json.load(open(ROOT / "targets" / "top_bottom_vs_r_cs137.json"))
+    tf = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--targets=")), "top_bottom_vs_r_cs137_single.json")
+    D = json.load(open(ROOT / "targets" / tf))   # default: single scatters
     e = np.arange(0, 25.1, 2.5)
     rc = 0.5 * (e[1:] + e[:-1])
     sim = {k: [] for k in ("top", "bot", "tot", "aft")}
@@ -50,7 +51,7 @@ def main():
             v, ve = {"top": (t, te), "bot": (b, be), "tot": (t + b, np.hypot(te, be)),
                      "aft": (t / (t + b), np.hypot(te * b, be * t) / (t + b) ** 2)}[k]
             n = v[3:5].mean()
-            a.errorbar(rc, v / n, ve / n, fmt="o", ms=5, color=col, label=f"data Cs-137 photopeak {day}")
+            a.errorbar(rc, v / n, ve / n, fmt="o", ms=5, color=col, label=f"data Cs-137 photopeak {day}" + (" (single scatters)" if "single" in tf else ""))
         a.axhline(1, color="0.7", lw=0.6)
         a.set(xlabel="r [mm]", title=titles[k] + " (÷ value at r 7.5–12.5 mm)")
         a.legend(fontsize=7)

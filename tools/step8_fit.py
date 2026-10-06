@@ -104,7 +104,8 @@ def fit_eps(model, err, data, mask):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    D = json.load(open(ROOT / "targets" / "data_2026-10-05.json"))
+    tf = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--targets=")), "data_2026-10-05_single.json")
+    D = json.load(open(ROOT / "targets" / tf))   # default: single scatters (no alternative S2)
     ed, dn = D["edges"], D["none"]
     d_s2r, d_s1z = arr(dn["s2_aft_vs_r_led"]), arr(dn["s1_aft_vs_z_led"])
     d_u, d_v = arr(dn["u_vs_x"]), arr(dn["v_vs_y"])

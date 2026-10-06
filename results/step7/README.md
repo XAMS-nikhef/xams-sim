@@ -1,5 +1,9 @@
 # Step 7 — data vs simulation (geometry v3, 2026-10-05)
 
+**Default since 2026-10-06: single scatters** (no alternative S2; `targets/data_2026-10-05_single.json`,
+`top_bottom_vs_r_cs137_single.json`; figures made with them). The tables below are for all events unless marked;
+single-scatter numbers are in the section "Single scatters only".
+
 Data: `analysis_SR2026.2/studies/optsim_targets.py` (stbc-i2, read-only, central v4 = gains v2 + pos_rec_map v0) →
 `targets/data_2026-10-05.json`. Δ750 V runs of 28/29-09: no source (B28, B29), Na-22 (N28, N29), Cs-137 (C28, C29);
 S1 and S2, no saturated S2 channel, r < 25 mm, −51.3 < z < −0.5 mm; area fractions with LED gains only (the v2 load
@@ -73,6 +77,9 @@ Same selections with the strict cut (`targets/*_single.json`): it keeps only 20 
   (strong loss near the wall, more than the optical 0.78), area fraction top 0.90–0.92 at 24 mm (simulation 0.88–0.90;
   all events 0.77–0.78). Centre: area fraction top 1.00, no dip.
 - No-source S2 vs r (3–20 kPE): 0.51 (centre) … 0.65 … 0.59 at 24 mm (all events 0.54 there).
+- **Loose cut** (alternative S2 below 5 % of the main S2; `targets/*_alt0.05.json`): keeps 30 % (no source) / 33 %
+  (Cs) and lies between all events and single scatters, close to single scatters (no source S2 vs r: 0.50 … 0.65 …
+  0.56; Cs photopeak area fraction top at 24 mm 0.86–0.89).
 - S1 area fraction top: single / all 0.91–0.94 near the cathode, ~1.05 in the middle — the depth profile is steeper
   for single scatters.
 

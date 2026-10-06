@@ -66,7 +66,8 @@ def arr(l):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    D = json.load(open(ROOT / "targets" / "data_2026-10-05.json"))
+    tf = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--targets=")), "data_2026-10-05_single.json")
+    D = json.load(open(ROOT / "targets" / tf))   # default: single scatters (no alternative S2)
     ed = D["edges"]
     s2 = [p for p in load("s2_optics")["points"] if p["config_json"]["liquid"]["level_above_gate_mm"] == 4.0]
     S2 = [sim_binned(p, ed) for p in s2]
@@ -123,7 +124,7 @@ def main():
     a.set_ylabel("top-array asymmetry")
     a.set_title("top-sector pattern: u = (1+3-2-4)/top, v = (1+2-3-4)/top", fontsize=10)
     a.legend(fontsize=7)
-    fig.suptitle("Step 7: data (LED gains, Δ750 V; points with statistical errors) vs optical simulation (bands; level 4 mm, equal QE)")
+    fig.suptitle(f"Step 7: data ({tf}; LED gains, Δ750 V; points ± stat.) vs optical simulation (bands; level 4 mm, equal QE)", fontsize=10)
     fig.tight_layout()
     fig.savefig(OUT / "compare.png", dpi=130)
     print("written", OUT / "compare.png")

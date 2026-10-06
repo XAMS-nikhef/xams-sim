@@ -95,8 +95,8 @@ def main(out):
         "<b>The geometry is right:</b> the top-sector light pattern versus position (asymmetries u, v) lies inside the "
         "narrow simulation band over ±24 mm, identically for every source.",
         "<b>Fit:</b> the shapes of S2 versus r, S1 versus depth and the sector pattern are reproduced with two efficiency "
-        "factors on the top/bottom ratio, ε<sub>S2</sub> = 1.13 and ε<sub>S1</sub> = 0.77 (QE ratio; top-PMT small-signal loss). Low "
-        "steel reflectivity is preferred; PTFE reflectivity and Rayleigh length are not constrained.",
+        "factors on the top/bottom ratio, ε<sub>S2</sub> = 1.23 and ε<sub>S1</sub> = 0.79 (single scatters; QE ratio and top-PMT "
+        "small-signal loss). Low steel reflectivity is preferred; the other optical parameters are not constrained.",
         "The S2 area fraction top in the data dips at the centre (r &lt; 5 mm); the model does not, and an insensitive cross "
         "between the top-PMT anodes cannot produce it (tested up to 6 mm).",
         "Only ~23 % of the S2 photons reach a photocathode (QE 0.33 → 7.6 % detected); the mesh foils take ~35 %, ~32 % go "
@@ -179,7 +179,8 @@ def main(out):
                   "(simulation frame: sector I at −x+y, II +x+y, III −x−y, IV +x−y)."))
 
     st += [PageBreak(), P("4. Comparison with the data", h2), P(
-        "Data: Δ750 V runs of 28/29-09 (central processing v4), no source / Na-22 / Cs-137, r &lt; 25 mm, area fractions "
+        "Data: Δ750 V runs of 28/29-09 (central processing v4), no source / Na-22 / Cs-137, <b>single scatters</b> (no "
+        "alternative S2; 20–25 % of the events — a loose cut, alternative S2 &lt; 5 % of the main one, gives the same), r &lt; 25 mm, area fractions "
         "with the LED gains only (the v2 load correction f_top undone). Simulation band: all optics points at the 4 mm "
         "level, equal QE top and bottom.")]
     st.append(img(RES / "step7" / "compare.png", W, "Data (points, statistical errors) vs simulation (bands: all optics "
@@ -191,17 +192,17 @@ def main(out):
                   "data points vs simulation band."))
     st += bullets([
         "<b>Sector pattern:</b> data inside the simulation band over ±24 mm, identical for all sources — geometry right.",
-        "<b>S2 versus size and source:</b> no source 0.68 (3–5 kPE) → 0.49 (&gt; 100 kPE); Na-22 0.53 → 0.36; Cs-137 0.40 → "
-        "0.27. Rate and size dependence are top-PMT effects (load, large pulses), not geometry. The simulation (0.55–0.60) "
+        "<b>S2 versus size and source:</b> no source 0.68 (3–5 kPE) → 0.53 (&gt; 100 kPE); Na-22 0.50 → 0.38; Cs-137 0.37 → "
+        "0.28. Rate and size dependence are top-PMT effects (load, large pulses), not geometry. The simulation (0.55–0.60) "
         "agrees with the low-load, medium-size data.",
-        "<b>S2 versus r:</b> outside the centre data/simulation top/bottom ratio 1.0–1.2; at r &lt; 5 mm 0.6–0.7 (central dip "
-        "in every source).",
-        "<b>S1 versus z:</b> same shape, constant ratio 0.72 (one efficiency factor for small signals on the top PMT).",
-        "<b>Top or bottom?</b> For the Cs-137 photopeak (fixed S2 per event) top and bottom are <i>both</i> ≈ 5–7 % lower at "
-        "r &lt; 2.5 mm (total S2 light 0.93 — S2 production, not optics) and the area fraction top shows no central dip "
-        "(1.02 vs simulation 1.01–1.04): the dip is a small-S2 effect. Outwards the bottom rises (1.08–1.15 at 19 mm, "
-        "simulation 0.96) and the top fraction falls faster than simulated: either the S2 yield rises outwards, or light "
-        "that leaves the model sideways returns in reality (surrounding structure, not modelled).",
+        "<b>S2 versus r:</b> outside the centre data/simulation top/bottom ratio 1.16–1.28 (absorbed by ε<sub>S2</sub>); at r &lt; 5 mm "
+        "0.65–0.77 (central dip in every source, also for single scatters).",
+        "<b>S1 versus z:</b> same shape, ratio 0.70–0.77 at every depth (one efficiency factor for small signals on the top PMT).",
+        "<b>Top or bottom?</b> Cs-137 photopeak (fixed S2 per event), single scatters: at the centre the area fraction top "
+        "shows no dip (1.00 vs simulation 1.01–1.04) — the dip is a small-S2 effect. Outwards top and bottom both fall; the "
+        "area fraction top at r = 24 mm is 0.90–0.92 (simulation 0.88–0.90), but the total S2 light drops to 0.44–0.51, far "
+        "more than the optical 0.78: charge or S2 light is lost near the wall. (With all events the bottom seemed to rise "
+        "outwards — that was a multiple-scatter effect.)",
         "Implied top-PMT efficiency relative to geometry (S2): ≈ 1 without source, ≈ 0.3 for Cs-137 large S2 — the v2 gain "
         "factor f_top (0.74–0.88, anchored on Cs runs) corrects only part of it.",
     ])
@@ -221,14 +222,14 @@ def main(out):
         "(S2 vs r / S1 vs z / u, v).",
         f"ε<sub>S2</sub> = {b8['eps_s2']:.2f} ({s8['eps_range_good']['s2'][0]:.2f}–{s8['eps_range_good']['s2'][1]:.2f}), "
         f"ε<sub>S1</sub> = {b8['eps_s1']:.2f} ({s8['eps_range_good']['s1'][0]:.2f}–{s8['eps_range_good']['s1'][1]:.2f}): not one "
-        "QE ratio — with a QE ratio of ~1.1 the top PMT keeps only ~0.68 of its small S1 signals relative to the bottom, "
+        "QE ratio — with a QE ratio of ~1.2 the top PMT keeps only ~0.65 of its small S1 signals relative to the bottom, "
         "consistent with the known small-signal integration loss.",
-        "Steel reflectivity low (0.2 preferred over 0.5, Δχ² 34) and a small specular PTFE part (0.1–0.2 over 0, Δχ² 35); "
-        "PTFE reflectivity and Rayleigh length are not constrained.",
-        "Dead cross on the top PMT (1.5 / 3 / 6 mm): centre / ring at most 1.03 → 1.00, data 0.79 — not the cause of the "
+        "Steel reflectivity low (0.2 preferred over 0.5, Δχ² 10.5); PTFE reflectivity, PTFE specular part and Rayleigh "
+        "length are not constrained (Δχ² ≤ 6). (With all events the S2 shape fitted worse, χ² 11.2 vs 2.6.)",
+        "Dead cross on the top PMT (1.5 / 3 / 6 mm): centre / ring at most 1.03 → 1.00, data 0.82 — not the cause of the "
         "central dip.",
-        "Central dip versus S2 size (data): centre / ring 0.68 (3–5 kPE) → 0.93 (&gt; 50 kPE), but because the ring value "
-        "falls with size (0.82 → 0.55) while the centre stays ≈ 0.50 at every size. A pure threshold loss from sharing the "
+        "Central dip versus S2 size (data, single scatters): centre / ring 0.69 (3–5 kPE) → 0.87 (20–50 kPE) → 1.02 (&gt; 50 "
+        "kPE), but mostly because the ring value falls with size (0.79 → 0.55) while the centre stays ≈ 0.48–0.54. A pure threshold loss from sharing the "
         "charge over four channels would make the centre rise with size; not seen. Likely a top-PMT signal-processing / "
         "per-channel effect rather than geometry (to check with fully integrated waveforms).",
     ])
