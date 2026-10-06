@@ -6,7 +6,7 @@ build and run inside it:
 
 ```bash
 conda activate g4
-cd /Users/acolijn/Documents/XAMS_DAQ/optical_sim
+cd /Users/acolijn/Documents/XAMS/optical_sim
 mkdir -p build && cd build && cmake .. && make -j8 && cd ..
 ```
 

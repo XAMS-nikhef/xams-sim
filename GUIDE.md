@@ -4,7 +4,7 @@ Moved into the MkDocs documentation in `docs/` (same content, split into pages, 
 and results). Read it in a browser:
 
 ```bash
-cd /Users/acolijn/Documents/XAMS_DAQ/optical_sim
+cd /Users/acolijn/Documents/XAMS/optical_sim
 ../xams-handbook/.venv/bin/mkdocs serve        # then open http://127.0.0.1:8000
 ```
 

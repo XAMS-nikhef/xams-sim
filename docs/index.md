@@ -23,7 +23,7 @@ Full write-up: the PDF note `notes/XAMS_optical_simulation_2026-10-05.pdf` and t
 
 ```bash
 conda activate g4
-cd /Users/acolijn/Documents/XAMS_DAQ/optical_sim
+cd /Users/acolijn/Documents/XAMS/optical_sim
 mkdir -p build && cd build && cmake .. && make -j8 && cd ..        # once
 python tools/make_config.py --level 4.0 --out run/config_level4.json
 cd build && ./xamsopt -c ../run/config_level4.json -o /tmp/vis.bin  # the viewer
@@ -37,7 +37,7 @@ Written in Markdown in `optical_sim/docs/`, built with MkDocs (same setup as the
 browser:
 
 ```bash
-cd /Users/acolijn/Documents/XAMS_DAQ/optical_sim
+cd /Users/acolijn/Documents/XAMS/optical_sim
 ../xams-handbook/.venv/bin/mkdocs serve        # then open http://127.0.0.1:8000
 ```
 
