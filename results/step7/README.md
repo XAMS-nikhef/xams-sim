@@ -61,6 +61,21 @@ each ÷ its value at r = 7.5–12.5 mm:
   19 mm, 0.77 vs 0.89 at 24 mm). Either the S2 yield rises outwards, or light that leaves the modelled region
   sideways (black in the model) comes back in reality and reaches the bottom PMT — the surrounding-structure TODO.
 
+### Single scatters only (no alternative S2, `alt_s2_index < 0`)
+
+Same selections with the strict cut (`targets/*_single.json`): it keeps only 20 % (no source), 22 % (Na-22), 25 %
+(Cs-137) of the events — most events have some second S2.
+
+- **Central dip of the small S2s survives** (no source, S2 3–50 kPE: centre / ring 0.69–0.87, centre ≈ 0.48–0.54) —
+  not a multiple-scatter effect. For S2 > 50 kPE it disappears (1.02).
+- **Cs-137 photopeak:** the outward bottom excess was a multiple-scatter effect. Single scatters: bottom / ring 0.93
+  and 0.86 at r ≈ 19 mm (all events 1.15 / 1.08), total S2 light 0.89 / 0.81 at 19 mm and 0.51 / 0.44 at 24 mm
+  (strong loss near the wall, more than the optical 0.78), area fraction top 0.90–0.92 at 24 mm (simulation 0.88–0.90;
+  all events 0.77–0.78). Centre: area fraction top 1.00, no dip.
+- No-source S2 vs r (3–20 kPE): 0.51 (centre) … 0.65 … 0.59 at 24 mm (all events 0.54 there).
+- S1 area fraction top: single / all 0.91–0.94 near the cathode, ~1.05 in the middle — the depth profile is steeper
+  for single scatters.
+
 ## S1 area fraction top vs z
 
 Same shape as the simulation; top/bottom ratio data/simulation **0.72 at every z** (0.71–0.77): one efficiency factor
