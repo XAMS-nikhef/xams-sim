@@ -47,6 +47,20 @@ on one top channel (per-channel non-linearity at large signals?), and the centre
 and flat. To settle it: compare per channel the peak area with the fully integrated waveform (raw records) for central
 and off-centre events.
 
+### Top deficit or bottom excess? (`top_bottom_vs_r.png`)
+
+The area fraction top cannot tell whether the top sees less or the bottom more. Cs-137 photopeak (fixed S2 per
+event, ~120 kPE; LED gains; `analysis_SR2026.2/scratch/top_bottom_vs_r.py` → `targets/top_bottom_vs_r_cs137.json`),
+each ÷ its value at r = 7.5–12.5 mm:
+
+- **Centre (r < 2.5 mm):** top 0.95 and bottom 0.93 — both lower, the bottom does *not* see more; total S2 light 0.93
+  on both days (S2 production lower at the very centre — not optics). The area fraction top is 1.02 (simulation
+  1.01–1.04): **no central dip for large S2s** — the dip of the small S2s (3–20 kPE) is a small-signal effect.
+- **Outwards:** the bottom rises to 1.08–1.15 at r ≈ 19 mm where the simulation falls to 0.96, and the total stays
+  ≈ 1.0–1.08 where the simulation falls to 0.9; the area fraction top falls faster than simulated (0.87 vs 0.94 at
+  19 mm, 0.77 vs 0.89 at 24 mm). Either the S2 yield rises outwards, or light that leaves the modelled region
+  sideways (black in the model) comes back in reality and reaches the bottom PMT — the surrounding-structure TODO.
+
 ## S1 area fraction top vs z
 
 Same shape as the simulation; top/bottom ratio data/simulation **0.72 at every z** (0.71–0.77): one efficiency factor
