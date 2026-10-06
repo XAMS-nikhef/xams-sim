@@ -14,7 +14,9 @@ A Qt window opens (drag = rotate, scroll = zoom). Type commands in the box at th
 | command | does |
 |---|---|
 | `/xamsopt/source/shape s2`, `/xamsopt/source/rmax 30 mm`, `/run/beamOn 50` | shoot 50 S2 photons, tracks drawn |
-| `/vis/viewer/set/cutawayMode intersection` then `/vis/viewer/addCutawayPlane 0 0 0 m 1 0 0` | cut the view open (`/vis/viewer/clearCutawayPlanes` to close) |
+| `/vis/viewer/clearCutawayPlanes` | the viewer starts cut open (plane x = 0, keeps x < 0: a plane keeps the side its normal points to); this closes it |
+| `/vis/viewer/addCutawayPlane 0 0 0 m 0 1 0` | add another cut (intersection mode: only what is on the kept side of all planes; `/vis/viewer/set/cutawayMode union` for any) |
+| `/vis/geometry/set/visibility Vessel 0 false` | hide the steel vessel (also `Bucket`) |
 | `/vis/viewer/set/viewpointThetaPhi 90 90 deg` / `0 0 deg` | side view / top view |
 | `/vis/viewer/set/style wireframe` | wireframe |
 | `/vis/geometry/set/colour Liquid 0 0.15 0.35 0.85 0.3` | colour + opacity of a volume |

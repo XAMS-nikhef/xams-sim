@@ -6,7 +6,7 @@
 //   "test_mesh"      (step 3): one mesh (no ring) in liquid xenon at z = 0, axes along x / y, for the transparency check
 //   "test_surface"   (step 4): liquid xenon above a reflecting slab (top face at z = 0) of PTFE or steel
 //                            (config "test_surface_material": ptfe | steel); reflected photons escape
-//   "xams"           (step 3): model v1 of the XAMS TPC (src/XamsGeometry.cc)
+//   "xams"           (step 3): model of the XAMS TPC (src/XamsGeometry.cc); v4: in the PTFE bucket and steel vessel
 // Optical surfaces (step 4): PTFE, mesh bars and rings reflect (unified model, ground: Lambertian + specular spike;
 // reflectivity and specular fraction from the config; the rest absorbed). Config "surfaces": 0 makes them black.
 // test_mesh keeps black bars (step-3 transparency check).
@@ -18,6 +18,7 @@
 
 class G4LogicalVolume;
 class G4Material;
+class G4OpticalSurface;
 class G4VPhysicalVolume;
 
 class DetectorConstruction : public G4VUserDetectorConstruction {
@@ -46,6 +47,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   // reflecting skin on every face of lv: probability `reflectivity` to reflect, of which a fraction `specular` as a
   // mirror (spike) and the rest Lambertian; otherwise absorbed
   void MakeReflector(G4LogicalVolume* lv, double reflectivity, double specular);
+  // the same, only on the boundary from -> to (a volume with different media on its two sides, e.g. the PTFE bucket)
+  void MakeBorderReflector(G4VPhysicalVolume* from, G4VPhysicalVolume* to, double reflectivity, double specular);
+  G4OpticalSurface* ReflectorSurface(const std::string& name, double reflectivity, double specular);
   // PTFE (liquid values), all mesh bars and rings (stainless steel, Lambertian)
   void ApplySurfaces();
 };

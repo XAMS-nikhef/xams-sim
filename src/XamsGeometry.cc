@@ -1,7 +1,8 @@
 // Model v1 of the XAMS TPC (geometry.yaml via config.json), and the single-mesh test geometry.
 //
 // Layout (z = 0 at the gate, z up): a liquid-xenon region below the liquid surface and a gas-xenon region above it,
-// both inside an absorbing world (no refractive index: photons leaving the xenon are stopped). In them: five etched
+// both inside an absorbing world (no refractive index: photons leaving the xenon are stopped); since geometry v4 the
+// liquid fills a PTFE bucket up to its weir and the gas fills a closed stainless-steel vessel around it. In them: five etched
 // meshes as stainless-steel bars with their rings, the PTFE cylinder between the cathode ring and the gate ring
 // (entirely in the liquid), two R12699 PMTs (silica window, photocathode behind it, absorbing body; the top one in
 // four sectors I-IV) and the two SiPMs. Steel and PTFE get their optical surfaces in step 4; until then they absorb.
@@ -213,17 +214,62 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
   const double ringHalf = 0.5 * c.Num("mesh_common/ring/thickness_mm", 1.8) * mm;
 
   // world (absorbing) and the two xenon regions
-  const double halfXY = 60. * mm, zLo = -90. * mm, zHi = 45. * mm;
-  auto* worldS = new G4Box("World", 100. * mm, 100. * mm, 120. * mm);
+  auto* worldS = new G4Box("World", 100. * mm, 100. * mm, 200. * mm);
   auto* worldL = new G4LogicalVolume(worldS, Absorber(), "World");
   auto* worldP = new G4PVPlacement(nullptr, {}, worldL, "World", nullptr, false, 0, kCheck);
 
-  const double liqC = 0.5 * (zLo + zl), liqH = 0.5 * (zl - zLo);
-  auto* liqL = new G4LogicalVolume(new G4Box("Liquid", halfXY, halfXY, liqH), LiquidXenon(), "Liquid");
-  auto* liqP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, liqC), liqL, "Liquid", worldL, false, 0, kCheck);
-  const double gasC = 0.5 * (zl + zHi), gasH = 0.5 * (zHi - zl);
-  auto* gasL = new G4LogicalVolume(new G4Box("Gas", halfXY, halfXY, gasH), GasXenon(), "Gas");
-  auto* gasP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, gasC), gasL, "Gas", worldL, false, 0, kCheck);
+  G4LogicalVolume *liqL, *gasL;
+  G4VPhysicalVolume *liqP, *gasP;
+  double liqC, gasC;
+  if (j.contains("ptfe_bucket") && j.contains("cryostat_vessel")) {
+    // surroundings (drawings "PTFE_bucket.pdf", "Inner_cryostat_vessel.pdf"): a closed steel vessel filled with gas
+    // ("Gas"); in it the PTFE bucket ("Bucket"), whose weir sets the liquid level (rim = surface + weir depth), filled
+    // with liquid up to the surface ("Liquid", a daughter of "Gas" inside the bucket cavity)
+    const auto& b = j["ptfe_bucket"];
+    const auto& v = j["cryostat_vessel"];
+    const double bIn = 0.5 * b["inner_diameter_mm"].get<double>() * mm, bOut = 0.5 * b["outer_diameter_mm"].get<double>() * mm;
+    const double bH = b["height_mm"].get<double>() * mm, bBot = b["bottom_thickness_mm"].get<double>() * mm;
+    const double zRim = zl + b["weir_below_rim_mm"].get<double>() * mm, zBucket = zRim - bH;
+    const double vIn = 0.5 * v["inner_diameter_mm"].get<double>() * mm, vOut = 0.5 * v["outer_diameter_mm"].get<double>() * mm;
+    const double vH = v["height_mm"].get<double>() * mm, vEnd = v["end_thickness_mm"].get<double>() * mm;
+    const double zvIn = zBucket - v["bottom_gap_mm"].get<double>() * mm;  // inner bottom face of the vessel
+    const double vC = zvIn - vEnd + 0.5 * vH;                             // centre of the vessel (outer)
+    if (vC + 0.5 * vH > 200. * mm || vC - 0.5 * vH < -200. * mm)
+      G4Exception("BuildXams", "GEOM030", FatalException, "cryostat vessel does not fit in the world");
+
+    auto* vesselS = new G4SubtractionSolid("Vessel", new G4Tubs("VesselO", 0., vOut, 0.5 * vH, 0., 360. * deg),
+                                           new G4Tubs("VesselI", 0., vIn, 0.5 * vH - vEnd, 0., 360. * deg));
+    auto* vesselL = new G4LogicalVolume(vesselS, StainlessSteel(), "Vessel");
+    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, vC), vesselL, "Vessel", worldL, false, 0, kCheck);
+    gasC = vC;
+    gasL = new G4LogicalVolume(new G4Tubs("Gas", 0., vIn, 0.5 * vH - vEnd, 0., 360. * deg), GasXenon(), "Gas");
+    gasP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, gasC), gasL, "Gas", worldL, false, 0, kCheck);
+
+    const double bC = zBucket + 0.5 * bH;
+    auto* bucketS = new G4SubtractionSolid("Bucket", new G4Tubs("BucketO", 0., bOut, 0.5 * bH, 0., 360. * deg),
+                                           new G4Tubs("BucketI", 0., bIn, 0.5 * (bH - bBot) + 1. * mm, 0., 360. * deg),
+                                           nullptr, G4ThreeVector(0, 0, 0.5 * bBot + 1. * mm));
+    auto* bucketL = new G4LogicalVolume(bucketS, Ptfe(), "Bucket");
+    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, bC - gasC), bucketL, "Bucket", gasL, false, 0, kCheck);
+
+    const double zLo = zBucket + bBot;
+    liqC = 0.5 * (zLo + zl);
+    liqL = new G4LogicalVolume(new G4Tubs("Liquid", 0., bIn, 0.5 * (zl - zLo), 0., 360. * deg), LiquidXenon(), "Liquid");
+    liqP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, liqC - gasC), liqL, "Liquid", gasL, false, 0, kCheck);
+    G4cout << "PTFE bucket r " << bIn / mm << "-" << bOut / mm << " mm, z " << zBucket / mm << " to " << zRim / mm
+           << " mm (rim " << (zRim - zl) / mm << " mm above the liquid), liquid from z " << zLo / mm
+           << " mm; steel vessel r " << vIn / mm << "-" << vOut / mm << " mm, z " << (vC - 0.5 * vH) / mm << " to "
+           << (vC + 0.5 * vH) / mm << " mm" << G4endl;
+  } else {
+    // geometry v1-v3: liquid and gas boxes in the absorbing world
+    const double halfXY = 60. * mm, zLo = -90. * mm, zHi = 45. * mm;
+    liqC = 0.5 * (zLo + zl);
+    liqL = new G4LogicalVolume(new G4Box("Liquid", halfXY, halfXY, 0.5 * (zl - zLo)), LiquidXenon(), "Liquid");
+    liqP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, liqC), liqL, "Liquid", worldL, false, 0, kCheck);
+    gasC = 0.5 * (zl + zHi);
+    gasL = new G4LogicalVolume(new G4Box("Gas", halfXY, halfXY, 0.5 * (zHi - zl)), GasXenon(), "Gas");
+    gasP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, gasC), gasL, "Gas", worldL, false, 0, kCheck);
+  }
 
   auto region = [&](double z) { return z < zl ? std::make_pair(liqL, liqC) : std::make_pair(gasL, gasC); };
 

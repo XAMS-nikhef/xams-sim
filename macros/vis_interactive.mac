@@ -1,7 +1,14 @@
 # Interactive viewer (xamsopt -c config.json, no macro): Qt window with the geometry.
 # Only the xenon is see-through: in this viewer, see-through volumes inside the see-through xenon are not drawn,
-# so everything else is opaque. Look inside: /vis/viewer/set/cutawayMode intersection
-#                                            /vis/viewer/addCutawayPlane 0 0 0 m 1 0 0
+# so everything else is opaque. The view starts cut open (cutaway, end of this file); in the command box:
+#   /vis/viewer/clearCutawayPlanes                       whole setup, closed
+#   /vis/viewer/addCutawayPlane 0 0 0 m 0 1 0            cut along another plane (point x y z unit, normal nx ny nz;
+#                                                        intersection mode: only what is on the kept side of all planes)
+#   /vis/viewer/set/cutawayMode union                    keep what is on the kept side of any plane (a plane keeps
+#                                                        the side its normal points to; quarter cut out: planes
+#                                                        0 0 0 m -1 0 0 and 0 0 0 m 0 -1 0)
+#   /vis/geometry/set/visibility Vessel 0 false          hide the steel vessel (also Bucket)
+#   /vis/viewer/set/sectionPlane on 0 0 0 m 0 1 0        thin slice instead (off: /vis/viewer/set/sectionPlane off)
 /vis/open TSG
 /vis/drawVolume
 /vis/viewer/set/background white
@@ -11,6 +18,8 @@
 /vis/geometry/set/colour PTFE 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour PTFE_gas 0 0.93 0.86 0.66 1
 /vis/geometry/set/colour MeshRing 0 0.45 0.45 0.55 1
+/vis/geometry/set/colour Bucket 0 0.85 0.72 0.42 1
+/vis/geometry/set/colour Vessel 0 0.55 0.58 0.62 1
 # mesh foils: steel pieces (bars + solid unetched cells) in a thin xenon layer; hide the layer, show the steel
 /vis/geometry/set/visibility top_screenLayer 0 false
 /vis/geometry/set/visibility anodeLayer 0 false
@@ -37,3 +46,7 @@
 # default source for /run/beamOn: S2 light in the gas gap
 /xamsopt/source/shape s2
 /xamsopt/source/rmax 30 mm
+# cut open: keep the half on the side the normal points to (x < 0), i.e. remove the half towards the default
+# viewpoint (70/20 deg) -> look into the TPC, bucket and vessel
+/vis/viewer/set/cutawayMode intersection
+/vis/viewer/addCutawayPlane 0 0 0 m -1 0 0

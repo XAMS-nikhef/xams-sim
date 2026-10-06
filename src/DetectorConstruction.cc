@@ -4,6 +4,7 @@
 #include <G4Exception.hh>
 #include <G4LogicalBorderSurface.hh>
 #include <G4LogicalSkinSurface.hh>
+#include <G4PhysicalVolumeStore.hh>
 #include <G4LogicalVolumeStore.hh>
 #include <G4LogicalVolume.hh>
 #include <G4Material.hh>
@@ -101,15 +102,25 @@ void DetectorConstruction::MakeSensor(G4LogicalVolume*, G4VPhysicalVolume* from,
   new G4LogicalBorderSurface("Border_" + from->GetName() + "_" + to->GetName(), from, to, surf);
 }
 
-void DetectorConstruction::MakeReflector(G4LogicalVolume* lv, double reflectivity, double specular) {
-  auto* surf = new G4OpticalSurface("Reflector_" + lv->GetName(), unified, ground, dielectric_metal, 0.);
+G4OpticalSurface* DetectorConstruction::ReflectorSurface(const std::string& name, double reflectivity, double specular) {
+  auto* surf = new G4OpticalSurface("Reflector_" + name, unified, ground, dielectric_metal, 0.);
   auto* mpt = new G4MaterialPropertiesTable();
   mpt->AddProperty("REFLECTIVITY", kEnergies, Flat(reflectivity));
   mpt->AddProperty("SPECULARSPIKECONSTANT", kEnergies, Flat(specular));
   mpt->AddProperty("SPECULARLOBECONSTANT", kEnergies, Flat(0.));
   mpt->AddProperty("BACKSCATTERCONSTANT", kEnergies, Flat(0.));
   surf->SetMaterialPropertiesTable(mpt);
-  new G4LogicalSkinSurface("Skin_" + lv->GetName(), lv, surf);
+  return surf;
+}
+
+void DetectorConstruction::MakeReflector(G4LogicalVolume* lv, double reflectivity, double specular) {
+  new G4LogicalSkinSurface("Skin_" + lv->GetName(), lv, ReflectorSurface(lv->GetName(), reflectivity, specular));
+}
+
+void DetectorConstruction::MakeBorderReflector(G4VPhysicalVolume* from, G4VPhysicalVolume* to, double reflectivity,
+                                               double specular) {
+  const std::string n = from->GetName() + "_" + to->GetName();
+  new G4LogicalBorderSurface("Border_" + n, from, to, ReflectorSurface(n, reflectivity, specular));
 }
 
 void DetectorConstruction::ApplySurfaces() {
@@ -129,10 +140,21 @@ void DetectorConstruction::ApplySurfaces() {
       MakeReflector(lv, c.Num("optics/ptfe_in_gas/reflectivity", 0.75), c.Num("optics/ptfe_in_gas/specular_fraction", 0.15));
     else if (n == "CopperRing")
       MakeReflector(lv, c.Num("optics/copper_reflectivity", 0.3), 0.);  // copper: Lambertian
+    else if (n == "Vessel")
+      MakeReflector(lv, rSteel, 0.);
     else if (n == "MeshFoil" || n == "MeshRing") {
       MakeReflector(lv, rSteel, 0.);  // steel: Lambertian
       nBar += n == "MeshFoil";
     }
+  }
+  // PTFE bucket (geometry v4): liquid values towards the liquid, gas values towards the gas (inside above the weir
+  // and outside); steel vessel: the steel reflectivity (Lambertian)
+  auto* pvs = G4PhysicalVolumeStore::GetInstance();
+  if (auto* bucket = pvs->GetVolume("Bucket", false)) {
+    MakeBorderReflector(pvs->GetVolume("Liquid"), bucket, rPtfe, fPtfe);
+    MakeBorderReflector(pvs->GetVolume("Gas"), bucket, c.Num("optics/ptfe_in_gas/reflectivity", 0.75),
+                        c.Num("optics/ptfe_in_gas/specular_fraction", 0.15));
+    G4cout << "optical surfaces: PTFE bucket (liquid / gas values), steel vessel" << G4endl;
   }
   G4cout << "optical surfaces: PTFE R = " << rPtfe << " (specular " << fPtfe << "), steel R = " << rSteel
          << " Lambertian (" << nBar << " mesh foils + rings)" << G4endl;

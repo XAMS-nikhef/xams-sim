@@ -18,8 +18,8 @@
 #               H = reference/LightSensors/R12699.pdf (Hamamatsu datasheet R12699-406-M4, 2017).
 
 meta:
-  version: 1
-  date: 2026-10-04
+  version: 4                 # v4 (2026-10-06): PTFE bucket + inner cryostat vessel
+  date: 2026-10-06
   status: draft — to be completed by AP
 
 # ------------------------------------------------------------------------------------------------ liquid level
@@ -91,6 +91,26 @@ field_shaping_rings:         # drawing "XAMS_field_shaper.pdf" (2026-10-05): cop
   # gaps between faces from the gate ring downwards: gate ring -> ring 1 not dimensioned (assumed 8), then 8, 8, 8;
   # ring 4 -> cathode ring 8.2 (drawing). Gate ring body: -1.725 to -0.075 mm -> ring centres:
   z_center_mm: [-10.625, -20.425, -30.225, -40.025]
+
+# ------------------------------------------------------------------------------------------------ surroundings
+ptfe_bucket:                 # drawing "PTFE_bucket.pdf" (2026-10-06): the TPC hangs in this PTFE bucket
+  inner_diameter_mm: 112.0   # drawing
+  outer_diameter_mm: 132.0   # drawing (wall 10 mm)
+  height_mm: 129.0           # drawing (outer)
+  weir_below_rim_mm: 1.78    # drawing: overflow notch in the rim. The weir SETS the liquid level (user, 2026-10-06):
+                             #   rim at liquid surface + 1.78 mm, so the bucket moves with the simulated level.
+                             #   The notch itself (a few mm wide) is not modelled.
+  bottom_thickness_mm: null  # not on the drawing -> default 10 (= wall)
+  # inside below the weir: liquid xenon; above it and all around the bucket: gas xenon (user, 2026-10-06).
+  # Surfaces: PTFE liquid values towards the liquid, PTFE gas values towards the gas.
+
+cryostat_vessel:             # drawing "Inner_cryostat_vessel.pdf" (2026-10-06): stainless-steel vessel, gas xenon
+  inner_diameter_mm: 146.86  # drawing
+  outer_diameter_mm: 152.4   # drawing (6" tube, wall 2.77 mm)
+  height_mm: 305.0           # drawing
+  material: stainless_steel  # surface: optics.stainless_steel_reflectivity (Lambertian)
+  end_thickness_mm: null     # bottom / top end not on the drawing -> default 2.77 (= wall), closed at both ends
+  bottom_gap_mm: null        # vessel inner bottom to bucket bottom, not known -> default 10
 
 # ------------------------------------------------------------------------------------------------ PMTs
 pmt_common:

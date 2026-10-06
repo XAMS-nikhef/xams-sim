@@ -2,3 +2,5 @@
 /run/initialize
 /xamsopt/section section_xz.bin xz 0 -60 60 -88 43 0.05
 /xamsopt/section section_gate_xy.bin xy 0 -35 35 -35 35 0.02
+# whole setup: TPC in the PTFE bucket in the steel vessel (geometry v4)
+/xamsopt/section section_xz_wide.bin xz 0 -80 80 -140 172 0.2

@@ -23,7 +23,9 @@ REQUIRED = ["mesh_common.foil_thickness_mm", "mesh_common.hole_size_mm", "mesh_c
             "ptfe_cylinder.length_mm", "ptfe_cylinder.z_top_mm", "mesh_common.ring.inner_diameter_mm", "pmt_common.photocathode_square_mm",
             "pmt_common.window_thickness_mm", "pmt_common.window_face_square_mm"]
 # second-order values with a default if still open
-DEFAULTS = {}   # all geometry values now come from the drawings (2026-10-05); kept for future open values
+DEFAULTS = {"ptfe_bucket.bottom_thickness_mm": 10.0,       # not on the drawing (2026-10-06): = wall
+            "cryostat_vessel.end_thickness_mm": 2.77,      # not on the drawing: = wall
+            "cryostat_vessel.bottom_gap_mm": 10.0}         # vessel inner bottom to bucket bottom: not known
 
 
 def get(d, path):
@@ -84,7 +86,8 @@ def main():
         print("MISSING (fill in geometry.yaml):", *missing, sep="\n  ")
         return 1
 
-    cfg = {k: g[k] for k in ("mesh_common", "meshes", "ptfe_cylinder", "field_shaping_rings", "pmt_common", "pmts", "sipms")}
+    cfg = {k: g[k] for k in ("mesh_common", "meshes", "ptfe_cylinder", "field_shaping_rings", "pmt_common", "pmts", "sipms",
+                                "ptfe_bucket", "cryostat_vessel") if k in g}
     hp = g["mesh_common"].get("hole_pattern_file")
     if hp:
         cfg["mesh_common"]["holes"] = json.load(open(Path(args.geometry).parent / hp))["holes"]

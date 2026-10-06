@@ -24,6 +24,8 @@ STYLE = [
     (r"Sector$|Cathode$", "#ff9a1f", "photocathode"),
     (r"Frame$|Body$", "#5a4a6a", "PMT frame / body (absorber)"),
     (r"^SiPM$", "#1fae4a", "SiPM"),
+    (r"^Bucket$", "#d9b86c", "PTFE bucket"),
+    (r"^Vessel$", "#4a5568", "cryostat vessel (steel)"),
 ]
 
 

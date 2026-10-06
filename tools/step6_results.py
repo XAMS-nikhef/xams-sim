@@ -90,6 +90,10 @@ def category(code, vol):
         return "mesh rings (+ foil rim)"
     if vol == "PTFE":
         return "PTFE"
+    if vol == "Bucket":
+        return "PTFE bucket"
+    if vol == "Vessel":
+        return "cryostat vessel (steel)"
     if vol.endswith("Frame") or vol.endswith("Body") or vol.endswith("Window") or vol.endswith("DeadCross"):
         return "PMT frame / body"
     if vol == "World":
