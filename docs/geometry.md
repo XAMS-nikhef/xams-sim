@@ -12,6 +12,7 @@ Built by `src/XamsGeometry.cc`.
 
 | part | model |
 |---|---|
+| PTFE around the PMTs (v4) | top and bottom alike (drawings `PTFE_between_TS_PMT.pdf`, `PTFE_between_BS_PMT.pdf`, CAD picture: the PMT sits in the slot): a plate from the screen-ring assembly to the window face (2.8 mm of the 7 mm plate) with a 50 mm square opening, and a block around the PMT from the window face to its back with a square slot (top 56 = PMT outline, drawing 54; bottom 56.9); both out to r = 46.3 mm (mesh-ring outer radius) |
 | PTFE bucket (v4) | Ø112 / Ø132 mm, 129 mm high (drawing `PTFE_bucket.pdf`); the weir 1.78 mm below the rim **sets the liquid level**, so the rim is at level + 1.78 mm (z = +5.78 mm at 4 mm) and the bucket moves with the simulated level. Bottom 10 mm (not on the drawing). The weir notch is not modelled |
 | liquid / gas | liquid xenon fills the bucket up to the level (2 / 3 / 4 mm above the gate; from z = −113 mm); gas above it and all around the bucket |
 | cryostat vessel (v4) | stainless steel, Ø146.86 / Ø152.4 mm, 305 mm (drawing `Inner_cryostat_vessel.pdf`), closed; ends 2.77 mm and inner bottom 10 mm below the bucket (both assumed); steel reflectivity, Lambertian |
@@ -43,10 +44,12 @@ the anode ring sits in the anode–top-screen gap; the copper rings are hidden b
 
 ## Effect of the surroundings (v4 vs v3)
 
-Bucket and vessel change nothing that matters (one parameter point, level 4 mm, `tools/surroundings_compare.py`,
-`results/surroundings/`): S2 top fraction 0.563 → 0.562, S1 0.177 → 0.177, light collection top +0.2 %, bottom +0.9 %.
-The 22 % of the S2 light that left the TPC region in v3 now ends on the vessel (13 %), the outside of the mesh rings and
-PMTs, the copper rings and the bucket (2 %); it hardly comes back. All results made with v3 stay valid.
+One parameter point (level 4 mm, PTFE R 0.95 / specular 0.1, steel R 0.35, Rayleigh 45 cm;
+`tools/surroundings_compare.py`, `results/surroundings/`). Bucket + vessel alone changed < 1 %; with the PTFE around
+the PMTs: S2 light collection top +6.6 %, bottom +8.5 %, S2 top fraction 0.563 → 0.558; S1 top +9 %, bottom +7 %, S1
+top fraction 0.177 → 0.179. The shapes (vs r, vs z) do not change. Still ~10 % of the S2 light ends on the vessel
+(it leaves sideways through the gate–anode and anode–top-screen gaps). The step-6/7/8 results were made with v3;
+the efficiency factors of the fit move by about these percentages.
 
 ![v4 vs v3](results/surroundings/compare.png)
 

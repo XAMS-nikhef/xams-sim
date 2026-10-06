@@ -284,6 +284,7 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
   auto* rimL = new G4LogicalVolume(new G4Tubs("MeshFoilRim", rRingIn, rFoil, 0.5 * tFoil, 0., 360. * deg),
                                    StainlessSteel(), "MeshRing");
   double zGate = 0., zCath = -51.8 * mm;
+  std::map<std::string, std::pair<double, double>> assembly;  // z extent of each mesh assembly (foil + ring body)
   for (const auto& m : j["meshes"]) {
     const std::string name = m["name"].get<std::string>();
     const double z = m["z_mm"].get<double>() * mm;
@@ -302,6 +303,7 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
            << " holes, " << ang << " deg" << G4endl;
     if (name == "gate") zGate = z;
     if (name == "cathode") zCath = z;
+    assembly[name] = {lo, hi};
   }
 
   // PTFE cylinder (drawing "PTFE_cylinder.pdf"): in the bores of the gate and cathode rings, from z_top down over its
@@ -363,6 +365,42 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     const bool top = name == "top";
     auto [mL, mC] = region(wz);
     BuildPmt(mL, top ? gasP : liqP, top ? "TopPMT" : "BottomPMT", wz - mC, top, top);
+  }
+
+  // PTFE holders of the PMTs (config "pmt_ptfe"; drawings "PTFE_between_TS_PMT.pdf", "PTFE_between_BS_PMT.pdf"): a plate
+  // from the screen-ring assembly to the PMT window face with a square opening in front of the photocathode, and a
+  // block around the PMT (square slot = PMT outline) from the window face to the back of the PMT; out to the mesh-ring
+  // outer radius. Logical name PTFE_gas (top, in the gas) / PTFE (bottom, in the liquid) for the surfaces.
+  if (j.contains("pmt_ptfe")) {
+    const auto& h = j["pmt_ptfe"];
+    const double rO = 0.5 * h["outer_diameter_mm"].get<double>() * mm;
+    const double ap = h["aperture_square_mm"].get<double>() * mm;
+    const double height = c.Num("pmt_common/height_mm", 14.8) * mm;
+    for (const auto& pm : j["pmts"]) {
+      const std::string name = pm["name"].get<std::string>();
+      const bool top = name == "top";
+      const double wz = pm["window_z_mm"].get<double>() * mm;
+      const auto& sl = h["slot_square_mm"];
+      const double slot = (sl.is_object() ? sl[name] : sl).get<double>() * mm;
+      const auto [alo, ahi] = assembly.at(top ? "top_screen" : "bottom_screen");
+      const double pLo = top ? ahi : wz, pHi = top ? wz : alo;     // plate
+      const double bLo = top ? wz : wz - height, bHi = top ? wz + height : wz;  // block around the PMT
+      if (pHi - pLo < 0.01 * mm)
+        G4Exception("BuildXams", "GEOM040", FatalException, ("no room for the PTFE plate in front of the " + name + " PMT").c_str());
+      const std::string ln = top ? "PTFE_gas" : "PTFE";
+      auto [mL, mC] = region(wz);
+      auto place = [&](const std::string& part, double lo, double hi, double square) {
+        const double hz = 0.5 * (hi - lo);
+        auto* sol = new G4SubtractionSolid("PTFE_" + name + "_" + part, new G4Tubs("o", 0., rO, hz, 0., 360. * deg),
+                                           new G4Box("i", 0.5 * square, 0.5 * square, hz + 1. * mm));
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, 0.5 * (lo + hi) - mC), new G4LogicalVolume(sol, Ptfe(), ln),
+                          "PTFE_" + name + "_" + part, mL, false, 0, kCheck);
+        G4cout << "PTFE " << name << " PMT " << part << ": z " << lo / mm << " to " << hi / mm << " mm, r < " << rO / mm
+               << " mm, square opening " << square / mm << " mm" << G4endl;
+      };
+      place("plate", pLo, pHi, ap);
+      place("surround", bLo, bHi, slot);
+    }
   }
 
   // SiPMs on the inside of the PTFE cylinder, looking inward (sensor ids 6, 7)

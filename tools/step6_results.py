@@ -90,6 +90,10 @@ def category(code, vol):
         return "mesh rings (+ foil rim)"
     if vol == "PTFE":
         return "PTFE"
+    if vol.startswith("PTFE_top"):
+        return "PTFE around the top PMT"
+    if vol.startswith("PTFE_bottom"):
+        return "PTFE around the bottom PMT"
     if vol == "Bucket":
         return "PTFE bucket"
     if vol == "Vessel":

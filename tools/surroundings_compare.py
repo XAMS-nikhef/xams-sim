@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Geometry v4 (TPC in the PTFE bucket in the steel vessel) vs v3 (absorbing world around the TPC): one parameter point
+"""Geometry v4 (PTFE holders around the PMTs; TPC in the PTFE bucket in the steel vessel) vs v3 (absorbing world around the TPC): one parameter point
 (level 4 mm, PTFE R 0.95, specular 0.1, steel R 0.35, Rayleigh 45 cm) for s2 and s1. v3 = that point of the step-8 fit
 scans (fit_s2, fit_s1), v4 = scans/check_v4_s2.yaml, check_v4_s1.yaml.
 
@@ -42,7 +42,7 @@ def main():
     summary = {}
     fig, ax = plt.subplots(1, 3, figsize=(16, 4.5))
     for src, a in (("s2", ax[0]), ("s1", ax[1])):
-        pts = {"v3 (no surroundings)": v3_point(f"fit_{src}"), "v4 (bucket + vessel)": load(f"check_v4_{src}")["points"][0]}
+        pts = {"v3 (no surroundings)": v3_point(f"fit_{src}"), "v4 (PMT PTFE, bucket, vessel)": load(f"check_v4_{src}")["points"][0]}
         summary[src] = {}
         for i, (lab, p) in enumerate(pts.items()):
             rec, n = p["rec"], p["n_photons"]

@@ -92,6 +92,19 @@ field_shaping_rings:         # drawing "XAMS_field_shaper.pdf" (2026-10-05): cop
   # ring 4 -> cathode ring 8.2 (drawing). Gate ring body: -1.725 to -0.075 mm -> ring centres:
   z_center_mm: [-10.625, -20.425, -30.225, -40.025]
 
+pmt_ptfe:                    # PTFE holders of the PMTs (user, 2026-10-06; drawings "PTFE_between_TS_PMT.pdf",
+                             # "PTFE_between_BS_PMT.pdf"; CAD picture: the PMT falls into the slot of the PTFE structure)
+  outer_diameter_mm: 92.6    # user: exactly the mesh-ring outer diameter (plate drawing: Ø93)
+  aperture_square_mm: 50.0   # drawing: square opening in front of the photocathode (48.5)
+  slot_square_mm:            # the PMT sits in the slot
+    top: 56.0                # = PMT outline in the model (drawing: step 54 + bevel, smaller than the 56 mm PMT)
+    bottom: 56.9             # drawing
+  # plate: from the screen ring (top screen / bottom screen assembly) to the PMT window face, opening 50 mm
+  #   (drawing: 7 mm thick, of which the part below the window face is in front of the window);
+  # surround: around the PMT from the window face to its back, slot 56 mm.
+  # Both plates Ø93 × 7 mm; with the mesh z chain only 2.8 mm of that is in front of the window (the PMT sits 4.2 mm
+  # deep in the slot).
+
 # ------------------------------------------------------------------------------------------------ surroundings
 ptfe_bucket:                 # drawing "PTFE_bucket.pdf" (2026-10-06): the TPC hangs in this PTFE bucket
   inner_diameter_mm: 112.0   # drawing

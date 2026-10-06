@@ -86,7 +86,7 @@ def main():
         print("MISSING (fill in geometry.yaml):", *missing, sep="\n  ")
         return 1
 
-    cfg = {k: g[k] for k in ("mesh_common", "meshes", "ptfe_cylinder", "field_shaping_rings", "pmt_common", "pmts", "sipms",
+    cfg = {k: g[k] for k in ("mesh_common", "meshes", "ptfe_cylinder", "field_shaping_rings", "pmt_common", "pmts", "sipms", "pmt_ptfe",
                                 "ptfe_bucket", "cryostat_vessel") if k in g}
     hp = g["mesh_common"].get("hole_pattern_file")
     if hp:

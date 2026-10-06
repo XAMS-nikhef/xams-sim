@@ -19,7 +19,7 @@ STYLE = [
     (r"Foil$", "#202020", "mesh foil (steel)"),
     (r"^CopperRing$", "#c8743a", "copper field-shaping rings"),
     (r"Ring$|Rim$", "#7a7f8c", "mesh rings (+ foil rim)"),
-    (r"^PTFE$|^PTFE_gas$", "#e8d7a8", "PTFE"),
+    (r"^PTFE", "#e8d7a8", "PTFE"),
     (r"Window$", "#8fd3ff", "PMT window (silica)"),
     (r"Sector$|Cathode$", "#ff9a1f", "photocathode"),
     (r"Frame$|Body$", "#5a4a6a", "PMT frame / body (absorber)"),

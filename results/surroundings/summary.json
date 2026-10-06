@@ -24,28 +24,30 @@
     "copper field-shaping rings": 0.0001
    }
   },
-  "v4 (bucket + vessel)": {
+  "v4 (PMT PTFE, bucket, vessel)": {
    "n_photons": 10000000,
-   "top_fraction": 0.5617,
+   "top_fraction": 0.5584,
    "top_fraction_err": 0.0006,
-   "lce_top": 0.0427,
-   "lce_bottom": 0.0334,
+   "lce_top": 0.0454,
+   "lce_bottom": 0.0359,
    "losses": {
-    "photocathode, not converted (1 - QE)": 0.1545,
-    "cryostat vessel (steel)": 0.1324,
-    "mesh rings (+ foil rim)": 0.1279,
-    "mesh foil: anode": 0.1254,
-    "mesh foil: gate": 0.0982,
-    "PMT frame / body": 0.0771,
-    "mesh foil: top_screen": 0.0615,
-    "detected top PMT": 0.0427,
-    "mesh foil: cathode": 0.0381,
-    "mesh foil: bottom_screen": 0.036,
-    "detected bottom PMT": 0.0334,
-    "PTFE": 0.0263,
-    "PTFE bucket": 0.0186,
-    "copper field-shaping rings": 0.0176,
-    "bulk absorption (LXe)": 0.009,
+    "photocathode, not converted (1 - QE)": 0.165,
+    "mesh rings (+ foil rim)": 0.1325,
+    "mesh foil: anode": 0.1305,
+    "cryostat vessel (steel)": 0.1028,
+    "mesh foil: gate": 0.1023,
+    "mesh foil: top_screen": 0.0737,
+    "mesh foil: bottom_screen": 0.0473,
+    "detected top PMT": 0.0454,
+    "mesh foil: cathode": 0.0447,
+    "detected bottom PMT": 0.0359,
+    "PTFE": 0.0279,
+    "PMT frame / body": 0.0253,
+    "PTFE around the top PMT": 0.0196,
+    "copper field-shaping rings": 0.0174,
+    "PTFE bucket": 0.0166,
+    "bulk absorption (LXe)": 0.0091,
+    "PTFE around the bottom PMT": 0.0026,
     "detected SiPMs": 0.0012
    }
   }
@@ -75,29 +77,31 @@
     "copper field-shaping rings": 0.0002
    }
   },
-  "v4 (bucket + vessel)": {
+  "v4 (PMT PTFE, bucket, vessel)": {
    "n_photons": 20000000,
-   "top_fraction": 0.177,
+   "top_fraction": 0.1791,
    "top_fraction_err": 0.0003,
-   "lce_top": 0.0135,
-   "lce_bottom": 0.063,
+   "lce_top": 0.0147,
+   "lce_bottom": 0.0672,
    "losses": {
-    "mesh foil: gate": 0.1594,
-    "photocathode, not converted (1 - QE)": 0.1556,
-    "mesh rings (+ foil rim)": 0.1166,
-    "mesh foil: cathode": 0.1064,
-    "PMT frame / body": 0.0961,
-    "PTFE": 0.0914,
-    "mesh foil: bottom_screen": 0.0804,
-    "detected bottom PMT": 0.063,
-    "mesh foil: anode": 0.026,
-    "bulk absorption (LXe)": 0.024,
-    "copper field-shaping rings": 0.02,
-    "cryostat vessel (steel)": 0.0163,
-    "mesh foil: top_screen": 0.0158,
-    "detected top PMT": 0.0135,
-    "PTFE bucket": 0.0113,
-    "detected SiPMs": 0.0042
+    "photocathode, not converted (1 - QE)": 0.166,
+    "mesh foil: gate": 0.1634,
+    "mesh rings (+ foil rim)": 0.1182,
+    "mesh foil: cathode": 0.1173,
+    "mesh foil: bottom_screen": 0.1027,
+    "PTFE": 0.0935,
+    "detected bottom PMT": 0.0672,
+    "PMT frame / body": 0.0351,
+    "mesh foil: anode": 0.0282,
+    "bulk absorption (LXe)": 0.0237,
+    "copper field-shaping rings": 0.0196,
+    "mesh foil: top_screen": 0.0195,
+    "detected top PMT": 0.0147,
+    "cryostat vessel (steel)": 0.0092,
+    "PTFE bucket": 0.007,
+    "PTFE around the bottom PMT": 0.0058,
+    "PTFE around the top PMT": 0.0047,
+    "detected SiPMs": 0.0043
    }
   }
  }
