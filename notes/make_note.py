@@ -186,6 +186,9 @@ def main(out):
                   "settings): S2 area fraction top vs S2 size and vs r, S1 vs z, and the top-sector asymmetries u(x), v(y)."))
     st.append(img(RES / "step7" / "central_dip_vs_size.png", W, "Central dip of the S2 area fraction top versus S2 size "
                   "(data, no source): per size class versus r (left), and centre / ring ratio (right)."))
+    st.append(img(RES / "step7" / "top_bottom_vs_r.png", W, "Top deficit or bottom excess? Cs-137 photopeak (fixed S2 per "
+                  "event, LED gains): top, bottom, total and area fraction top versus r, each ÷ its value at r = 7.5–12.5 mm; "
+                  "data points vs simulation band."))
     st += bullets([
         "<b>Sector pattern:</b> data inside the simulation band over ±24 mm, identical for all sources — geometry right.",
         "<b>S2 versus size and source:</b> no source 0.68 (3–5 kPE) → 0.49 (&gt; 100 kPE); Na-22 0.53 → 0.36; Cs-137 0.40 → "
@@ -194,6 +197,11 @@ def main(out):
         "<b>S2 versus r:</b> outside the centre data/simulation top/bottom ratio 1.0–1.2; at r &lt; 5 mm 0.6–0.7 (central dip "
         "in every source).",
         "<b>S1 versus z:</b> same shape, constant ratio 0.72 (one efficiency factor for small signals on the top PMT).",
+        "<b>Top or bottom?</b> For the Cs-137 photopeak (fixed S2 per event) top and bottom are <i>both</i> ≈ 5–7 % lower at "
+        "r &lt; 2.5 mm (total S2 light 0.93 — S2 production, not optics) and the area fraction top shows no central dip "
+        "(1.02 vs simulation 1.01–1.04): the dip is a small-S2 effect. Outwards the bottom rises (1.08–1.15 at 19 mm, "
+        "simulation 0.96) and the top fraction falls faster than simulated: either the S2 yield rises outwards, or light "
+        "that leaves the model sideways returns in reality (surrounding structure, not modelled).",
         "Implied top-PMT efficiency relative to geometry (S2): ≈ 1 without source, ≈ 0.3 for Cs-137 large S2 — the v2 gain "
         "factor f_top (0.74–0.88, anchored on Cs runs) corrects only part of it.",
     ])
