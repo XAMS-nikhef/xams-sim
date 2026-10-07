@@ -1,6 +1,6 @@
 """Note: XAMS optical simulation — model, validation, results, comparison with the data, design study.
 Figures and numbers from results/ (tools/step6_results.py, step7_compare.py, design_ptfe.py) and results/geometry.
-Usage (from optical_sim/): python notes/make_note.py notes/XAMS_optical_simulation_2026-10-05.pdf"""
+Usage (from optical_sim/): python notes/make_note.py notes/XAMS_optical_simulation_2026-10-07.pdf"""
 import json
 import sys
 from pathlib import Path
@@ -85,22 +85,23 @@ def bars(L, m):
 def main(out):
     st = []
     st += [P("XAMS optical simulation: model, validation and first results", h1),
-           P("Geant4 optical simulation of the XAMS TPC with the meshes as built — geometry v3 from the drawings · "
-             "5 October 2026 · optical_sim/ (local git), user guide: optical_sim/docs (MkDocs)", sub)]
+           P("Geant4 optical simulation of the XAMS TPC with the meshes as built — geometry v4 from the drawings "
+             "(TPC in the PTFE bucket and the cryostat vessel, PTFE PMT holders) · 7 October 2026 · optical_sim/ (local git), user guide: optical_sim/docs (MkDocs)", sub)]
     st.append(box([P("<b>Summary.</b>"), *bullets([
         "Question: is the low S2 light on the top PMT a geometric effect? <b>Partly.</b> Geometry and optics give an S2 top "
-        "fraction of 0.53–0.58 over all plausible optical parameters and liquid levels. The data without a source come "
+        "fraction of 0.52–0.58 over all plausible optical parameters and liquid levels. The data without a source come "
         "close (0.50–0.68 depending on S2 size, 0.55 at 10–20 kPE); the Cs-137 and Na-22 values (0.27–0.40) are far below "
         "anything geometric — they are the load effect of the top PMT, not geometry.",
         "<b>The geometry is right:</b> the top-sector light pattern versus position (asymmetries u, v) lies inside the "
         "narrow simulation band over ±24 mm, identically for every source.",
         "<b>Fit:</b> the shapes of S2 versus r, S1 versus depth and the sector pattern are reproduced with two efficiency "
-        "factors on the top/bottom ratio, ε<sub>S2</sub> = 1.23 and ε<sub>S1</sub> = 0.79 (single scatters; QE ratio and top-PMT "
+        "factors on the top/bottom ratio, ε<sub>S2</sub> = 1.17 and ε<sub>S1</sub> = 0.74 (single scatters; QE ratio and top-PMT "
         "small-signal loss). Low steel reflectivity is preferred; the other optical parameters are not constrained.",
         "The S2 area fraction top in the data dips at the centre (r &lt; 5 mm); the model does not, and an insensitive cross "
         "between the top-PMT anodes cannot produce it (tested up to 6 mm).",
-        "Only ~23 % of the S2 photons reach a photocathode (QE 0.33 → 7.6 % detected); the mesh foils take ~35 %, ~32 % go "
-        "sideways into the rings or out of the model. The liquid level (2 → 4 mm) hardly matters.",
+        "Only ~25 % of the S2 photons reach a photocathode (QE 0.33 → 8.1 % detected); the mesh foils take ~40 %, the mesh "
+        "and copper rings ~15 %, the bucket and the cryostat vessel ~12 %. The liquid level (2 → 4 mm) hardly matters. The "
+        "surroundings (bucket, vessel) change nothing; the PTFE PMT holders add 7–9 % light on both PMTs.",
         "Design study: PTFE cylinders also in the gate–anode and anode–top-screen gaps raise the S2 light collection by "
         f"+{100 * (dp['s2'][4]['total'] / dp['s2'][0]['total'] - 1):.0f} %, with the cathode–bottom-screen gap "
         f"+{100 * (dp['s2'][5]['total'] / dp['s2'][0]['total'] - 1):.0f} % (S1 "
@@ -113,7 +114,7 @@ def main(out):
         "scintillation). S2: liquid surface to just below the anode foil, r &lt; 30 mm; S1: cathode to gate, r &lt; 30 mm. "
         "Every photon is recorded (origin, end point, how it ended, sensor, reflections); maps are made by binning the origins.")]
     st.append(table([
-        ["part", "model (geometry v2, from the drawings)"],
+        ["part", "model (geometry v4, from the drawings)"],
         ["meshes (5)", "solid 0.15 mm steel foils (Ø80) with 456 square holes 2.45 mm (pitch 2.6 mm) etched in a staircase-shaped "
                        "area (gate drawing; outer hole corners at r = 32.8 mm), the rest solid; all at 29.4° to the anodes. "
                        "z: top screen +18, anode +8, gate 0, cathode −51.8, bottom screen −59.6 mm"],
@@ -128,13 +129,17 @@ def main(out):
         ["PMTs", "two R12699: silica window 54.6 mm square, 2.5 mm, n = 1.60; photocathode 48.5 mm square with QE 0.33 "
                  "(top: 4 sectors = ch1–ch4); frame and body absorbing"],
         ["SiPMs", "two, on the PTFE inner wall at z = −25 mm, azimuth 0° / 90°"],
-        ["outside", "everything beyond |x|, |y| = 60 mm, below −90 or above +45 mm absorbs (to be made realistic)"],
+        ["PMT holders", "PTFE plate between screen ring and PMT window (50 mm square opening) and block around each PMT "
+                        "(slot 56 / 56.9 mm), out to r = 46.3 mm"],
+        ["bucket, vessel", "the TPC hangs in a PTFE bucket (Ø112/132 mm, 129 mm; the weir 1.78 mm below the rim sets the "
+                           "liquid level), inside the closed stainless-steel inner vessel (Ø146.9/152.4 mm, 305 mm); gas "
+                           "around the bucket. Bucket bottom, vessel ends and the gap below the bucket are defaults"],
     ], [28 * mm, W - 28 * mm]))
     st.append(Spacer(1, 4))
     st.append(Table([[cell(RES / "geometry" / "section_xz.png", W * 0.52,
                            "Cross section at y = 0 from Geant4's own navigator (exactly what the simulation uses)."),
-                      cell(RES / "geometry" / "view_cut.png", W * 0.43,
-                           "3-D view, cut open: PTFE (cream), mesh rings (grey), copper rings, PMTs.")]],
+                      cell(RES / "geometry" / "view_cut_v4.png", W * 0.43,
+                           "3-D view, cut open: PTFE bucket, PTFE (cream), mesh rings (grey), copper rings, PMTs, inside the vessel (without the PMT holders).")]],
                     colWidths=[W * 0.54, W * 0.46]))
 
     st += [P("2. Validation", h2), P("Each implementation step ended with a check against an analytic result:")]
@@ -150,9 +155,9 @@ def main(out):
     ], [70 * mm, W - 70 * mm]))
 
     st += [PageBreak(), P("3. Results", h2), P("<b>S2 top fraction.</b> Over the full ranges of the free parameters and "
-           "liquid levels: 0.531–0.584. Strongest knobs: PTFE specular fraction (−0.034 from 0 to 0.2), steel and PTFE "
-           "reflectivity (≈ −0.02 each over their ranges), Rayleigh length (−0.014); liquid level 2 → 4 mm only +0.010. "
-           "Versus radius 0.62 at the centre → 0.52 at the edge.")]
+           "liquid levels: 0.524–0.584. Strongest knobs: PTFE specular fraction (−0.032 from 0 to 0.2), steel and PTFE "
+           "reflectivity (−0.025 / −0.023 over their ranges), Rayleigh length (−0.012); liquid level 2 → 4 mm only +0.010. "
+           "Versus radius 0.61 at the centre → 0.51 at the edge.")]
     st.append(img(RES / "step6" / "s2_topfraction.png", W, "S2 top fraction vs PTFE reflectivity for three steel "
                   "reflectivities and three liquid levels (10<super>7</super> photons per point; statistical errors ±0.0006)."))
     st.append(P("<b>Where the light ends.</b> Reference point: level 4 mm, PTFE R 0.95, steel R 0.35, copper R 0.3."))
@@ -162,12 +167,15 @@ def main(out):
          f"{pc(l1['detected top PMT'])} / {pc(l1['detected bottom PMT'])}"],
         ["photocathode reached, not converted (1 − QE)", pc(l2["photocathode, not converted (1 - QE)"]),
          pc(l1["photocathode, not converted (1 - QE)"])],
-        ["leaves the TPC region sideways", pc(l2["leaves the TPC region"]), pc(l1["leaves the TPC region"])],
+        ["cryostat vessel (steel)", pc(l2["cryostat vessel (steel)"]), pc(l1["cryostat vessel (steel)"])],
+        ["PTFE bucket", pc(l2["PTFE bucket"]), pc(l1["PTFE bucket"])],
+        ["PTFE PMT holders top / bottom", f'{pc(l2["PTFE around the top PMT"])} / {pc(l2["PTFE around the bottom PMT"])}',
+         f'{pc(l1["PTFE around the top PMT"])} / {pc(l1["PTFE around the bottom PMT"])}'],
         ["mesh rings + foil rims", pc(l2["mesh rings (+ foil rim)"]), pc(l1["mesh rings (+ foil rim)"])],
         ["mesh foils: anode / gate / top screen / cathode / bottom screen",
          " / ".join(bars(l2, m) for m in ("anode", "gate", "top_screen", "cathode", "bottom_screen")),
          " / ".join(bars(l1, m) for m in ("anode", "gate", "top_screen", "cathode", "bottom_screen"))],
-        ["PTFE", pc(l2["PTFE"]), pc(l1["PTFE"])],
+        ["PTFE drift-region cylinder", pc(l2["PTFE"]), pc(l1["PTFE"])],
         ["PMT frame / body", pc(l2["PMT frame / body"]), pc(l1["PMT frame / body"])],
         ["copper field-shaping rings", pc(l2["copper field-shaping rings"]), pc(l1["copper field-shaping rings"])],
         ["absorbed in the liquid", pc(l2["bulk absorption (LXe)"]), pc(l1["bulk absorption (LXe)"])],
@@ -196,12 +204,12 @@ def main(out):
         "0.28. Rate and size dependence are top-PMT effects (load, large pulses), not geometry. The simulation (0.55–0.60) "
         "agrees with the low-load, medium-size data.",
         "<b>S2 versus r:</b> outside the centre data/simulation top/bottom ratio 1.16–1.28 (absorbed by ε<sub>S2</sub>); at r &lt; 5 mm "
-        "0.65–0.77 (central dip in every source, also for single scatters).",
-        "<b>S1 versus z:</b> same shape, ratio 0.70–0.77 at every depth (one efficiency factor for small signals on the top PMT).",
+        "0.67–0.79 (central dip in every source, also for single scatters).",
+        "<b>S1 versus z:</b> same shape, ratio 0.68–0.76 at every depth (one efficiency factor for small signals on the top PMT).",
         "<b>Top or bottom?</b> Cs-137 photopeak (fixed S2 per event), single scatters: at the centre the area fraction top "
         "shows no dip (1.00 vs simulation 1.01–1.04) — the dip is a small-S2 effect. Outwards top and bottom both fall; the "
         "area fraction top at r = 24 mm is 0.90–0.92 (simulation 0.88–0.90), but the total S2 light drops to 0.44–0.51, far "
-        "more than the optical 0.78: charge or S2 light is lost near the wall. (With all events the bottom seemed to rise "
+        "more than the optical ~0.78: charge or S2 light is lost near the wall. (With all events the bottom seemed to rise "
         "outwards — that was a multiple-scatter effect.)",
         "Implied top-PMT efficiency relative to geometry (S2): ≈ 1 without source, ≈ 0.3 for Cs-137 large S2 — the v2 gain "
         "factor f_top (0.74–0.88, anchored on Cs runs) corrects only part of it.",
@@ -218,15 +226,16 @@ def main(out):
                   "data = points (no source); χ² profiles of the four optical parameters."))
     st += bullets([
         f"Best point: PTFE R {b8['PTFE R']}, specular {b8['PTFE specular']}, steel R {b8['steel R']}, Rayleigh "
-        f"{b8['Rayleigh [cm]']} cm; χ² {b8['chi2_s2r']:.1f} / {b8['chi2_s1z']:.1f} / {b8['chi2_uv']:.1f} for 7 / 11 / 45 dof "
+        f"{b8['Rayleigh [cm]']} cm; χ² {b8['chi2_s2r']:.1f} / {b8['chi2_s1z']:.1f} / {b8['chi2_uv']:.1f} for 7 / 11 / 24 dof "
         "(S2 vs r / S1 vs z / u, v).",
         f"ε<sub>S2</sub> = {b8['eps_s2']:.2f} ({s8['eps_range_good']['s2'][0]:.2f}–{s8['eps_range_good']['s2'][1]:.2f}), "
         f"ε<sub>S1</sub> = {b8['eps_s1']:.2f} ({s8['eps_range_good']['s1'][0]:.2f}–{s8['eps_range_good']['s1'][1]:.2f}): not one "
         "QE ratio — with a QE ratio of ~1.2 the top PMT keeps only ~0.65 of its small S1 signals relative to the bottom, "
         "consistent with the known small-signal integration loss.",
-        "Steel reflectivity low (0.2 preferred over 0.5, Δχ² 10.5); PTFE reflectivity, PTFE specular part and Rayleigh "
-        "length are not constrained (Δχ² ≤ 6). (With all events the S2 shape fitted worse, χ² 11.2 vs 2.6.)",
-        "Dead cross on the top PMT (1.5 / 3 / 6 mm): centre / ring at most 1.03 → 1.00, data 0.82 — not the cause of the "
+        "Steel reflectivity low (0.2 preferred: Δχ² +16.7 for 0.35, +35.7 for 0.5). PTFE reflectivity, PTFE specular part and "
+        "Rayleigh length are not constrained beyond the scan statistics: their Δχ² reach 8–13, but the best values moved "
+        "between geometry v3 and v4 (PTFE R 0.99 → 0.95, Rayleigh 60 → 45 cm) while ε and the shapes stayed the same.",
+        "Dead cross on the top PMT (0 / 1.5 / 3 / 6 mm): centre / ring 1.02 → 1.01, data 0.82 — not the cause of the "
         "central dip.",
         "Central dip versus S2 size (data, single scatters): centre / ring 0.69 (3–5 kPE) → 0.87 (20–50 kPE) → 1.02 (&gt; 50 "
         "kPE), but mostly because the ring value falls with size (0.79 → 0.55) while the centre stays ≈ 0.48–0.54. A pure threshold loss from sharing the "
@@ -266,9 +275,8 @@ def main(out):
 
     st += [P("8. Limitations and next steps", h2)]
     st.append(box(bullets([
-        "Everything outside |x|, |y| &lt; 60 mm is black and the three gate–anode pillars are missing: ~22 % of the S2 light "
-        "leaves the model sideways. The surrounding structure (holders, field-cage parts, cryostat wall) is next (TODO) — it "
-        "affects light collection and the design study, little the top fraction.",
+        "Surroundings are in (v4: PTFE bucket, cryostat vessel, PMT holders); ~10 % of the S2 light ends on the vessel. Still "
+        "missing: the three gate–anode pillars; bucket bottom, vessel ends and the gap below the bucket are defaults.",
         "Central S2 dip: check the position reconstruction near u = v = 0 (AFT versus u, v directly), since the PMT cross is excluded.",
         "Optical parameters: a finer grid with more photons (u/v term) to constrain PTFE reflectivity and Rayleigh length; "
         "measure the top-PMT small-signal efficiency (amstrax integration) to separate it from the QE ratio.",
@@ -282,4 +290,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "notes" / "XAMS_optical_simulation_2026-10-05.pdf"))
+    main(sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "notes" / "XAMS_optical_simulation_2026-10-07.pdf"))

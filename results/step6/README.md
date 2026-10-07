@@ -1,4 +1,9 @@
-# Step 6 — first physics results (geometry v3, 2026-10-05)
+# Step 6 — first physics results (geometry v3, 2026-10-05; figures and summary.json geometry v4, 2026-10-07)
+
+**Geometry v4 (2026-10-07):** all step-6 scans rerun with the PTFE bucket, cryostat vessel and PMT holders; figures and
+`summary.json` are v4. Top fractions change by < 0.006; light collection +6–7 % (PMT holders); the "leaves the TPC
+region" share of v3 (S2 22 %, S1 11 %) now ends on the vessel (S2 10 %), bucket (1.7 %), copper rings (1.7 %) and more
+on the meshes / rings. The text below gives the v3 numbers.
 
 Made by `tools/step6_results.py` from the scans `s2_optics` (27 points: level 2/3/4 mm × PTFE R 0.90/0.95/0.99 ×
 steel R 0.2/0.35/0.5, 10⁷ photons each), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸). Geometry v3: everything from the
