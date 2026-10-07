@@ -37,6 +37,9 @@ simulation band over ±24 mm, the same for every source. **The geometry is right
 
 ### Central dip versus S2 size (threshold test, `central_dip_vs_size.png`)
 
+**Readout toy (2026-10-07, `results/threshold_toy/`):** DAQ threshold + amstrax hit-only integration with charge
+sharing loses < 1 % at S2 ≥ 3 kPE, centre and ring alike — the readout does not make the dip.
+
 Idea (user): at the centre the top charge is shared over four channels, so more of each channel's S2 tail falls below
 the hit threshold, lowering the top area. Such a loss shrinks with S2 size. Data (no source, LED gains, ± statistical):
 
