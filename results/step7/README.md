@@ -1,4 +1,9 @@
-# Step 7 — data vs simulation (geometry v3, 2026-10-05)
+# Step 7 — data vs simulation (geometry v3, 2026-10-05; rerun with geometry v4 2026-10-07)
+
+**Geometry v4 (2026-10-07):** scans `s2_optics` / `s1_optics` rerun with v4 (PTFE bucket, steel vessel, PMT holders);
+figures and `sim_binned.json` are v4. Changes vs v3 are small: S2 area fraction top (r < 25 mm) 0.548–0.595
+(v3 0.554–0.597), S1 area fraction top +0.002–0.004 near the cathode, central / ring 1.00–1.03 (v3 1.01–1.04).
+All conclusions below stand. v3 scan outputs: `run/scans_v3_20261006/`.
 
 **Default since 2026-10-06: single scatters** (no alternative S2; `targets/data_2026-10-05_single.json`,
 `top_bottom_vs_r_cs137_single.json`; figures made with them). The tables below are for all events unless marked;

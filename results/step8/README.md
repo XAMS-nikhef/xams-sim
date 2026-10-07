@@ -1,5 +1,14 @@
 # Step 8 — fit to the data and the dead-cross test (geometry v3, 2026-10-05; single scatters 2026-10-06)
 
+**Geometry v4 (2026-10-07; scans `fit_s2` / `fit_s1` rerun, single scatters):** best point PTFE R 0.95, specular
+0.1, steel R 0.2, Rayleigh 45 cm; χ² (S2 vs r / S1 vs z / u, v) **2.0 / 8.0 / 27.4** for 7 / 11 / 24 dof;
+**ε_S2 = 1.17** (1.11–1.23), **ε_S1 = 0.74** (0.71–0.77). Profiles (Δχ²): PTFE R 0.90/0.95/0.99 +7.8/0/+13.0;
+specular 0/0.1/0.2 +13.0/0/+7.8; steel R 0.2/0.35/0.5 0/+16.7/+35.7; Rayleigh 30/45/60 +12.1/0/+7.8. The minimum in
+PTFE R and Rayleigh moved between v3 and v4 (v3: 0.99, 60 cm) — those two are not constrained beyond the scan
+statistics; the preference for a low steel reflectivity is stronger and robust. The efficiency factors agree with
+v3 within their ranges. The dead-cross figure still uses the v3 scan `deadcross_s2` (not rerun). The v3 numbers
+follow. (u, v has 24 dof, not 45 as written below.)
+
 **Since 2026-10-06 the data are single scatters (no alternative S2, `targets/data_2026-10-05_single.json`).**
 Single-scatter result: best point PTFE R 0.99, specular 0.1, steel R 0.2, Rayleigh 60 cm; χ² (S2 vs r / S1 vs z /
 u, v) **2.6 / 10.5 / 21.6** for 7 / 11 / 45 dof; **ε_S2 = 1.23** (1.14–1.29), **ε_S1 = 0.79** (0.71–0.80). Profiles
