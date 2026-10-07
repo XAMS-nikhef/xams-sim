@@ -48,13 +48,12 @@ One parameter point (level 4 mm, PTFE R 0.95 / specular 0.1, steel R 0.35, Rayle
 `tools/surroundings_compare.py`, `results/surroundings/`). Bucket + vessel alone changed < 1 %; with the PTFE around
 the PMTs: S2 light collection top +6.6 %, bottom +8.5 %, S2 top fraction 0.563 → 0.558; S1 top +9 %, bottom +7 %, S1
 top fraction 0.177 → 0.179. The shapes (vs r, vs z) do not change. Still ~10 % of the S2 light ends on the vessel
-(it leaves sideways through the gate–anode and anode–top-screen gaps). The step-6/7/8 results were made with v3;
-the efficiency factors of the fit move by about these percentages.
+(it leaves sideways through the gate–anode and anode–top-screen gaps). All results were rerun with v4 on
+2026-10-07; the fit gives ε_S2 1.17 / ε_S1 0.74 (v3: 1.23 / 0.79), within the ranges of v3.
 
 ![v4 vs v3](results/surroundings/compare.png)
 
 ## Not (yet) in the model
 
 The three PTFE pillars between gate and anode; holders and structure outside the rings; the weir notch; the SiPM
-filters; the vessel lid and what hangs from it. ~22 % of the S2 light leaves the TPC sideways and is lost on the
-surroundings (see above).
+filters; the vessel lid and what hangs from it. ~10 % of the S2 light ends on the vessel (see above).

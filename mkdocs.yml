@@ -55,6 +55,7 @@ nav:
       - Fit and dead-cross test (step 8): results/step8/README.md
       - Design study (extra PTFE): results/design_ptfe/README.md
       - Anode mesh rotated by 120°: results/anode_rotation/README.md
+      - Surroundings (bucket, vessel, PMT holders): results/surroundings/README.md
   - Reference:
       - File map: files.md
       - Implementation plan: plan.md

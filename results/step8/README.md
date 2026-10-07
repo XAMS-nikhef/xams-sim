@@ -1,4 +1,4 @@
-# Step 8 — fit to the data and the dead-cross test (geometry v3, 2026-10-05; single scatters 2026-10-06)
+# Step 8 — fit to the data and the dead-cross test (geometry v3, 2026-10-05; single scatters 2026-10-06; geometry v4 2026-10-07)
 
 **Geometry v4 (2026-10-07; scans `fit_s2` / `fit_s1` rerun, single scatters):** best point PTFE R 0.95, specular
 0.1, steel R 0.2, Rayleigh 45 cm; χ² (S2 vs r / S1 vs z / u, v) **2.0 / 8.0 / 27.4** for 7 / 11 / 24 dof;
