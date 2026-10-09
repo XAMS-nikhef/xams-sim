@@ -102,10 +102,12 @@ def main(out):
         "(a single top photon keeps ~55 %). Low steel reflectivity is preferred; the other optical parameters are not constrained.",
         "<b>Central dip</b> of the S2 area fraction top (no source, small S2s): not optics, not a dead PMT cross, not the readout "
         "threshold (toy: &lt; 1 % at S2 ≥ 3 kPE). It comes from an extra population of small S2s piled up at the reconstructed "
-        "centre (density ×10–14 for 3–20 kPE, ×1.2 above 50 kPE) with low area fraction top, also in raw u–v.",
+        "centre (density ×10–14 for 3–20 kPE, ×1.2 above 50 kPE) with low area fraction top, also in raw u–v. Their S1 does not "
+        "fit their drift time (S1 AFT says 15 µs deeper, S2/S1 ≈ 13): accidental S1–S2 pairs, not optics.",
         "<b>Lower half (y &lt; 0):</b> in an arc at r ≈ 10–18 mm the S2 top/bottom ratio is ~0.6–0.8 × the model, but only "
-        "for interactions in the upper half of the drift region (drift &lt; 25 µs), in both samples and on both days; deeper "
-        "events there agree. Top-channel gains are fine (±4 %). Working hypothesis: a drift-field distortion at y &lt; 0.",
+        "for interactions in the upper half of the drift region (drift &lt; 25 µs). Mostly a population mixture: near-gate "
+        "events (~2 mm below the gate, S2/S1 ≈ 600–1000) have a lower S2 AFT everywhere and form a larger share at y &lt; 0, "
+        "where bulk background events are rare; normal Cs-137 events there agree with the model. Top-channel gains are fine.",
         "Only ~25 % of the S2 photons reach a photocathode (QE 0.33 → 8.1 % detected); the mesh foils take ~40 %, the mesh "
         "and copper rings ~15 %, the bucket and the cryostat vessel ~12 %. The liquid level (2 → 4 mm) hardly matters. The "
         "surroundings (bucket, vessel) change nothing; the PTFE PMT holders add 7–9 % light on both PMTs.",
@@ -302,8 +304,10 @@ def main(out):
     st += bullets([
         "<b>Central population:</b> small no-source S2s pile up at the reconstructed centre (×14 / ×10 / ×4 / ×1.2 for 3–5 / "
         "5–20 / 20–50 / &gt; 50 kPE; Cs photopeak flat). They spread their top light equally over the four anodes "
-        "(u ≈ v ≈ 0) and have AFT ≈ 0.5: the central dip is this population. What they are (S2 width, drift time, S1, "
-        "S1-AFT vs drift-time z) is open.",
+        "(u ≈ v ≈ 0) and have AFT ≈ 0.5: the central dip is this population. Their S1 does not belong to the drift time "
+        "(S1 AFT vs drift time below: 70 % off by &gt; 10 µs, S1 15 µs deeper; S2/S1 ≈ 13 vs 34 in the ring): likely "
+        "accidental pairs of an S1-only event (e.g. below the cathode) with a small diffuse S2 (delayed / single-electron "
+        "trains spread over the TPC → u ≈ v ≈ 0).",
         "<b>Not a channel problem:</b> fitted relative top-channel gains 0.95–1.04, the same from Cs-137 and no source; the "
         "deficit is the same on the slow ch4 side and the fast ch3 side and the top-channel shares stay normal; position reconstruction anchored on the gate mesh would show a ch3/ch4 error of the needed size.",
         "<b>Cs-137 S2 yield:</b> top and bottom move together with position (±15–20 %); the top/bottom ratio is flat within ~5 % "
@@ -321,13 +325,17 @@ def main(out):
         f"have wider S2s (width50 {ln['y<0 region']['s2_width50_median']:.0f} vs {ln['mirror y>0']['s2_width50_median']:.0f} ns) "
         "and smaller S1s. Cs-137 <b>photopeak</b> events in the region show it only mildly (AFT ×0.88–0.95 at drift &lt; 20 µs): "
         "the strong deficit belongs to events with an S1 too small for their S2.",
-        "An S2's AFT should depend only on where its light is made, and 0.41 is below the model anywhere (≥ 0.52), so these "
-        "S2s are not made where normal S2s are. Candidates: (a) a drift-field distortion in the upper part at y &lt; 0 "
-        "(field cage / resistor chain; cf. the 1.2 µs longer cathode drift time for y &gt; 0) bringing electrons to the edge of "
-        "the extraction region, where the S2 light is partly hidden from the top PMT; (b) interactions outside the active "
-        "volume (liquid outside the PTFE wall at y &lt; 0): S1 shielded by the PTFE, electrons reaching the extraction region "
-        "at its edge. To check: cS2/cS1 and S1-AFT versus drift-time z of these events, event display, field calculation.",
+        "<b>S1 AFT versus drift time</b> (figure below): S2/S1 has two populations everywhere — bulk events (≈ 100–200) and "
+        "near-gate events (≈ 600–1000, drift ≈ 2 µs, S1 AFT 0.24–0.27 = consistent with ~2 mm below the gate). Near-gate S2s "
+        "have a lower AFT everywhere (−0.04 to −0.05). In the y &lt; 0 region they are 52 % (no source) / 41 % (Cs) of the "
+        "events vs 22 % / 17 % in the mirror, mainly because bulk background events concentrate at y &gt; 0. Cs-137 bulk "
+        "events: region 0.293 vs mirror 0.300 — <b>normal events at y &lt; 0 agree with the model</b>. Open: why near-gate S2s "
+        "have a lower AFT, and a residual for near-gate events at y &lt; 0 (0.41 vs 0.50).",
     ])
+
+    st.append(img(RES / "s1aft_depth" / "s1aft_depth.png", W, "S1 AFT versus drift time (left), depth from the S1 AFT minus drift "
+                  "time (middle) and S2/S1 (right) for the y &lt; 0 region, its mirror, the central small-S2 population and its ring; "
+                  "no source (top) and Cs-137 (bottom)."))
 
     st += [P("9. Design study: extra PTFE cylinders", h2), P(
         "PTFE cylinders with the radii of the drift-region PTFE, inside the ring bores, foil to foil:")]
@@ -364,8 +372,9 @@ def main(out):
         "Surroundings are in (v4: PTFE bucket, cryostat vessel, PMT holders); ~10 % of the S2 light ends on the vessel. Still "
         "missing: the three gate–anode pillars; bucket bottom, vessel ends and the gap below the bucket are defaults.",
         "Central S2 dip: identify the small-S2 population at the centre (S2 width, drift time, S1, S1-AFT vs drift-time z).",
-        "y &lt; 0 deficit for shallow interactions: event display, field calculation; check the field cage / resistor chain "
-        "before the next fill (already in the run plan).",
+        "Near-gate events: why their S2 AFT is lower (S1 light on the top PMT ~2 µs before the S2? extraction near the gate "
+        "wires?); the central population: confirm accidental S1–S2 pairing (S1 width / pulse shape, S2 width, time since the "
+        "previous large S2).",
         "Optical parameters: a finer grid with more photons (u/v term) to constrain PTFE reflectivity and Rayleigh length. "
         "amstrax: integration bounds + lower hit threshold so small signals keep their full charge.",
         "Oct 2024 (2 + 6 mm liquid/gas) vs now (4 + 4 mm): the simulation predicts only +0.01 in the S2 top fraction.",
