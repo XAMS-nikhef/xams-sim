@@ -19,3 +19,10 @@ ring; the central density excess drops from ×10.9 to ×5.1 — but the survivor
 Their S1 is consistent, and their **S2s are narrow**: width50 400 ns (ring 586 ns; normal S2s are ≥ 520 ns even at the
 gate), rise time 400 vs 517 ns, drift 8.9 vs 20.5 µs. So the central dip is only partly mismatched S1–S2 pairs: the rest
 are S2s made over a shorter gas path or differently (anode / mesh geometry at the centre? gas events?) — open.
+
+**Not a reconstruction artefact (checked 2026-10-09).** u, v = cgr fractions of ch1–4; `grid_lookup` keeps NaN as NaN
+and clips out-of-range (u, v) onto the map edge, where `pos_rec_map_v0` gives r ≈ 29–31 mm; only |u|, |v| ≲ 0.12 maps to
+r < 2.5 mm. Empty channels (e.g. ch3 + ch4 = 0 → v = +1) therefore end at the edge, and diagonal-only light
+(ch1 = ch4, ch2 = ch3 = 0) would give u = v = 0 — but no central event has a channel below 3 % of the top light:
+sorted channel shares 0.23 / 0.24 / 0.26 / 0.28 (S2 3–20 kPE, same as for large central S2s). Their top light is
+genuinely balanced over the four anodes (a real central S2, or light from a spread-out source).
