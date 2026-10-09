@@ -304,10 +304,10 @@ def main(out):
         "5–20 / 20–50 / &gt; 50 kPE; Cs photopeak flat). They spread their top light equally over the four anodes "
         "(u ≈ v ≈ 0) and have AFT ≈ 0.5: the central dip is this population. What they are (S2 width, drift time, S1, "
         "S1-AFT vs drift-time z) is open.",
-        "<b>Not a channel problem:</b> fitted relative top-channel gains 0.97 / 1.02 / 0.96 / 1.04, the same from Cs-137 and "
-        "no source; position reconstruction anchored on the gate mesh would show a ch3/ch4 error of the needed size.",
-        "<b>Cs-137 S2 yield:</b> top and bottom move together with position (±25 %); the top/bottom ratio is flat within ±5 % "
-        "except at the lower edge. An x–y correction of the photopeak cS2 (cross-validated) reduces the spread 47 → 41 % at "
+        "<b>Not a channel problem:</b> fitted relative top-channel gains 0.95–1.04, the same from Cs-137 and no source; the "
+        "deficit is the same on the slow ch4 side and the fast ch3 side and the top-channel shares stay normal; position reconstruction anchored on the gate mesh would show a ch3/ch4 error of the needed size.",
+        "<b>Cs-137 S2 yield:</b> top and bottom move together with position (±15–20 %); the top/bottom ratio is flat within ~5 % "
+        "except at the edges. An x–y correction of the photopeak cS2 (cross-validated) reduces the spread 47 → 41 % at "
         "r &lt; 25 mm, 42 → 40 % at r &lt; 20 mm and not at all at r &lt; 15 mm: not the cause of the ~40 % S2 spread.",
     ])
     st.append(img(RES / "channel_test" / "low_region_vs_drift.png", W * 0.85, "AFT versus drift time in the y &lt; 0 region "
@@ -319,13 +319,14 @@ def main(out):
         "vs 0.54 in the mirror region), not for deeper ones (0.56 vs 0.55); same on 28-09 and 29-09 and for Cs-137. Events "
         f"there are shallower (median drift {ln['y<0 region']['drift_median_us']:.1f} vs {ln['mirror y>0']['drift_median_us']:.1f} µs), "
         f"have wider S2s (width50 {ln['y<0 region']['s2_width50_median']:.0f} vs {ln['mirror y>0']['s2_width50_median']:.0f} ns) "
-        "and smaller S1s.",
+        "and smaller S1s. Cs-137 <b>photopeak</b> events in the region show it only mildly (AFT ×0.88–0.95 at drift &lt; 20 µs): "
+        "the strong deficit belongs to events with an S1 too small for their S2.",
         "An S2's AFT should depend only on where its light is made, and 0.41 is below the model anywhere (≥ 0.52), so these "
-        "S2s are not made where normal S2s are. Working hypothesis: a drift-field distortion in the upper part at y &lt; 0 "
-        "(field cage / resistor chain; cf. the 1.2 µs longer cathode drift time for y &gt; 0) brings electrons from shallow "
-        "interactions there to the edge of the extraction region, where the S2 light is partly hidden from the top PMT, "
-        "and their light pattern is reconstructed inward. To check: event display, S2 width / rise time vs drift time, "
-        "field calculation.",
+        "S2s are not made where normal S2s are. Candidates: (a) a drift-field distortion in the upper part at y &lt; 0 "
+        "(field cage / resistor chain; cf. the 1.2 µs longer cathode drift time for y &gt; 0) bringing electrons to the edge of "
+        "the extraction region, where the S2 light is partly hidden from the top PMT; (b) interactions outside the active "
+        "volume (liquid outside the PTFE wall at y &lt; 0): S1 shielded by the PTFE, electrons reaching the extraction region "
+        "at its edge. To check: cS2/cS1 and S1-AFT versus drift-time z of these events, event display, field calculation.",
     ])
 
     st += [P("9. Design study: extra PTFE cylinders", h2), P(

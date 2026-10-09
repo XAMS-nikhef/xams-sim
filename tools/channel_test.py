@@ -53,12 +53,10 @@ def sim_maps():
 
 
 def photopeak(cs1):
-    h, e = np.histogram(cs1, np.linspace(800, 2200, 141))
-    mu = 0.5 * (e[np.argmax(h)] + e[np.argmax(h) + 1])
-    for _ in range(5):                                     # iterate a ±1 sigma window around the peak
-        w = cs1[np.abs(cs1 - mu) < 250]
-        mu, sg = np.median(w), 1.4826 * np.median(np.abs(w - np.median(w)))
-    return np.abs(cs1 - mu) < 0.5 * sg, mu, sg
+    """cS1 photopeak band (±0.5 sigma) from the edge fit on stbc-i2 (studies/aft_maps.py, photopeak.edge_and_fit);
+    the local spectrum of single scatters has only a shoulder, so no local peak search"""
+    lo, hi = np.load(DATA.parent / "aft_maps.npz")["cs_cs1_band"]
+    return (cs1 > lo) & (cs1 < hi), 0.5 * (lo + hi), hi - lo
 
 
 def cell_index(x, y):

@@ -6,12 +6,14 @@ amstrax), LED gains. Simulation: per-sensor light map, 81 fit_s2 points pooled (
 `python tools/channel_test.py` → `channel_test.png`, `low_region_vs_drift.png`, `summary.json`.
 
 **A. Channel calibration is fine.** Relative top gains that make the measured channel shares match the simulation:
-0.97 / 1.02 / 0.96 / 1.04 (ch1–4), the same from the Cs-137 photopeak and from no-source S2 > 20 kPE; share rms
-0.013 → 0.011. (Also implied by the position reconstruction working: a ch3/ch4 error large enough for the deficit,
+0.98 / 1.03 / 0.95 / 1.04 (ch1–4, Cs-137 photopeak) and 0.97 / 1.02 / 0.97 / 1.04 (no-source S2 > 20 kPE); share
+rms 0.012–0.013 → 0.009–0.011. (Also implied by the position reconstruction working: a ch3/ch4 error large enough for the deficit,
 35–40 %, would shift v by 0.15–0.2.)
 
 **B. Cs-137 photopeak versus x and y** (strips |x|, |y| < 6 mm, data ÷ simulated light collection, ÷ centre): top and
-bottom move together (S2 yield varies ±25 %), the top/bottom ratio is flat within ±5 % except at the lower edge.
+bottom move together (S2 yield varies ±15–20 %), the top/bottom ratio is flat within ~5 % except at the edges.
+(Photopeak band cS1 1247–1511 PE from the edge fit on stbc-i2; a first version used a local peak search that
+landed in the Compton region — corrected 2026-10-09.)
 
 **C. The deficit is a depth-dependent region, not geometry of the S2 alone.** On x-y (and in raw u-v, no
 reconstruction) the top/bottom ratio drops abruptly to 0.55–0.7 × the model in an arc at y < 0, r ≈ 10–18 mm, next to
@@ -33,3 +35,14 @@ cathode drift time for y > 0) sends electrons from shallow interactions there to
 where the S2 light is partly hidden from the top PMT (ring / foil rim), and the light pattern is reconstructed inward.
 Wider S2s and the empty cells next to the region fit this. To check: event display of region events; S2 width / rise
 time vs drift; electric-field calculation with a broken field-cage connection.
+
+**Not a slow channel** (anode 4 has a ~30 ns tail): the deficit is the same on the ch4 side (lower left, top/bottom ÷
+sim 0.51) and the ch3 side (lower right, 0.52), and the top-channel shares stay normal (±10 %, the same for shallow and
+deep events) — the top light keeps its pattern, only top vs bottom changes.
+
+**Photopeak events show it only mildly.** Cs-137 photopeak (fixed energy) in the region vs mirror at the same drift
+time: AFT 0.24 / 0.26 / 0.28 vs 0.27 / 0.28 / 0.30 for drift 0–5 / 5–10 / 10–20 µs (×0.88–0.95; 70–105 events per bin),
+equal deeper. The strong deficit of the S2 > 50 kPE samples belongs to events with an S1 too small for their S2
+(median S1 399 vs 787 PE in the mirror region). Alternative to the field-distortion picture: interactions outside the
+active volume (liquid between the PTFE wall and the outer structures at y < 0) whose S1 is shielded by the PTFE and whose
+electrons reach the extraction region at its edge. Test: cS2/cS1 and S1-AFT versus drift-time z of these events.
