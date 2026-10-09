@@ -1,6 +1,7 @@
-"""Note: XAMS optical simulation — model, validation, results, comparison with the data, design study.
+"""Note: XAMS optical simulation — model, validation, results, comparison with the data (incl. Cs photopeak fit, readout
+toy, 2D maps), design study.
 Figures and numbers from results/ (tools/step6_results.py, step7_compare.py, design_ptfe.py) and results/geometry.
-Usage (from optical_sim/): python notes/make_note.py notes/XAMS_optical_simulation_2026-10-07.pdf"""
+Usage (from optical_sim/): python notes/make_note.py notes/XAMS_optical_simulation_2026-10-09.pdf"""
 import json
 import sys
 from pathlib import Path
@@ -86,7 +87,7 @@ def main(out):
     st = []
     st += [P("XAMS optical simulation: model, validation and first results", h1),
            P("Geant4 optical simulation of the XAMS TPC with the meshes as built — geometry v4 from the drawings "
-             "(TPC in the PTFE bucket and the cryostat vessel, PTFE PMT holders) · 7 October 2026 · optical_sim/ (local git), user guide: optical_sim/docs (MkDocs)", sub)]
+             "(TPC in the PTFE bucket and the cryostat vessel, PTFE PMT holders) · 9 October 2026 · optical_sim/ (local git), user guide: optical_sim/docs (MkDocs)", sub)]
     st.append(box([P("<b>Summary.</b>"), *bullets([
         "Question: is the low S2 light on the top PMT a geometric effect? <b>Partly.</b> Geometry and optics give an S2 top "
         "fraction of 0.52–0.58 over all plausible optical parameters and liquid levels. The data without a source come "
@@ -94,11 +95,17 @@ def main(out):
         "anything geometric — they are the load effect of the top PMT, not geometry.",
         "<b>The geometry is right:</b> the top-sector light pattern versus position (asymmetries u, v) lies inside the "
         "narrow simulation band over ±24 mm, identically for every source.",
-        "<b>Fit:</b> the shapes of S2 versus r, S1 versus depth and the sector pattern are reproduced with two efficiency "
-        "factors on the top/bottom ratio, ε<sub>S2</sub> = 1.17 and ε<sub>S1</sub> = 0.74 (single scatters; QE ratio and top-PMT "
-        "small-signal loss). Low steel reflectivity is preferred; the other optical parameters are not constrained.",
-        "The S2 area fraction top in the data dips at the centre (r &lt; 5 mm); the model does not, and an insensitive cross "
-        "between the top-PMT anodes cannot produce it (tested up to 6 mm).",
+        "<b>Fit:</b> the shapes of S2 versus r, S1 versus depth and the sector pattern are reproduced. No-source data: "
+        "ε<sub>S2</sub> = 1.17, ε<sub>S1</sub> = 0.74 on the top/bottom ratio; <b>Cs-137 photopeak (large signals): the same "
+        "best optics, no central dip, and one factor ε<sub>S2</sub> = 0.31 ≈ ε<sub>S1</sub> = 0.33</b> (the top-PMT load). "
+        "The no-source ε<sub>S1</sub> &lt; ε<sub>S2</sub> is the top small-signal loss: amstrax sums only S2/S1 samples ≥ 15 ADC "
+        "(a single top photon keeps ~55 %). Low steel reflectivity is preferred; the other optical parameters are not constrained.",
+        "<b>Central dip</b> of the S2 area fraction top (no source, small S2s): not optics, not a dead PMT cross, not the readout "
+        "threshold (toy: &lt; 1 % at S2 ≥ 3 kPE). It comes from an extra population of small S2s piled up at the reconstructed "
+        "centre (density ×10–14 for 3–20 kPE, ×1.2 above 50 kPE) with low area fraction top, also in raw u–v.",
+        "<b>Lower half (y &lt; 0):</b> in an arc at r ≈ 10–18 mm the S2 top/bottom ratio is ~0.6–0.8 × the model, but only "
+        "for interactions in the upper half of the drift region (drift &lt; 25 µs), in both samples and on both days; deeper "
+        "events there agree. Top-channel gains are fine (±4 %). Working hypothesis: a drift-field distortion at y &lt; 0.",
         "Only ~25 % of the S2 photons reach a photocathode (QE 0.33 → 8.1 % detected); the mesh foils take ~40 %, the mesh "
         "and copper rings ~15 %, the bucket and the cryostat vessel ~12 %. The liquid level (2 → 4 mm) hardly matters. The "
         "surroundings (bucket, vessel) change nothing; the PTFE PMT holders add 7–9 % light on both PMTs.",
@@ -230,20 +237,98 @@ def main(out):
         "(S2 vs r / S1 vs z / u, v).",
         f"ε<sub>S2</sub> = {b8['eps_s2']:.2f} ({s8['eps_range_good']['s2'][0]:.2f}–{s8['eps_range_good']['s2'][1]:.2f}), "
         f"ε<sub>S1</sub> = {b8['eps_s1']:.2f} ({s8['eps_range_good']['s1'][0]:.2f}–{s8['eps_range_good']['s1'][1]:.2f}): not one "
-        "QE ratio — with a QE ratio of ~1.2 the top PMT keeps only ~0.65 of its small S1 signals relative to the bottom, "
-        "consistent with the known small-signal integration loss.",
+        "factor — the top PMT loses part of its small S1 signals (hit-only integration, section 7); for large signals "
+        "(Cs-137 photopeak, section 6) both factors agree.",
         "Steel reflectivity low (0.2 preferred: Δχ² +16.7 for 0.35, +35.7 for 0.5). PTFE reflectivity, PTFE specular part and "
         "Rayleigh length are not constrained beyond the scan statistics: their Δχ² reach 8–13, but the best values moved "
         "between geometry v3 and v4 (PTFE R 0.99 → 0.95, Rayleigh 60 → 45 cm) while ε and the shapes stayed the same.",
         "Dead cross on the top PMT (0 / 1.5 / 3 / 6 mm): centre / ring 1.02 → 1.01, data 0.82 — not the cause of the "
         "central dip.",
         "Central dip versus S2 size (data, single scatters): centre / ring 0.69 (3–5 kPE) → 0.87 (20–50 kPE) → 1.02 (&gt; 50 "
-        "kPE), but mostly because the ring value falls with size (0.79 → 0.55) while the centre stays ≈ 0.48–0.54. A pure threshold loss from sharing the "
-        "charge over four channels would make the centre rise with size; not seen. Likely a top-PMT signal-processing / "
-        "per-channel effect rather than geometry (to check with fully integrated waveforms).",
+        "kPE) — explained in section 8 by an event population, not by the optics.",
     ])
 
-    st += [P("6. Design study: extra PTFE cylinders", h2), P(
+    sp = json.load(open(RES / "step8_photopeak" / "summary.json"))["best"]
+    sc = json.load(open(RES / "size_classes" / "summary.json"))
+    st += [PageBreak(), P("6. Large signals: the Cs-137 photopeak", h2), P(
+        "The same fit with Cs-137 photopeak events only (Δ750 V, single scatters, cS1 photopeak ±0.5 σ, 34 600 events; "
+        "S2 ≈ 120 kPE, S1 ≈ 1400 PE — no small signals).")]
+    st.append(table([
+        ["", "no source", "Cs-137 photopeak"],
+        ["best optics", f"PTFE R {b8['PTFE R']}, spec. {b8['PTFE specular']}, steel R {b8['steel R']}, Rayleigh {b8['Rayleigh [cm]']} cm",
+         f"PTFE R {sp['PTFE R']}, spec. {sp['PTFE specular']}, steel R {sp['steel R']}, Rayleigh {sp['Rayleigh [cm]']} cm"],
+        ["ε<sub>S2</sub> / ε<sub>S1</sub>", f"{b8['eps_s2']:.2f} / {b8['eps_s1']:.2f}", f"{sp['eps_s2']:.2f} / {sp['eps_s1']:.2f}"],
+        ["χ² S2 vs r / S1 vs z / u,v (7 / 11 / 24 dof)", f"{b8['chi2_s2r']:.1f} / {b8['chi2_s1z']:.1f} / {b8['chi2_uv']:.1f}",
+         f"{sp['chi2_s2r']:.1f} / {sp['chi2_s1z']:.1f} / {sp['chi2_uv']:.1f}"],
+        ["AFT centre ÷ ring (data)", "0.82", "1.00"],
+    ], [62 * mm, (W - 62 * mm) / 2, (W - 62 * mm) / 2]))
+    st.append(img(RES / "step8_photopeak" / "best_fit.png", W * 0.9, "Fit with Cs-137 photopeak events: S2 vs r, S1 vs z, "
+                  "top-sector pattern, χ² profiles."))
+    g = lambda k: sc[k]  # noqa: E731
+    st += bullets([
+        "Large signals: <b>one efficiency factor</b> for S1 and S2 (≈ 0.32, the top-PMT gain drop under Cs-137 load), the same "
+        "optics as without source, no central dip. The optical model describes large signals.",
+        f"Best optics against the no-source data per S2 size (ε only): ε = {g('no source 3000-5000 PE')['eps']:.2f} (3–5 kPE), "
+        f"{g('no source 5000-10000 PE')['eps']:.2f}, {g('no source 10000-20000 PE')['eps']:.2f}, "
+        f"{g('no source 20000-50000 PE')['eps']:.2f}, {g('no source 50000-300000 PE')['eps']:.2f} (&gt; 50 kPE): stable "
+        "above 20 kPE, rising below (the falling AFT with size). Large S2s at y &gt; 0: "
+        f"χ² {g('no source > 50 kPE, y > 0')['chi2_r_ge_5']:.0f}/7, centre ÷ model {g('no source > 50 kPE, y > 0')['centre_data_over_model']:.2f}; "
+        f"at y &lt; 0: χ² {g('no source > 50 kPE, y < 0')['chi2_r_ge_5']:.0f}/7 (section 8).",
+    ])
+
+    tt = json.load(open(RES / "threshold_toy" / "summary.json"))
+    st += [P("7. Readout: thresholds and charge sharing", h2), P(
+        "Toy on top of the simulated light response: photons per channel and 4-ns sample from the S2 time profile, LED gains, "
+        "measured single-photon pulse shapes, noise; V1725 self-trigger (top 20/30 ADC, bottom 60 ADC, pre-trigger 32 and "
+        "24 samples under threshold); amstrax hit finding. <b>amstrax sums only samples ≥ 15 ADC</b> (strax.sum_waveform "
+        "on hits, no integration margin), so a lone top photon keeps 52–54 % (measured 55–60 %).")]
+    st.append(img(RES / "threshold_toy" / "threshold_toy.png", W, "Toy vs data: AFT vs r per S2 size (left), centre/ring "
+                  "vs S2 size (middle), charge kept by the readout (right)."))
+    st += bullets([
+        "S2 ≥ 3 kPE loses &lt; 1 % (top) / &lt; 3 % (bottom), centre and ring alike: the readout makes neither the central dip "
+        "nor the AFT size dependence, and adds only 0.3 % to the Cs-137 photopeak S2 spread.",
+        "S1: the top keeps 0.56 / 0.70 / 0.85 at 30 / 100 / 300 PE — the ε<sub>S1</sub> of the no-source fit, and an S1 "
+        "non-linearity. Bottom PMT at −800 V (≈ 3 ADC peak per photon, 60 ADC trigger): records nothing below ~1 kPE; the "
+        "toy's bottom numbers for small signals need the real bottom threshold (to check). Fix: hit integration bounds and a "
+        "lower hit threshold in amstrax (TODO).",
+    ])
+
+    lr = json.load(open(RES / "channel_test" / "summary.json"))
+    st += [PageBreak(), P("8. 2D maps: the central population and the y &lt; 0 region", h2), P(
+        "AFT and event density on x–y and on the raw top asymmetries u–v (no position reconstruction), per S2 size, "
+        "no-source and Cs-137 data (Δ750 V, single scatters, LED gains), against the simulated map.")]
+    st.append(img(RES / "aft_maps" / "density_vs_r.png", W * 0.9, "Event density (÷ ring 7.5–12.5 mm) and AFT versus r per S2 "
+                  "size class, no source."))
+    st += bullets([
+        "<b>Central population:</b> small no-source S2s pile up at the reconstructed centre (×14 / ×10 / ×4 / ×1.2 for 3–5 / "
+        "5–20 / 20–50 / &gt; 50 kPE; Cs photopeak flat). They spread their top light equally over the four anodes "
+        "(u ≈ v ≈ 0) and have AFT ≈ 0.5: the central dip is this population. What they are (S2 width, drift time, S1, "
+        "S1-AFT vs drift-time z) is open.",
+        "<b>Not a channel problem:</b> fitted relative top-channel gains 0.97 / 1.02 / 0.96 / 1.04, the same from Cs-137 and "
+        "no source; position reconstruction anchored on the gate mesh would show a ch3/ch4 error of the needed size.",
+        "<b>Cs-137 S2 yield:</b> top and bottom move together with position (±25 %); the top/bottom ratio is flat within ±5 % "
+        "except at the lower edge. An x–y correction of the photopeak cS2 (cross-validated) reduces the spread 47 → 41 % at "
+        "r &lt; 25 mm, 42 → 40 % at r &lt; 20 mm and not at all at r &lt; 15 mm: not the cause of the ~40 % S2 spread.",
+    ])
+    st.append(img(RES / "channel_test" / "low_region_vs_drift.png", W * 0.85, "AFT versus drift time in the y &lt; 0 region "
+                  "(r 10–18 mm) and its mirror at y &gt; 0, S2 &gt; 50 kPE, no source and Cs-137."))
+    ln = lr["low_region"]["no source"]
+    st += bullets([
+        "<b>y &lt; 0 region:</b> in an arc at y &lt; 0, r ≈ 10–18 mm (also in raw u–v, next to cells with almost no events) "
+        "the top/bottom ratio drops to ~0.6–0.8 × the model — only for interactions with drift time &lt; 25 µs (AFT 0.41–0.43 "
+        "vs 0.54 in the mirror region), not for deeper ones (0.56 vs 0.55); same on 28-09 and 29-09 and for Cs-137. Events "
+        f"there are shallower (median drift {ln['y<0 region']['drift_median_us']:.1f} vs {ln['mirror y>0']['drift_median_us']:.1f} µs), "
+        f"have wider S2s (width50 {ln['y<0 region']['s2_width50_median']:.0f} vs {ln['mirror y>0']['s2_width50_median']:.0f} ns) "
+        "and smaller S1s.",
+        "An S2's AFT should depend only on where its light is made, and 0.41 is below the model anywhere (≥ 0.52), so these "
+        "S2s are not made where normal S2s are. Working hypothesis: a drift-field distortion in the upper part at y &lt; 0 "
+        "(field cage / resistor chain; cf. the 1.2 µs longer cathode drift time for y &gt; 0) brings electrons from shallow "
+        "interactions there to the edge of the extraction region, where the S2 light is partly hidden from the top PMT, "
+        "and their light pattern is reconstructed inward. To check: event display, S2 width / rise time vs drift time, "
+        "field calculation.",
+    ])
+
+    st += [P("9. Design study: extra PTFE cylinders", h2), P(
         "PTFE cylinders with the radii of the drift-region PTFE, inside the ring bores, foil to foil:")]
     rows = [["extra PTFE", "S2 light", "S2 vs now", "S1 light", "S1 vs now", "S2 top fraction"]]
     for a, b in zip(dp["s2"], dp["s1"]):
@@ -256,7 +341,7 @@ def main(out):
 
     ar = json.load(open(RES / "anode_rotation" / "summary.json"))
     a0, a1 = ar["29.4"], ar["149.4"]
-    st += [P("7. Anode mesh rotated by 120°", h2), P(
+    st += [P("10. Anode mesh rotated by 120°", h2), P(
         "A square mesh repeats every 90°, so a 120° rotation of the anode relative to the gate is a 30° rotation. "
         "Simulated with the anode as now (aligned with the gate) and rotated (4·10<super>7</super> photons each):")]
     st.append(table([
@@ -273,13 +358,15 @@ def main(out):
            "Not covered: the electric field — a rotation changes where gate and anode bars cross, and with it the local "
            "extraction and electroluminescence field.", small)]
 
-    st += [P("8. Limitations and next steps", h2)]
+    st += [P("11. Limitations and next steps", h2)]
     st.append(box(bullets([
         "Surroundings are in (v4: PTFE bucket, cryostat vessel, PMT holders); ~10 % of the S2 light ends on the vessel. Still "
         "missing: the three gate–anode pillars; bucket bottom, vessel ends and the gap below the bucket are defaults.",
-        "Central S2 dip: check the position reconstruction near u = v = 0 (AFT versus u, v directly), since the PMT cross is excluded.",
-        "Optical parameters: a finer grid with more photons (u/v term) to constrain PTFE reflectivity and Rayleigh length; "
-        "measure the top-PMT small-signal efficiency (amstrax integration) to separate it from the QE ratio.",
+        "Central S2 dip: identify the small-S2 population at the centre (S2 width, drift time, S1, S1-AFT vs drift-time z).",
+        "y &lt; 0 deficit for shallow interactions: event display, field calculation; check the field cage / resistor chain "
+        "before the next fill (already in the run plan).",
+        "Optical parameters: a finer grid with more photons (u/v term) to constrain PTFE reflectivity and Rayleigh length. "
+        "amstrax: integration bounds + lower hit threshold so small signals keep their full charge.",
         "Oct 2024 (2 + 6 mm liquid/gas) vs now (4 + 4 mm): the simulation predicts only +0.01 in the S2 top fraction.",
     ]), AMBER))
 
@@ -290,4 +377,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "notes" / "XAMS_optical_simulation_2026-10-07.pdf"))
+    main(sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "notes" / "XAMS_optical_simulation_2026-10-09.pdf"))
