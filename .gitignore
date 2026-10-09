@@ -7,3 +7,5 @@ build_dev/
 .DS_Store
 # simulation caches (rebuilt from run/scans)
 results/**/*.npz
+# generated notes (notes/make_note.py); kept locally, not in git
+notes/*.pdf
