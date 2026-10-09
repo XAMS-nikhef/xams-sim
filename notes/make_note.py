@@ -317,6 +317,22 @@ def main(out):
         "except at the edges. An x–y correction of the photopeak cS2 (cross-validated) reduces the spread 47 → 41 % at "
         "r &lt; 25 mm, 42 → 40 % at r &lt; 20 mm and not at all at r &lt; 15 mm: not the cause of the ~40 % S2 spread.",
     ])
+    sw = json.load(open(RES / "s2width_map" / "summary.json"))
+    st.append(img(RES / "s2width_map" / "s2width_map.png", W, "S2 width50 at the gate on x–y per S2 size (top); width and AFT "
+                  "versus r, AFT versus width and the width distribution for small no-source S2s (bottom). Quality cuts: "
+                  "S1 ≥ 20 PE in top and bottom, S1 AFT consistent with the drift time."))
+    st += bullets([
+        "<b>The central dip is a population of narrow S2s.</b> Small no-source S2s (3–20 kPE) at r &lt; 2.5 mm have width50 "
+        f"{sw['no source 3–20 kPE']['width_centre']:.0f} ns at the gate (ring {sw['no source 3–20 kPE']['width_ring']:.0f} ns); "
+        f"{100 * sw['no source 3–20 kPE']['frac_narrow_lt_450_centre']:.0f} % are narrower than 450 ns (ring "
+        f"{100 * sw['no source 3–20 kPE']['frac_narrow_lt_450_ring']:.0f} %), falling with S2 size (20–50 kPE "
+        f"{100 * sw['no source 20–50 kPE']['frac_narrow_lt_450_centre']:.0f} %, &gt; 50 kPE "
+        f"{100 * sw['no source > 50 kPE']['frac_narrow_lt_450_centre']:.0f} %). Split by width: narrow central S2s have AFT 0.50, "
+        "normal-width central S2s 0.65 — the same as the ring (0.665). Without the narrow S2s there is no central dip. "
+        "They are narrower than any normal S2 at the gate and have balanced top light: light from a spread-out source "
+        "arriving at once (e.g. simultaneous electron release over a large area), reconstructed at the centre. Open; a "
+        "cut on the gate-corrected width (&gt; 450 ns) removes them.",
+    ])
     st.append(img(RES / "channel_test" / "low_region_vs_drift.png", W * 0.85, "AFT versus drift time in the y &lt; 0 region "
                   "(r 10–18 mm) and its mirror at y &gt; 0, S2 &gt; 50 kPE, no source and Cs-137."))
     ln = lr["low_region"]["no source"]
@@ -375,7 +391,7 @@ def main(out):
         "Surroundings are in (v4: PTFE bucket, cryostat vessel, PMT holders); ~10 % of the S2 light ends on the vessel. Still "
         "missing: the three gate–anode pillars; bucket bottom, vessel ends and the gap below the bucket are defaults.",
         "Central S2 dip: identify the small-S2 population at the centre (S2 width, drift time, S1, S1-AFT vs drift-time z).",
-        "Central narrow small S2s: S2 width map on x–y, anode / mesh geometry at the centre, gas events. "
+        "Central narrow small S2s: identify them (time since the previous large S2, S2 pulse shape); width cut. "
         "Near-gate events: why their S2 AFT is lower (S1 light on the top PMT ~2 µs before the S2? extraction near the gate "
         "wires?); the central population: confirm accidental S1–S2 pairing (S1 width / pulse shape, S2 width, time since the "
         "previous large S2).",
