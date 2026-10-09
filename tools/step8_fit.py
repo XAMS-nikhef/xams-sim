@@ -2,6 +2,7 @@
 """Step 8: fit the free optical parameters to the data targets, and test an insensitive cross on the top PMT.
 
     python tools/step8_fit.py   ->  results/step8/ (summary.json, fit_table.csv, figures)
+    python tools/step8_fit.py --targets=data_2026-10-09_photopeak.json --key=cs137 --out=step8_photopeak
 
 Data (targets/data_2026-10-05.json, no-source runs, LED gains): S2 area fraction top vs r (S2 3-20 kPE), S1 area
 fraction top vs z (S1 > 20 PE), top-array asymmetries u(x), v(y). Simulation: scans fit_s2 / fit_s1 (81 points: PTFE R
@@ -102,11 +103,19 @@ def fit_eps(model, err, data, mask):
     return best
 
 
+def opt(name, default):
+    return next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith(f"--{name}=")), default)
+
+
 def main():
+    global OUT
+    OUT = ROOT / "results" / opt("out", "step8")   # e.g. --out=step8_photopeak
     OUT.mkdir(parents=True, exist_ok=True)
-    tf = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--targets=")), "data_2026-10-05_single.json")
+    tf = opt("targets", "data_2026-10-05_single.json")
     D = json.load(open(ROOT / "targets" / tf))   # default: single scatters (no alternative S2)
-    ed, dn = D["edges"], D["none"]
+    key = opt("key", "none")                     # data set in the targets file: none / na22 / cs137
+    dlab = {"none": "no source", "na22": "Na-22", "cs137": "Cs-137"}[key] + (" photopeak" if "photopeak" in tf else "")
+    ed, dn = D["edges"], D[key]
     d_s2r, d_s1z = arr(dn["s2_aft_vs_r_led"]), arr(dn["s1_aft_vs_z_led"])
     d_u, d_v = arr(dn["u_vs_x"]), arr(dn["v_vs_y"])
     de_s2r, de_s1z = arr(dn["s2_aft_vs_r_led_err"]), arr(dn["s1_aft_vs_z_led_err"])
@@ -170,13 +179,13 @@ def main():
     fig, ax = plt.subplots(2, 2, figsize=(11, 8))
     a = ax[0, 0]
     a.fill_between(rc, s2c.min(0), s2c.max(0), color="C0", label="simulation, 10 best grid points (each × its ε_S2)", **band)
-    a.errorbar(rc, d_s2r, de_s2r, fmt="ko", ms=5, label="data, no source (S2 3–20 kPE)")
+    a.errorbar(rc, d_s2r, de_s2r, fmt="ko", ms=5, label=f"data, {dlab}" + ("" if "photopeak" in tf else " (S2 3–20 kPE)"))
     a.axvspan(0, 5, color="0.9", zorder=0, label="not in the fit (central dip)")
     a.set(xlabel="r [mm]", ylabel="S2 area fraction top", title=f"S2 vs r (best ε_S2 = {eps2:.2f})")
     a.legend(fontsize=7)
     a = ax[0, 1]
     a.fill_between(zc, s1c.min(0), s1c.max(0), color="C0", label="simulation, 10 best grid points (each × its ε_S1)", **band)
-    a.errorbar(zc, d_s1z, de_s1z, fmt="ko", ms=5, label="data, no source (S1 > 20 PE)")
+    a.errorbar(zc, d_s1z, de_s1z, fmt="ko", ms=5, label=f"data, {dlab}" + ("" if "photopeak" in tf else " (S1 > 20 PE)"))
     a.set(xlabel="z [mm]", ylabel="S1 area fraction top", title=f"S1 vs z (best ε_S1 = {eps1:.2f})")
     a.legend(fontsize=7)
     a = ax[1, 0]
@@ -214,7 +223,7 @@ def main():
         me = b["aft_e"] * model / np.where(b["aft"] > 0, b["aft"], 1)
         ax[0].fill_between(rc, model - me, model + me, alpha=0.4, lw=0, label=f"simulation, dead cross {wv} mm")
         ax[1].fill_between(pc, b["u"] - b["u_e"], b["u"] + b["u_e"], alpha=0.4, lw=0, label=f"simulation, {wv} mm")
-    ax[0].errorbar(rc, d_s2r, de_s2r, fmt="ko", ms=5, label="data, no source")
+    ax[0].errorbar(rc, d_s2r, de_s2r, fmt="ko", ms=5, label=f"data, {dlab}")
     ax[0].set(xlabel="r [mm]", ylabel="S2 area fraction top", title="S2 vs r (each scaled with its ε_S2)")
     ax[0].legend(fontsize=7)
     ax[1].errorbar(pc, d_u, de_u, fmt="ko", ms=5, label="data")
