@@ -102,8 +102,9 @@ def main(out):
         "(a single top photon keeps ~55 %). Low steel reflectivity is preferred; the other optical parameters are not constrained.",
         "<b>Central dip</b> of the S2 area fraction top (no source, small S2s): not optics, not a dead PMT cross, not the readout "
         "threshold (toy: &lt; 1 % at S2 ≥ 3 kPE). It comes from an extra population of small S2s piled up at the reconstructed "
-        "centre (density ×10–14 for 3–20 kPE, ×1.2 above 50 kPE) with low area fraction top, also in raw u–v. Their S1 does not "
-        "fit their drift time (S1 AFT says 15 µs deeper, S2/S1 ≈ 13): accidental S1–S2 pairs, not optics.",
+        "centre (density ×10–14 for 3–20 kPE, ×1.2 above 50 kPE) with low area fraction top, also in raw u–v. Part of them have an S1 that "
+        "does not fit the drift time (mismatched pairs, tiny S1s); an S1-AFT consistency cut halves the excess but the dip "
+        "stays — the survivors have unusually narrow S2s (width50 400 vs 586 ns). Not optics; open.",
         "<b>Lower half (y &lt; 0):</b> in an arc at r ≈ 10–18 mm the S2 top/bottom ratio is ~0.6–0.8 × the model, but only "
         "for interactions in the upper half of the drift region (drift &lt; 25 µs). Mostly a population mixture: near-gate "
         "events (~2 mm below the gate, S2/S1 ≈ 600–1000) have a lower S2 AFT everywhere and form a larger share at y &lt; 0, "
@@ -305,9 +306,11 @@ def main(out):
         "<b>Central population:</b> small no-source S2s pile up at the reconstructed centre (×14 / ×10 / ×4 / ×1.2 for 3–5 / "
         "5–20 / 20–50 / &gt; 50 kPE; Cs photopeak flat). They spread their top light equally over the four anodes "
         "(u ≈ v ≈ 0) and have AFT ≈ 0.5: the central dip is this population. Their S1 does not belong to the drift time "
-        "(S1 AFT vs drift time below: 70 % off by &gt; 10 µs, S1 15 µs deeper; S2/S1 ≈ 13 vs 34 in the ring): likely "
-        "accidental pairs of an S1-only event (e.g. below the cathode) with a small diffuse S2 (delayed / single-electron "
-        "trains spread over the TPC → u ≈ v ≈ 0).",
+        "for many of them (S1 AFT vs drift time below: 70 % of those with S1 &gt; 100 PE off by &gt; 10 µs; 44 % have S1 &lt; 20 PE). "
+        "An S1-AFT consistency cut (3σ, S1 ≥ 20 PE) removes 63 % of the central events (ring 20 %), the density excess "
+        "drops ×10.9 → ×5.1, but the survivors still have AFT 0.53 vs 0.66 and narrow S2s (width50 400 vs 586 ns, below "
+        "any normal S2): S2s made over a shorter gas path or differently. The cut leaves the energy spectrum, the Cs-137 "
+        "photopeak spread (43.0 → 42.8 %) and the optical fit unchanged.",
         "<b>Not a channel problem:</b> fitted relative top-channel gains 0.95–1.04, the same from Cs-137 and no source; the "
         "deficit is the same on the slow ch4 side and the fast ch3 side and the top-channel shares stay normal; position reconstruction anchored on the gate mesh would show a ch3/ch4 error of the needed size.",
         "<b>Cs-137 S2 yield:</b> top and bottom move together with position (±15–20 %); the top/bottom ratio is flat within ~5 % "
@@ -372,6 +375,7 @@ def main(out):
         "Surroundings are in (v4: PTFE bucket, cryostat vessel, PMT holders); ~10 % of the S2 light ends on the vessel. Still "
         "missing: the three gate–anode pillars; bucket bottom, vessel ends and the gap below the bucket are defaults.",
         "Central S2 dip: identify the small-S2 population at the centre (S2 width, drift time, S1, S1-AFT vs drift-time z).",
+        "Central narrow small S2s: S2 width map on x–y, anode / mesh geometry at the centre, gas events. "
         "Near-gate events: why their S2 AFT is lower (S1 light on the top PMT ~2 µs before the S2? extraction near the gate "
         "wires?); the central population: confirm accidental S1–S2 pairing (S1 width / pulse shape, S2 width, time since the "
         "previous large S2).",

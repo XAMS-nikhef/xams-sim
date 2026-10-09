@@ -16,7 +16,9 @@ source, S2 3–20 kPE, r < 2.5 mm) vs ring (7.5–12.5 mm). `summary.json`, `s1a
 The central events have a large, deep-looking (bottom-heavy) S1 and a small S2 with a short drift time: the S1 and
 S2 do not fit together. Likely accidental pairs — an S1-only event (e.g. a gamma below the cathode, no charge
 collected) with an unrelated small, diffuse S2 (delayed / single-electron trains spread over the TPC give u ≈ v ≈ 0,
-hence the reconstructed centre). This is the central AFT dip.
+hence the reconstructed centre). **Correction (same day, `results/s1cut_spectrum/`):** a 3σ S1-AFT consistency cut
+removes 63 % of the central events but not the dip — the survivors have consistent S1s and unusually narrow S2s, so
+mismatched pairs are only part of the central population.
 
 ## y < 0 region: a mixture of two populations
 
