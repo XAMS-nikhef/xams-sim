@@ -16,3 +16,24 @@ copper rings for an external source; background data have none.
   rate per µs is ∝ 1/v, so the drift is slower at both ends — a field effect (present without source), consistent with
   the S1-AFT profile (`results/drift_profile/`).
 - Next: a collimated z-scan (lead slit or Na-22 + NaI coincidence) gives t(z) at known heights directly.
+
+## Photopeak events and expected shadow depth (2026-10-12)
+
+- Cs-137 photopeak at the standard position (`photopeak_shadows.png`, 17.6 k events, r < 20 mm): no dip beyond the
+  ±5–8 % noise at or near the ring times either. The photopeak density rises ~3× towards the cathode (0.011 → 0.03 per
+  0.4 µs), more than all single scatters.
+- Ray-trace of the shadows (point source on the side at distance d from the axis and height h; copper rings r 36–46.3
+  mm, 1.8 mm high, μ_Cu = 0.066 /mm; interactions uniform in r < 20 mm; no scattering), deepest expected dip in 0.4 µs
+  bins:
+
+| d | h = −26 mm | −45 mm | −65 mm | −90 mm |
+|---|---|---|---|---|
+| 85 mm | 0.85 | 0.86 | 1.00 | 0.99 |
+| 110 mm | 0.71 | 0.72 | 0.99 | 1.00 |
+| 175 mm | 0.59 | 0.68 | 0.98 | 0.99 |
+| 300 mm | 0.52 | 0.56 | 0.87 | 0.99 |
+
+- A source aimed at the drift region from ≥ 11 cm would give 30–50 % dips — not seen. Consistent: a source below the
+  drift region (h ≲ −60 mm) or right at the vessel. With the photopeak rising towards the cathode: the standard
+  position was most likely low (near / below cathode level). Next fill: source level with the drift region at ≥ 10 cm,
+  height noted — gives even depth coverage and ring shadows as a free depth / field check.
