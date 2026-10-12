@@ -28,3 +28,22 @@ COMSOL notes:
 - COMSOL's default security setting forbids Java code to write files outside its own folders: the model is saved with
   `comsol batch -outputfile`, and the (r, z) map is printed to the log (`MAP` lines). The 3D box exports around the SiPMs
   (`export: [sipm]` in `cases.yaml`) need *Preferences → Security → File system access: All files* (the user's choice).
+
+## Mesh cell (gate / cathode)
+
+```bash
+efield/comsol/run_cell.sh gate    --cases sept,refa,cmb50,bs2,bs3            # 2D plane through the hole centres
+efield/comsol/run_cell.sh cathode --cases sept,cmb50 --map3d                 # + 3D field near the foil
+/Users/acolijn/miniconda3/envs/g4/bin/python efield/comsol/plot_cell3d.py cathode sept cmb50   # interactive 3D (HTML)
+```
+
+| File | What |
+|---|---|
+| `comsol/make_cell.py` | quarter cell of the etched mesh (holes 2.45, bars 0.15 × 0.15 mm, pitch 2.6 mm; periodic by symmetry); drift side with a fixed field (surface charge), far side a fixed-potential plane (anode / bottom screen); all cases in one sweep; `--map3d` prints the 3D field near the foil |
+| `comsol/run_cell.sh` | generate → compile → batch → `plot_cell.py` |
+| `comsol/plot_cell.py` | `results/efield/comsol/cell_<el>_<case>.png` (|E|, equipotentials, drift lines; 3 cells mirrored), `cell_<el>.json` |
+| `comsol/plot_cell3d.py` | `results/efield/comsol/cell3d_<el>_<case>.html` (plotly, 3 × 3 cells; not in git: 10–25 MB each, regenerate) |
+
+Results (2026-10-12): gate — all drift lines pass, focused into ~0.6 mm channels at the hole centres, zero-field point
+~0.8 mm below each bar. Cathode — the reverse field pulls electrons from a layer above the cathode through the holes
+(lost for S2): Sept 1.17 mm, BS2 1.22 mm, REF-a 0.86 mm, CM-B 0.23 mm, BS3 0; slow drift just above that layer.

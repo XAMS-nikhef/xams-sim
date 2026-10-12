@@ -9,3 +9,5 @@ build_dev/
 results/**/*.npz
 # generated notes (notes/make_note.py); kept locally, not in git
 notes/*.pdf
+# interactive 3D views (efield/comsol/plot_cell3d.py), 10-25 MB each: regenerate
+results/efield/comsol/cell3d_*.html

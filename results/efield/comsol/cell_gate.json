@@ -1,0 +1,62 @@
+{
+ "sept": {
+  "note": "SR-2026.2 (Sept 2026, \u0394750 V)",
+  "E_far_below_V_cm": 144.8,
+  "E_far_above_V_cm": 8109.9,
+  "E_max_V_cm": 21350.0,
+  "drift_line_ends": {
+   "full": {
+    "below->up": 61
+   },
+   "zoom": {
+    "below->down": 4,
+    "below->up": 57
+   }
+  }
+ },
+ "refa": {
+  "note": "short fill REF-a (Oct-2024 fields)",
+  "E_far_below_V_cm": 96.5,
+  "E_far_above_V_cm": 4461.3,
+  "E_max_V_cm": 11690.0,
+  "drift_line_ends": {
+   "full": {
+    "below->up": 61
+   },
+   "zoom": {
+    "below->down": 4,
+    "below->up": 57
+   }
+  }
+ },
+ "cmb50": {
+  "note": "CM-B with margin: SiPM \u2248 50 V below its surroundings (short-fill plan, 2026-10-12)",
+  "E_far_below_V_cm": 100.0,
+  "E_far_above_V_cm": 3570.0,
+  "E_max_V_cm": 9283.0,
+  "drift_line_ends": {
+   "full": {
+    "below->up": 61
+   },
+   "zoom": {
+    "below->down": 4,
+    "below->up": 57
+   }
+  }
+ },
+ "bs2": {
+  "note": "short fill BS2 (cathode\u2013BS 1.7 kV)",
+  "E_far_below_V_cm": 96.5,
+  "E_far_above_V_cm": 4461.3,
+  "E_max_V_cm": 11690.0,
+  "drift_line_ends": {
+   "full": {
+    "below->up": 61
+   },
+   "zoom": {
+    "below->down": 4,
+    "below->up": 57
+   }
+  }
+ }
+}
