@@ -1,0 +1,693 @@
+{
+ "misc": {
+  "mesh elements": "2298558",
+  "chain_current_nA": "150.0",
+  "exports": "failed java.security.AccessControlException: Security preference 'File system access' does not allow 'write' access to '/Users/acolijn/Documents/XAMS/optical_sim/results/efield/comsol/sept_sipm1.txt'."
+ },
+ "cases": {
+  "sept": {
+   "note": "SR-2026.2 (Sept 2026, \u0394750 V)",
+   "drift_field_nominal_V_cm": 144.79,
+   "centre": {
+    "V": -2840.09,
+    "E_V_cm": 147.74,
+    "Ez_V_cm": -146.05
+   },
+   "r20": {
+    "V": -2865.36,
+    "E_V_cm": 147.58,
+    "Ez_V_cm": -147.08
+   },
+   "liq_gap": {
+    "V": -1655.41,
+    "E_V_cm": 4222.98,
+    "Ez_V_cm": -4222.98
+   },
+   "gas_gap": {
+    "V": 844.6,
+    "E_V_cm": 8277.03,
+    "Ez_V_cm": -8277.03
+   },
+   "near_cathode": {
+    "V": -3217.42,
+    "E_V_cm": 162.89,
+    "Ez_V_cm": -162.87
+   },
+   "near_gate": {
+    "V": -2524.86,
+    "E_V_cm": 124.41,
+    "Ez_V_cm": -124.39
+   },
+   "wall_sipm_height": {
+    "V": -2868.08,
+    "E_V_cm": 151.77,
+    "Ez_V_cm": -151.67
+   },
+   "axis_sipm_height": {
+    "V": -2831.72,
+    "E_V_cm": 146.86,
+    "Ez_V_cm": -145.16
+   },
+   "sipm1_mouth": {
+    "V": -967.91,
+    "E_V_cm": 8116.71,
+    "Ez_V_cm": -82.07
+   },
+   "sipm1_front1mm": {
+    "V": -1603.44,
+    "E_V_cm": 4820.03,
+    "Ez_V_cm": -123.52
+   },
+   "sipm1_front3mm": {
+    "V": -2209.68,
+    "E_V_cm": 1831.94,
+    "Ez_V_cm": -156.33
+   },
+   "sipm2_mouth": {
+    "V": -967.87,
+    "E_V_cm": 8111.07,
+    "Ez_V_cm": -92.03
+   },
+   "sipm2_front1mm": {
+    "V": -1603.34,
+    "E_V_cm": 4827.79,
+    "Ez_V_cm": -129.24
+   },
+   "sipm2_front3mm": {
+    "V": -2209.83,
+    "E_V_cm": 1836.12,
+    "Ez_V_cm": -130.08
+   },
+   "centre_over_nominal": 1.0087,
+   "gas_over_liquid_gap": 1.96
+  },
+  "cma": {
+   "note": "short fill CM-A (SiPM height \u2248 \u22121450 V)",
+   "drift_field_nominal_V_cm": 100.0,
+   "centre": {
+    "V": -1442.05,
+    "E_V_cm": 101.43,
+    "Ez_V_cm": -100.8
+   },
+   "r20": {
+    "V": -1455.15,
+    "E_V_cm": 101.83,
+    "Ez_V_cm": -101.63
+   },
+   "liq_gap": {
+    "V": -828.38,
+    "E_V_cm": 1858.11,
+    "Ez_V_cm": -1858.11
+   },
+   "gas_gap": {
+    "V": 271.62,
+    "E_V_cm": 3641.89,
+    "Ez_V_cm": -3641.89
+   },
+   "near_cathode": {
+    "V": -1696.29,
+    "E_V_cm": 108.54,
+    "Ez_V_cm": -108.54
+   },
+   "near_gate": {
+    "V": -1217.99,
+    "E_V_cm": 89.97,
+    "Ez_V_cm": -89.97
+   },
+   "wall_sipm_height": {
+    "V": -1455.32,
+    "E_V_cm": 104.88,
+    "Ez_V_cm": -104.84
+   },
+   "axis_sipm_height": {
+    "V": -1436.27,
+    "E_V_cm": 100.99,
+    "Ez_V_cm": -100.36
+   },
+   "sipm1_mouth": {
+    "V": -491.15,
+    "E_V_cm": 4108.55,
+    "Ez_V_cm": -60.57
+   },
+   "sipm1_front1mm": {
+    "V": -813.58,
+    "E_V_cm": 2446.17,
+    "Ez_V_cm": -85.89
+   },
+   "sipm1_front3mm": {
+    "V": -1121.13,
+    "E_V_cm": 931.86,
+    "Ez_V_cm": -105.79
+   },
+   "sipm2_mouth": {
+    "V": -491.12,
+    "E_V_cm": 4110.23,
+    "Ez_V_cm": -62.64
+   },
+   "sipm2_front1mm": {
+    "V": -813.52,
+    "E_V_cm": 2450.14,
+    "Ez_V_cm": -88.78
+   },
+   "sipm2_front3mm": {
+    "V": -1121.2,
+    "E_V_cm": 933.61,
+    "Ez_V_cm": -92.46
+   },
+   "centre_over_nominal": 1.008,
+   "gas_over_liquid_gap": 1.96
+  },
+  "cmb": {
+   "note": "short fill CM-B, SiPM-neutral (gate on the NaI channel)",
+   "drift_field_nominal_V_cm": 100.0,
+   "centre": {
+    "V": -8.46,
+    "E_V_cm": 100.56,
+    "Ez_V_cm": -100.56
+   },
+   "r20": {
+    "V": -9.49,
+    "E_V_cm": 101.64,
+    "Ez_V_cm": -101.63
+   },
+   "liq_gap": {
+    "V": 624.62,
+    "E_V_cm": 1858.11,
+    "Ez_V_cm": -1858.11
+   },
+   "gas_gap": {
+    "V": 1724.62,
+    "E_V_cm": 3641.89,
+    "Ez_V_cm": -3641.89
+   },
+   "near_cathode": {
+    "V": -245.41,
+    "E_V_cm": 97.95,
+    "Ez_V_cm": -97.95
+   },
+   "near_gate": {
+    "V": 232.81,
+    "E_V_cm": 100.94,
+    "Ez_V_cm": -100.94
+   },
+   "wall_sipm_height": {
+    "V": -4.97,
+    "E_V_cm": 104.93,
+    "Ez_V_cm": -104.92
+   },
+   "axis_sipm_height": {
+    "V": -2.68,
+    "E_V_cm": 100.61,
+    "Ez_V_cm": -100.61
+   },
+   "sipm1_mouth": {
+    "V": -1.6,
+    "E_V_cm": 63.5,
+    "Ez_V_cm": -62.0
+   },
+   "sipm1_front1mm": {
+    "V": -2.61,
+    "E_V_cm": 87.67,
+    "Ez_V_cm": -87.37
+   },
+   "sipm1_front3mm": {
+    "V": -3.42,
+    "E_V_cm": 99.64,
+    "Ez_V_cm": -99.62
+   },
+   "sipm2_mouth": {
+    "V": -1.6,
+    "E_V_cm": 62.11,
+    "Ez_V_cm": -60.48
+   },
+   "sipm2_front1mm": {
+    "V": -2.61,
+    "E_V_cm": 87.65,
+    "Ez_V_cm": -87.35
+   },
+   "sipm2_front3mm": {
+    "V": -3.42,
+    "E_V_cm": 99.58,
+    "Ez_V_cm": -99.56
+   },
+   "centre_over_nominal": 1.0056,
+   "gas_over_liquid_gap": 1.96
+  },
+  "cmb50": {
+   "note": "CM-B with margin: SiPM \u2248 50 V below its surroundings (short-fill plan, 2026-10-12)",
+   "drift_field_nominal_V_cm": 100.0,
+   "centre": {
+    "V": 40.87,
+    "E_V_cm": 100.55,
+    "Ez_V_cm": -100.55
+   },
+   "r20": {
+    "V": 40.25,
+    "E_V_cm": 101.64,
+    "Ez_V_cm": -101.63
+   },
+   "liq_gap": {
+    "V": 674.62,
+    "E_V_cm": 1858.11,
+    "Ez_V_cm": -1858.11
+   },
+   "gas_gap": {
+    "V": 1774.62,
+    "E_V_cm": 3641.89,
+    "Ez_V_cm": -3641.89
+   },
+   "near_cathode": {
+    "V": -195.49,
+    "E_V_cm": 97.59,
+    "Ez_V_cm": -97.59
+   },
+   "near_gate": {
+    "V": 282.74,
+    "E_V_cm": 101.32,
+    "Ez_V_cm": -101.32
+   },
+   "wall_sipm_height": {
+    "V": 44.94,
+    "E_V_cm": 104.94,
+    "Ez_V_cm": -104.93
+   },
+   "axis_sipm_height": {
+    "V": 46.65,
+    "E_V_cm": 100.62,
+    "Ez_V_cm": -100.62
+   },
+   "sipm1_mouth": {
+    "V": 15.24,
+    "E_V_cm": 141.43,
+    "Ez_V_cm": -61.84
+   },
+   "sipm1_front1mm": {
+    "V": 25.3,
+    "E_V_cm": 116.22,
+    "Ez_V_cm": -87.42
+   },
+   "sipm1_front3mm": {
+    "V": 35.04,
+    "E_V_cm": 103.81,
+    "Ez_V_cm": -99.41
+   },
+   "sipm2_mouth": {
+    "V": 15.24,
+    "E_V_cm": 141.11,
+    "Ez_V_cm": -60.63
+   },
+   "sipm2_front1mm": {
+    "V": 25.29,
+    "E_V_cm": 116.21,
+    "Ez_V_cm": -87.3
+   },
+   "sipm2_front3mm": {
+    "V": 35.04,
+    "E_V_cm": 104.2,
+    "Ez_V_cm": -99.8
+   },
+   "centre_over_nominal": 1.0055,
+   "gas_over_liquid_gap": 1.96
+  },
+  "refa": {
+   "note": "short fill REF-a (Oct-2024 fields)",
+   "drift_field_nominal_V_cm": 96.53,
+   "centre": {
+    "V": -1433.03,
+    "E_V_cm": 97.94,
+    "Ez_V_cm": -97.29
+   },
+   "r20": {
+    "V": -1446.02,
+    "E_V_cm": 98.28,
+    "Ez_V_cm": -98.08
+   },
+   "liq_gap": {
+    "V": -735.47,
+    "E_V_cm": 2322.64,
+    "Ez_V_cm": -2322.64
+   },
+   "gas_gap": {
+    "V": 639.53,
+    "E_V_cm": 4552.36,
+    "Ez_V_cm": -4552.36
+   },
+   "near_cathode": {
+    "V": -1678.97,
+    "E_V_cm": 105.13,
+    "Ez_V_cm": -105.12
+   },
+   "near_gate": {
+    "V": -1217.29,
+    "E_V_cm": 86.5,
+    "Ez_V_cm": -86.49
+   },
+   "wall_sipm_height": {
+    "V": -1446.32,
+    "E_V_cm": 101.22,
+    "Ez_V_cm": -101.17
+   },
+   "axis_sipm_height": {
+    "V": -1427.45,
+    "E_V_cm": 97.51,
+    "Ez_V_cm": -96.86
+   },
+   "sipm1_mouth": {
+    "V": -488.08,
+    "E_V_cm": 4093.11,
+    "Ez_V_cm": -56.32
+   },
+   "sipm1_front1mm": {
+    "V": -808.55,
+    "E_V_cm": 2431.03,
+    "Ez_V_cm": -82.84
+   },
+   "sipm1_front3mm": {
+    "V": -1114.21,
+    "E_V_cm": 925.81,
+    "Ez_V_cm": -102.27
+   },
+   "sipm2_mouth": {
+    "V": -488.06,
+    "E_V_cm": 4090.28,
+    "Ez_V_cm": -60.3
+   },
+   "sipm2_front1mm": {
+    "V": -808.5,
+    "E_V_cm": 2434.96,
+    "Ez_V_cm": -85.72
+   },
+   "sipm2_front3mm": {
+    "V": -1114.29,
+    "E_V_cm": 927.59,
+    "Ez_V_cm": -89.03
+   },
+   "centre_over_nominal": 1.008,
+   "gas_over_liquid_gap": 1.96
+  },
+  "cmb_p100": {
+   "note": "CM-B, SiPM +100 V off",
+   "drift_field_nominal_V_cm": 100.0,
+   "centre": {
+    "V": -7.18,
+    "E_V_cm": 100.58,
+    "Ez_V_cm": -100.58
+   },
+   "r20": {
+    "V": -9.06,
+    "E_V_cm": 101.65,
+    "Ez_V_cm": -101.64
+   },
+   "liq_gap": {
+    "V": 624.62,
+    "E_V_cm": 1858.11,
+    "Ez_V_cm": -1858.11
+   },
+   "gas_gap": {
+    "V": 1724.62,
+    "E_V_cm": 3641.89,
+    "Ez_V_cm": -3641.89
+   },
+   "near_cathode": {
+    "V": -245.28,
+    "E_V_cm": 98.64,
+    "Ez_V_cm": -98.64
+   },
+   "near_gate": {
+    "V": 232.96,
+    "E_V_cm": 100.22,
+    "Ez_V_cm": -100.22
+   },
+   "wall_sipm_height": {
+    "V": -4.89,
+    "E_V_cm": 104.93,
+    "Ez_V_cm": -104.92
+   },
+   "axis_sipm_height": {
+    "V": -1.4,
+    "E_V_cm": 100.6,
+    "Ez_V_cm": -100.59
+   },
+   "sipm1_mouth": {
+    "V": 64.68,
+    "E_V_cm": 301.61,
+    "Ez_V_cm": -61.78
+   },
+   "sipm1_front1mm": {
+    "V": 41.53,
+    "E_V_cm": 195.72,
+    "Ez_V_cm": -87.26
+   },
+   "sipm1_front3mm": {
+    "V": 19.59,
+    "E_V_cm": 119.58,
+    "Ez_V_cm": -100.05
+   },
+   "sipm2_mouth": {
+    "V": 64.68,
+    "E_V_cm": 301.04,
+    "Ez_V_cm": -58.68
+   },
+   "sipm2_front1mm": {
+    "V": 41.53,
+    "E_V_cm": 196.05,
+    "Ez_V_cm": -87.45
+   },
+   "sipm2_front3mm": {
+    "V": 19.58,
+    "E_V_cm": 118.93,
+    "Ez_V_cm": -99.08
+   },
+   "centre_over_nominal": 1.0058,
+   "gas_over_liquid_gap": 1.96
+  },
+  "cmb_m100": {
+   "note": "CM-B, SiPM \u2212100 V off",
+   "drift_field_nominal_V_cm": 100.0,
+   "centre": {
+    "V": -9.74,
+    "E_V_cm": 100.54,
+    "Ez_V_cm": -100.54
+   },
+   "r20": {
+    "V": -9.92,
+    "E_V_cm": 101.63,
+    "Ez_V_cm": -101.63
+   },
+   "liq_gap": {
+    "V": 624.62,
+    "E_V_cm": 1858.11,
+    "Ez_V_cm": -1858.11
+   },
+   "gas_gap": {
+    "V": 1724.62,
+    "E_V_cm": 3641.89,
+    "Ez_V_cm": -3641.89
+   },
+   "near_cathode": {
+    "V": -245.55,
+    "E_V_cm": 97.26,
+    "Ez_V_cm": -97.26
+   },
+   "near_gate": {
+    "V": 232.67,
+    "E_V_cm": 101.66,
+    "Ez_V_cm": -101.66
+   },
+   "wall_sipm_height": {
+    "V": -5.06,
+    "E_V_cm": 104.93,
+    "Ez_V_cm": -104.92
+   },
+   "axis_sipm_height": {
+    "V": -3.96,
+    "E_V_cm": 100.63,
+    "Ez_V_cm": -100.62
+   },
+   "sipm1_mouth": {
+    "V": -67.88,
+    "E_V_cm": 275.11,
+    "Ez_V_cm": -62.35
+   },
+   "sipm1_front1mm": {
+    "V": -46.74,
+    "E_V_cm": 182.89,
+    "Ez_V_cm": -87.46
+   },
+   "sipm1_front3mm": {
+    "V": -26.43,
+    "E_V_cm": 116.84,
+    "Ez_V_cm": -99.19
+   },
+   "sipm2_mouth": {
+    "V": -67.88,
+    "E_V_cm": 273.69,
+    "Ez_V_cm": -62.88
+   },
+   "sipm2_front1mm": {
+    "V": -46.75,
+    "E_V_cm": 183.0,
+    "Ez_V_cm": -87.25
+   },
+   "sipm2_front3mm": {
+    "V": -26.43,
+    "E_V_cm": 117.64,
+    "Ez_V_cm": -100.04
+   },
+   "centre_over_nominal": 1.0054,
+   "gas_over_liquid_gap": 1.96
+  },
+  "cmb_p300": {
+   "note": "CM-B, SiPM +300 V off",
+   "drift_field_nominal_V_cm": 100.0,
+   "centre": {
+    "V": -4.62,
+    "E_V_cm": 100.64,
+    "Ez_V_cm": -100.61
+   },
+   "r20": {
+    "V": -8.2,
+    "E_V_cm": 101.67,
+    "Ez_V_cm": -101.65
+   },
+   "liq_gap": {
+    "V": 624.62,
+    "E_V_cm": 1858.11,
+    "Ez_V_cm": -1858.11
+   },
+   "gas_gap": {
+    "V": 1724.62,
+    "E_V_cm": 3641.89,
+    "Ez_V_cm": -3641.89
+   },
+   "near_cathode": {
+    "V": -245.0,
+    "E_V_cm": 100.02,
+    "Ez_V_cm": -100.02
+   },
+   "near_gate": {
+    "V": 233.25,
+    "E_V_cm": 98.77,
+    "Ez_V_cm": -98.77
+   },
+   "wall_sipm_height": {
+    "V": -4.72,
+    "E_V_cm": 104.94,
+    "Ez_V_cm": -104.92
+   },
+   "axis_sipm_height": {
+    "V": 1.16,
+    "E_V_cm": 100.59,
+    "Ez_V_cm": -100.57
+   },
+   "sipm1_mouth": {
+    "V": 197.23,
+    "E_V_cm": 863.41,
+    "Ez_V_cm": -61.38
+   },
+   "sipm1_front1mm": {
+    "V": 129.8,
+    "E_V_cm": 518.31,
+    "Ez_V_cm": -87.07
+   },
+   "sipm1_front3mm": {
+    "V": 65.61,
+    "E_V_cm": 217.59,
+    "Ez_V_cm": -100.91
+   },
+   "sipm2_mouth": {
+    "V": 197.24,
+    "E_V_cm": 861.53,
+    "Ez_V_cm": -54.59
+   },
+   "sipm2_front1mm": {
+    "V": 129.81,
+    "E_V_cm": 519.22,
+    "Ez_V_cm": -87.66
+   },
+   "sipm2_front3mm": {
+    "V": 65.59,
+    "E_V_cm": 216.95,
+    "Ez_V_cm": -98.11
+   },
+   "centre_over_nominal": 1.0061,
+   "gas_over_liquid_gap": 1.96
+  },
+  "cmb_m300": {
+   "note": "CM-B, SiPM \u2212300 V off",
+   "drift_field_nominal_V_cm": 100.0,
+   "centre": {
+    "V": -12.3,
+    "E_V_cm": 100.53,
+    "Ez_V_cm": -100.5
+   },
+   "r20": {
+    "V": -10.78,
+    "E_V_cm": 101.62,
+    "Ez_V_cm": -101.62
+   },
+   "liq_gap": {
+    "V": 624.62,
+    "E_V_cm": 1858.11,
+    "Ez_V_cm": -1858.11
+   },
+   "gas_gap": {
+    "V": 1724.62,
+    "E_V_cm": 3641.89,
+    "Ez_V_cm": -3641.89
+   },
+   "near_cathode": {
+    "V": -245.83,
+    "E_V_cm": 95.88,
+    "Ez_V_cm": -95.87
+   },
+   "near_gate": {
+    "V": 232.38,
+    "E_V_cm": 103.11,
+    "Ez_V_cm": -103.11
+   },
+   "wall_sipm_height": {
+    "V": -5.23,
+    "E_V_cm": 104.93,
+    "Ez_V_cm": -104.93
+   },
+   "axis_sipm_height": {
+    "V": -6.52,
+    "E_V_cm": 100.68,
+    "Ez_V_cm": -100.65
+   },
+   "sipm1_mouth": {
+    "V": -200.44,
+    "E_V_cm": 835.91,
+    "Ez_V_cm": -62.16
+   },
+   "sipm1_front1mm": {
+    "V": -135.02,
+    "E_V_cm": 504.07,
+    "Ez_V_cm": -87.66
+   },
+   "sipm1_front3mm": {
+    "V": -72.45,
+    "E_V_cm": 213.07,
+    "Ez_V_cm": -98.33
+   },
+   "sipm2_mouth": {
+    "V": -200.45,
+    "E_V_cm": 833.21,
+    "Ez_V_cm": -67.48
+   },
+   "sipm2_front1mm": {
+    "V": -135.03,
+    "E_V_cm": 504.73,
+    "Ez_V_cm": -87.04
+   },
+   "sipm2_front3mm": {
+    "V": -72.44,
+    "E_V_cm": 214.82,
+    "Ez_V_cm": -101.01
+   },
+   "centre_over_nominal": 1.005,
+   "gas_over_liquid_gap": 1.96
+  }
+ }
+}

@@ -1,0 +1,48 @@
+# HV cases for the electric-field model (efield). One entry per setting; voltages in V.
+# A = anode, G = gate, C = cathode, BS = bottom screen, TS = top screen, PMT_T / PMT_B = PMT bodies (photocathode HV,
+# assumption: the whole PMT box at that potential), SIPM = SiPM planes (grounded = 0).
+# Field-cage rings between gate and cathode follow from the resistor chain (field_cage below).
+# Sources: measurements/run_overview.md (SR-2026.2 settings) and the short-fill run plan
+# (measurements/2026-10-12/plan/XAMS_runplan_short_fill.pdf, 2026-10-12).
+#
+# export: which field maps to write for this case (needs COMSOL "File system access: All files", see README):
+#   planes = the y = 0 and x = 0 planes through the TPC (step 0.2 mm; each contains one SiPM at 180° / 90°)
+#   sipm   = a 3D box around each SiPM (step 0.25 mm) for drift lines near the SiPMs
+
+field_cage:
+  resistors_gohm: [1.0, 1.0, 1.0, 1.0, 1.0]   # gate -> ring 1 -> ring 2 -> ring 3 -> ring 4 -> cathode (design 5 x 1 GOhm,
+                                               # Flierman thesis p.102; ~5 GOhm in operation)
+
+sipm:                        # model: grounded 3 x 3 mm conducting plane, recessed 1 mm into the PTFE cylinder (user,
+                             # 2026-10-12); no package, PCB, cables or foil
+  azimuth_deg: [90.0, 180.0] # data x-y frame (results/sipm_checks, spread map); geometry.yaml says 0 / 90 — to be checked
+  z_mm: -25.325              # midway between field-shaping rings 2 (-20.425) and 3 (-30.225)
+  size_mm: 3.0
+  recess_mm: 1.0
+
+liquid_level_mm: 4.0         # above the gate (SR-2026.2)
+
+cases:
+  sept:  {A: 2500, G: -2500, C: -3250, BS: -1000, TS: -100, PMT_T: -950,  PMT_B: -800,  SIPM: 0, export: [planes, sipm],
+          note: "SR-2026.2 (Sept 2026, Δ750 V)"}
+  refa:  {A: 1550, G: -1200, C: -1700, BS: -1000, TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
+          note: "short fill REF-a (Oct-2024 fields)"}
+  refc:  {A: 2200, G: -1200, C: -1700, BS: -1000, TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
+          note: "short fill REF-c (May-2024 voltages)"}
+  bs2:   {A: 1550, G: -1200, C: -1700, BS: 0,     TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
+          note: "short fill BS2 (cathode–BS 1.7 kV)"}
+  bs3:   {A: 1550, G: -1200, C: -1700, BS: -1600, TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
+          note: "short fill BS3 (cathode–BS 0.1 kV)"}
+  cma:   {A: 1000, G: -1200, C: -1718, BS: -1568, TS: 0,    PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
+          note: "short fill CM-A (SiPM height ≈ −1450 V)"}
+  cmb:   {A: 2453, G: 253,   C: -265,  BS: -115,  TS: 0,    PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
+          note: "short fill CM-B, SiPM-neutral (gate on the NaI channel)"}
+  s1d:   {A: 0,    G: 0,     C: -518,  BS: -368,  TS: 0,    PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
+          note: "short fill S1D (drift field, no extraction)"}
+  # sensitivity: CM-B with the SiPM planes off their local potential (≈ 0 V at CM-B); + = SiPM more positive (attracts electrons)
+  cmb_p100: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 100,  export: [planes], note: "CM-B, SiPM +100 V off"}
+  cmb_m100: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: -100, export: [planes], note: "CM-B, SiPM −100 V off"}
+  cmb_p300: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 300,  export: [planes], note: "CM-B, SiPM +300 V off"}
+  cmb_m300: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: -300, export: [planes], note: "CM-B, SiPM −300 V off"}
+  cmb50: {A: 2503, G: 303, C: -215, BS: -65, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
+          note: "CM-B with margin: SiPM ≈ 50 V below its surroundings (short-fill plan, 2026-10-12)"}
