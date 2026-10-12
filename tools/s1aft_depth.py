@@ -24,7 +24,7 @@ import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "s1aft_depth"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 TB = np.arange(0, 41.1, 2.5)                    # drift-time bins [µs]
 TC = 0.5 * (TB[1:] + TB[:-1])
 S1MIN = 100

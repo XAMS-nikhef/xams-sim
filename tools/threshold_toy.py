@@ -34,7 +34,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from read_output import read  # noqa: E402
 
 OUT = ROOT / "results" / "threshold_toy"
-ANA = ROOT.parent / "notebooks" / "analysis_SR2026.2"
+ANA = ROOT.parent / "measurements" / "analysis_SR2026.2"
 CH = (0, 1, 2, 3, 4)                      # 0 = bottom, 1-4 = top anodes
 GAIN = np.array([12.6, 56.0, 47.8, 53.0, 44.6])   # ADC*samples per PE (LED, P3a/P3b/P4 average; bottom -800 V)
 GAIN_RES = np.array([0.40, 0.39, 0.44, 0.40, 0.38])  # single-PE resolution (LED fits)

@@ -20,7 +20,7 @@ from matplotlib.colors import LogNorm  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "s1cut_spectrum"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 TAU = {28: 157.0, 29: 161.0}                       # µs, elife_v2
 
 

@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from read_output import read  # noqa: E402
 
 OUT = ROOT / "results" / "channel_test"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 E = np.arange(-25, 25.1, 2.5)
 C = 0.5 * (E[1:] + E[:-1])
 

@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import step8_fit as S  # noqa: E402
 
 OUT = ROOT / "results" / "drift_profile"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 BEST = {"optics.ptfe_in_liquid.reflectivity": 0.95, "optics.ptfe_in_liquid.specular_fraction": 0.1,
         "optics.stainless_steel_reflectivity": 0.2, "optics.lxe.rayleigh_length_cm": 45}
 T_GATE, T_CATH, L = 1.15, 38.2, 51.8

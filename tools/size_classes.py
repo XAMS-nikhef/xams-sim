@@ -53,7 +53,7 @@ def main():
     samples = [(f"no source {k} PE", arr(v["aft"]), arr(v["err"])) for k, v in T["none"]["s2_aft_vs_r_by_size_led"].items()]
     samples.append(("Cs-137 photopeak", arr(P["s2_aft_vs_r_led"]), arr(P["s2_aft_vs_r_led_err"])))
     # large no-source S2s by y half, from the event arrays; simulation by the same y half
-    D = np.load(ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "aft_maps.npz")
+    D = np.load(ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "aft_maps.npz")
     ev = {k[6:]: D[k] for k in D.files if k.startswith("bg_ev_")}
     aft = ev["top"] / (ev["top"] + ev["bot"])
     r = np.hypot(ev["x"], ev["y"])

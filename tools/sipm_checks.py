@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from s1cut_spectrum import s1_consistent  # noqa: E402
 
 OUT = ROOT / "results" / "sipm_checks"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 T_GATE, T_CATH, L = 1.15, 38.2, 51.8
 
 

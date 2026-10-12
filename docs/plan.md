@@ -246,7 +246,7 @@ Details: `results/step8/README.md`.
 ## 9. Write-up (½ day)
 
 - Note in `optical_sim/notes/` with the geometry, the checks, the comparison and the conclusion; results into
-  `notebooks/run_overview.md`; input for the refill plan (expected S2 sizes at the Oct-2024 settings with 4 + 4 mm).
+  `measurements/run_overview.md`; input for the refill plan (expected S2 sizes at the Oct-2024 settings with 4 + 4 mm).
 
 ## Later (v2, only if step 8 asks for it)
 

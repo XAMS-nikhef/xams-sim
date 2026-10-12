@@ -23,7 +23,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from read_output import read  # noqa: E402
 
 OUT = ROOT / "results" / "aft_maps"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "aft_maps.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "aft_maps.npz"
 TOP = (1, 2, 3, 4)
 
 

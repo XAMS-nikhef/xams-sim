@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from s1cut_spectrum import s1_consistent  # noqa: E402
 
 OUT = ROOT / "results" / "s2width_map"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 K_DIFF = 3600.0
 E = np.arange(-25, 25.1, 2.5)
 RE = np.arange(0, 25.1, 2.5)

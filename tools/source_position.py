@@ -25,7 +25,7 @@ import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "results" / "source_position"
-DATA = ROOT.parent / "notebooks" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
+DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 MU, RB, ZTOP, ZBOT = 0.022, 56.0, 4.0, -113.0
 T_GATE, T_CATH, L = 1.15, 38.2, 51.8
 XE = np.arange(-22, 22.1, 4.0)
