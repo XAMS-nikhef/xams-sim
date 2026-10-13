@@ -1,0 +1,74 @@
+{
+ "sept": {
+  "note": "SR-2026.2 (Sept 2026, \u0394750 V)",
+  "E_far_below_V_cm": 144.8,
+  "E_far_above_V_cm": 2332.7,
+  "E_max_V_cm": 48437.0,
+  "drift_line_ends": {
+   "gas_path_mm": {
+    "median": 5.268,
+    "min": 4.842,
+    "max": 5.802,
+    "rms_over_mean": 0.0492
+   },
+   "el_photons_per_electron_p2bar": {
+    "mean": 346.7,
+    "rms_over_mean": 0.0097
+   },
+   "full": {
+    "below->anode_from_above": 61
+   },
+   "zoom": {
+    "below->anode_from_above": 61
+   }
+  }
+ },
+ "refa": {
+  "note": "short fill REF-a (Oct-2024 fields)",
+  "E_far_below_V_cm": 96.5,
+  "E_far_above_V_cm": 1888.3,
+  "E_max_V_cm": 28450.0,
+  "drift_line_ends": {
+   "gas_path_mm": {
+    "median": 5.088,
+    "min": 4.71,
+    "max": 5.586,
+    "rms_over_mean": 0.0463
+   },
+   "el_photons_per_electron_p2bar": {
+    "mean": 144.4,
+    "rms_over_mean": 0.0097
+   },
+   "full": {
+    "below->anode_from_above": 61
+   },
+   "zoom": {
+    "below->anode_from_above": 61
+   }
+  }
+ },
+ "cmb50": {
+  "note": "CM-B with margin: SiPM \u2248 50 V below its surroundings (short-fill plan, 2026-10-12)",
+  "E_far_below_V_cm": 100.0,
+  "E_far_above_V_cm": 2353.2,
+  "E_max_V_cm": 25281.0,
+  "drift_line_ends": {
+   "gas_path_mm": {
+    "median": 4.89,
+    "min": 4.56,
+    "max": 5.382,
+    "rms_over_mean": 0.0449
+   },
+   "el_photons_per_electron_p2bar": {
+    "mean": 98.3,
+    "rms_over_mean": 0.0114
+   },
+   "full": {
+    "below->anode_from_above": 61
+   },
+   "zoom": {
+    "below->anode_from_above": 61
+   }
+  }
+ }
+}
