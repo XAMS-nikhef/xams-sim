@@ -3,7 +3,7 @@
 # assumption: the whole PMT box at that potential), SIPM = SiPM planes (grounded = 0).
 # Field-cage rings between gate and cathode follow from the resistor chain (field_cage below).
 # Sources: measurements/run_overview.md (SR-2026.2 settings) and the short-fill run plan
-# (measurements/2026-10-12/plan/XAMS_runplan_short_fill.pdf, 2026-10-12).
+# (measurements/next_fill/plan/XAMS_runplan_short_fill.pdf, 2026-10-12).
 #
 # export: which field maps to write for this case (needs COMSOL "File system access: All files", see README):
 #   planes = the y = 0 and x = 0 planes through the TPC (step 0.2 mm; each contains one SiPM at 180° / 90°)

@@ -157,7 +157,7 @@ rate × S2 electrons × lost fraction).
 
 ## E8. Run-plan cases: predictions before the fill (½ day)
 
-All cases of the short-fill plan (`measurements/2026-10-12/plan/`): REF-a, REF-c, BS2, BS3, CM-A, CM-B, S1D, plus the
+All cases of the short-fill plan (`measurements/next_fill/plan/`): REF-a, REF-c, BS2, BS3, CM-A, CM-B, S1D, plus the
 Sept setting. Per case one table row: drift-field non-uniformity, predicted wall-loss fraction (top / deep, centre /
 wall), loss and shift near the SiPMs, drift-time range. CM-A and CM-B must give the same field inside the TPC except
 near the SiPMs (and outside the cage) — that is the point of the test.
