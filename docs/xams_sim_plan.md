@@ -1,0 +1,210 @@
+# Implementation plan — full XAMS simulation chain (xams-sim)
+
+Goal: simulate XAMS from the radiation source to processed events — interactions, light and charge, drift,
+extraction and electroluminescence, light collection, sensor response, waveforms — and push the result through the
+**unchanged** amstrax processing, so simulation and data are compared with the same code and cuts. Every part can also
+be run on its own, and **one configuration file** drives a complete simulation.
+
+Status: plan (2026-10-16), no code yet.
+
+## Principles
+
+- **One source per kind of information.** Geometry: `geometry.yaml`. Materials and optics: `materials.yaml`.
+  A detector setting (HV, level, pressure, lifetime, gains): one *state* file. A simulation: one *run* config that
+  names a state and a source. Nothing is typed twice.
+- **Two kinds of software.**
+  - *Map producers* — standalone packages that turn geometry + state into maps, slowly, once per state:
+    field (COMSOL), light collection (Geant4 optical), mesh-cell extraction / EL. Each has its own command line and can
+    be run by hand; the chain calls them only through their command line and reads their output files.
+  - *The event chain* — strax plugins that simulate events quickly, using those maps.
+- **amstrax is not changed.** The chain stops at `raw_records`; from there the normal amstrax plugins take over.
+- **fuse (XENONnT) as a library, not a fork** — if the read-through (step S0) shows it fits: unchanged plugins are
+  imported, XAMS versions are subclasses in xams-sim, missing ones are our own. All settings come from our config.
+- **No ROOT.** Geant4 writes fixed-size binary records + a JSON header (as optical_sim now); maps are `.npz` / HDF5
+  with a JSON manifest.
+- **Provenance everywhere.** Every map and every simulated run records the config, the state, the code versions and
+  the date; strax lineage does this automatically for the chain.
+- Each step ends with a check; a step is done when its check passes. Rough effort in brackets.
+
+## Overview
+
+```
+                 ┌────────────────────────── config ──────────────────────────┐
+                 │ geometry.yaml   materials.yaml   states/<state>.yaml        │
+                 │ sources/<source>.yaml            runs/<run>.yaml  (one file │
+                 │                                  names state + source + N…) │
+                 └───────────────┬─────────────────────────────┬──────────────┘
+          MAP PRODUCERS (standalone, once per state)           │  EVENT CHAIN (strax, per simulation run)
+   ┌───────────────────────────────────────────┐               │
+   │ efield   (COMSOL)  → field map |E|(x,y,z)  │──┐            ▼
+   │                     drift map (end point,  │  │   xams-g4 particle mode → deposits (binary records)
+   │                     time, loss) per state  │  │            │
+   │ efield cell (COMSOL) → extraction / EL map │  │            ▼
+   │ optical (Geant4 optical) → S1 light map,   │  ├──▶ [deposits] → [clusters] → [quanta: NEST, local field]
+   │                     S2 pattern map / chan. │  │            → [drifted electrons] → [extracted e⁻ + S2 photons]
+   │ (later) gains, noise, SPE from data        │──┘            → [photons per channel] → [photoelectrons]
+   └───────────────────────────────────────────┘                → [PMT / SiPM response] → [raw_records]
+                                                                          │
+                                                                          ▼
+                                                     amstrax (unchanged): records → peaks → events
+```
+
+## Software in the chain
+
+| Software | Role | Kind | Language / tool | Input | Output | Status |
+|---|---|---|---|---|---|---|
+| **config** | geometry, materials, states, sources, runs | data | YAML | — | — | geometry.yaml exists (optical_sim) |
+| **xams-g4** | Geant4 app, two modes: *particle* (interactions) and *optical* (photon transport) | standalone + called by the chain (particle mode) | C++ / Geant4 | geometry, source | deposits (binary) / photon records | optical mode exists (optical_sim); particle mode new |
+| **efield** | electric field, drift lines, mesh cells | map producer (standalone) | Python → COMSOL Java | geometry, state (HV) | field map, drift map, extraction/EL map | exists (optical_sim/efield), needs map export |
+| **optical maps** | light collection per channel from Geant4 optical scans | map producer (standalone) | Python on xams-g4 output | geometry, materials (fitted optics) | S1 map (x,y,z → channel), S2 pattern map (x,y → channel) | scans exist (optical_sim step 6–8); map format new |
+| **nestpy** | light and charge yields per cluster vs local field | library | Python (NEST) | energy, type, field | photons, electrons | external |
+| **fuse** | XENONnT simulation plugins (clustering, yields, drift, extraction, PMT, waveforms) | library (optional) | Python / strax | — | — | external; decision in S0 |
+| **xams-sim** | the event chain: XAMS plugins, context, CLI, map registry, validation | chain | Python / strax | run config + maps | strax data up to `raw_records` | new |
+| **strax** | plugin framework, lineage, caching | library | Python | — | — | external (STBC: 1.5.4) |
+| **amstrax** (+ amstrax_files) | processing of `raw_records` | library, **unchanged** | Python / strax | raw_records | peaks, events | existing |
+
+## The single configuration
+
+A simulation run is one file; everything else is referenced:
+
+```yaml
+# runs/cs137_cmb50_001.yaml
+state: cmb50              # -> states/cmb50.yaml: HV case, liquid level, pressure, electron lifetime, gains, noise
+source: cs137_raised      # -> sources/cs137_raised.yaml: isotope, activity, position, collimator
+n_events: 200000          # or: live_time_s
+seed: 1
+stop_after: raw_records   # or any intermediate product: quanta, drifted_electrons, photoelectrons, ...
+physics:                  # only overrides; defaults live in materials.yaml / the plugin configs
+  nest_model: default
+  diffusion: on
+```
+
+`xamssim run runs/cs137_cmb50_001.yaml` then:
+
+1. resolves the state → which maps are needed (field, drift, extraction/EL, S1, S2), looks them up in the **map
+   registry** (`maps/manifest.json`: state hash → files + provenance);
+2. for a missing map, runs the producer (`efield …`, `optical-maps …`) or stops with the exact command to run (COMSOL
+   and Geant4 optical scans can take long — default: tell, not run);
+3. runs xams-g4 in particle mode for the source (or reuses deposits with the same source/geometry/seed);
+4. builds the strax context (XAMS plugins + chosen fuse plugins + amstrax) with **all** settings from the config, and
+   produces the requested data type.
+
+Each producer and each stage can also be run alone, e.g. `efield field --state cmb50`, `xams-g4 particle
+--source cs137_raised -n 1e5`, or in Python `st.get_array(run, "drifted_electrons")`.
+
+## Repository layout
+
+```
+XAMS-nikhef/xams-sim
+  config/        geometry.yaml (moved from optical_sim), materials.yaml, states/, sources/, runs/
+  g4/            Geant4 application (particle + optical mode; the optical_sim C++ code moves here)
+  efield/        COMSOL generators, drift, mesh cells (from optical_sim/efield), + map export
+  optical/       optical scans -> light maps (from optical_sim tools)
+  xamssim/       Python package
+    config.py    load + validate config, resolve state/source, hash for provenance
+    maps.py      map registry and loaders
+    context.py   the strax context (XAMS + fuse + amstrax plugins)
+    plugins/     XAMS plugins: input reader, clustering?, drift, extraction/EL, light, sensors, waveforms
+    cli.py       xamssim run / maps / status
+  maps/          generated maps + manifest (not in git; large) 
+  validation/    comparisons with data (step 7/8 targets, Cs spectra, AFT, drift profile, S2 width)
+  docs/
+```
+
+Decision: one repository with standalone components (shared config, no version skew of the geometry), or separate
+repositories per producer. Recommended: one repository; optical_sim becomes its optical part (history kept).
+
+## Steps
+
+### S0. Decisions and fuse read-through (1 day)
+- Clone fuse (read only), list its plugins and all settings (`st.show_config`) in a throwaway environment.
+- Per plugin: usable via config / needs a XAMS subclass / tied to XENON infrastructure (database, URL configs,
+  hard-coded PMT counts, 10 ns sampling).
+- Which NEST version and settings does fuse use; any XENONnT tunings (their field ~23 V/cm, ours 100–150 V/cm)?
+- Versions: strax / amstrax (STBC: strax 1.5.4, Python 3.8) vs what fuse needs → one environment or chain and
+  amstrax in separate steps (raw_records written to disk in between).
+
+**Check:** decision written down: fuse as library (which plugins) or own plugins; environment and versions fixed.
+
+### S1. Repository, config and map registry (1–2 days)
+- New repo, config schema (states, sources, runs), loader with validation and hashing; move geometry.yaml.
+- Map registry: manifest with state hash → files, producer version, date; `xamssim maps --state X` lists what exists
+  and what is missing (with the command to make it).
+- Conda environment `xamssim` on the Mac (strax, amstrax, nestpy, fuse if chosen); Geant4 stays in `g4`.
+
+**Check:** `xamssim status runs/<run>.yaml` shows the resolved state, source and the map status.
+
+### S2. Geant4 particle mode (2–3 days)
+- xams-g4 with a particle mode: source from `sources/` (isotope via Geant4 radioactive decay, position, collimator),
+  full XAMS geometry incl. the region below the cathode and the gas; output per step: event id, x, y, z, t, dE,
+  particle, process, track / parent id → binary records + JSON header.
+
+**Check:** Cs-137 deposit spectrum (photopeak fraction, Compton edge) and the depth profile for the raised source;
+compare the photopeak depth profile with data (orphan-S1 / source-position analyses).
+
+### S3. Input, clustering, yields (2 days)
+- Input plugin (our binary format → the table fuse / our chain expects); clustering of steps; NEST yields per cluster
+  with the **local** field from the field map.
+
+**Check:** yields against standalone nestpy at fixed fields (100, 145, 500 V/cm); S1/S2 anticorrelation at 662 keV.
+
+### S4. Field maps and drift (2–3 days)
+- efield: export of the 3D field map and a drift map per state (end point, drift time, loss flag on a grid), from the
+  COMSOL model (needs "File system access: All files", or the printed-map route).
+- Drift plugin: drift time from v(E), longitudinal / transverse diffusion, lifetime, losses (wall, SiPM, through the
+  cathode holes), position at the gate; delayed-electron model as an option (paper).
+
+**Check:** drift-time profile and maximum drift time against data (`results/drift_profile`), apparent lifetime vs
+radius (`results/sipm_checks`) for the Sept state.
+
+### S5. Extraction and electroluminescence (1–2 days)
+- Extraction probability vs field below the surface; S2 photons per electron and their timing along the gas path
+  (from the mesh-cell model incl. gate–anode alignment); S2 width.
+
+**Check:** S2 width (gate-corrected) and single-electron size against data.
+
+### S6. Light maps (2 days)
+- optical: S1 map (x, y, z → expected photons per channel) and S2 pattern map (x, y → per channel) from the fitted
+  optical model; loader + photon → channel plugin.
+
+**Check:** AFT vs r and S1 AFT vs depth against data (step 7/8 targets) for S1 and S2.
+
+### S7. Sensors, fast output at peak level (2–3 days)
+- PMT: QE / CE, gain and SPE spectrum, double-PE, afterpulses, non-linearity under load (top PMT); SiPM: PDE,
+  crosstalk. A "fast" output straight at peak level (S1, S2 areas per channel, positions) for quick studies.
+
+**Check:** Cs-137 cS1, cS2 spectra and resolution per state (Sept vs CM-B), AFT; separate intrinsic (recombination)
+from detector effects.
+
+### S8. Waveforms → amstrax (1–2 weeks)
+- Waveforms per channel (V1725, 4 ns, baseline, noise, thresholds, pre-trigger) → `raw_records` with simulated run
+  metadata (DAQ config, gains) given from the config instead of MongoDB.
+
+**Check:** amstrax processes simulated runs unchanged; the same analysis cuts give the same distributions as data
+(cS1, cS2, widths, AFT, drift time) within the known differences.
+
+### S9. Validation suite and docs (2 days)
+- `validation/`: one command per comparison (data targets from analysis_SR2026.2), report per state.
+- Docs: config reference, how to run each producer and the chain, how to add a state or a source.
+
+## Effort
+
+| Part | Effort |
+|---|---|
+| S0–S1 (decisions, repo, config, registry) | ~2–3 days |
+| S2–S4 (Geant4 particle, yields, drift) | ~6–8 days |
+| S5–S7 (extraction/EL, light maps, sensors, fast output) | ~5–7 days |
+| S8 (waveforms → amstrax) | 1–2 weeks |
+| S9 | ~2 days |
+
+After S7 the chain already answers the physics questions (resolution per state, SiPM and cathode effects, gamma-X);
+S8 adds the like-for-like comparison through amstrax.
+
+## Open questions
+
+1. fuse as library or own plugins (S0).
+2. One repository (optical_sim grows into xams-sim) or separate repositories per producer.
+3. strax / amstrax versions for the simulation environment (STBC runs strax 1.5.4 on Python 3.8).
+4. Where the field map comes from in production: COMSOL file export (security setting) or the printed-map route.
+5. Delayed-electron model in the drift step: which model (for the paper).
+6. Large productions: the Mac for development; stbc-i2 in the background for big runs (no condor).

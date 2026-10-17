@@ -60,3 +60,4 @@ nav:
       - File map: files.md
       - Implementation plan: plan.md
       - E-field plan: efield_plan.md
+      - Full simulation chain plan: xams_sim_plan.md
