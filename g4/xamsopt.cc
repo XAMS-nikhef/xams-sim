@@ -1,5 +1,7 @@
-// XAMS optical simulation.
-//   xamsopt -c run/config.json -o run/photons.bin [-s seed] [-d] [-v] [macro.mac]
+// XAMS Geant4 application (xams-sim): optical mode (default) and particle mode.
+//   xamsopt -c run/config.json -o run/photons.bin [-s seed] [-d] [-v] [macro.mac]          optical photons
+//   xamsopt -m particle -c config.json -o run/x/deposits.bin [-s seed] macro.mac           sources -> energy deposits
+//     (particle mode: include/ParticleMode.hh; normally started by `xamssim g4 config/runs/<run>.yaml`)
 // -d: records only for detected photons (every photon still counted in <out>.summary.json).
 // Without a macro: interactive session with visualisation (Qt). -v: visualisation also in batch (offscreen images).
 #include <G4RunManagerFactory.hh>
@@ -14,17 +16,19 @@
 #include "Config.hh"
 #include "DetectorConstruction.hh"
 #include "Output.hh"
+#include "ParticleMode.hh"
 #include "PhotonActions.hh"
 #include "PhysicsList.hh"
 #include "SectionScan.hh"
 
 int main(int argc, char** argv) {
-  std::string config, out = "photons.bin", macro;
+  std::string config, out = "photons.bin", macro, mode = "optical";
   long seed = 12345;
   bool vis = false, detectedOnly = false;
   for (int i = 1; i < argc; ++i) {
     std::string a = argv[i];
     if (a == "-c" && i + 1 < argc) config = argv[++i];
+    else if (a == "-m" && i + 1 < argc) mode = argv[++i];
     else if (a == "-o" && i + 1 < argc) out = argv[++i];
     else if (a == "-s" && i + 1 < argc) seed = std::stol(argv[++i]);
     else if (a == "-v") vis = true;
@@ -32,20 +36,36 @@ int main(int argc, char** argv) {
     else macro = a;
   }
   if (config.empty()) {
-    std::cerr << "usage: xamsopt -c config.json [-o out.bin] [-s seed] [-d] [-v] [macro.mac]\n";
+    std::cerr << "usage: xamsopt [-m optical|particle] -c config.json [-o out.bin] [-s seed] [-d] [-v] [macro.mac]\n";
+    return 1;
+  }
+  if (mode != "optical" && mode != "particle") {
+    std::cerr << "unknown mode '" << mode << "' (optical | particle)\n";
     return 1;
   }
   Config::Get().Load(config);
+  Config::Get().SetMode(mode);
   G4Random::setTheSeed(seed);
 
   auto* rm = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
   rm->SetUserInitialization(new DetectorConstruction());
-  rm->SetUserInitialization(new PhysicsList());
-  rm->SetUserInitialization(new ActionInitialization());
-  Output::Get().Open(out, detectedOnly);
-  Output::Get().SetInfo("config", config);
-  Output::Get().SetInfo("seed", std::to_string(seed));
-  Output::Get().SetInfo("macro", macro);
+  if (mode == "particle") {
+    rm->SetUserInitialization(new ParticlePhysicsList());
+    rm->SetUserInitialization(new ParticleActionInitialization());
+    auto& o = DepositOutput::Get();
+    o.Open(out);
+    o.SetInfo("config", config);
+    o.SetInfo("seed", std::to_string(seed));
+    o.SetInfo("macro", macro);
+    o.SetInfo("config_json", Config::Get().J().dump());
+  } else {
+    rm->SetUserInitialization(new PhysicsList());
+    rm->SetUserInitialization(new ActionInitialization());
+    Output::Get().Open(out, detectedOnly);
+    Output::Get().SetInfo("config", config);
+    Output::Get().SetInfo("seed", std::to_string(seed));
+    Output::Get().SetInfo("macro", macro);
+  }
   SectionScan scanner;  // /xamsopt/section
 
   auto* ui = G4UImanager::GetUIpointer();
@@ -67,7 +87,8 @@ int main(int argc, char** argv) {
     delete session;
     delete vis;
   }
-  Output::Get().Close();
+  if (mode == "particle") DepositOutput::Get().Close();
+  else Output::Get().Close();
   delete rm;
   return 0;
 }

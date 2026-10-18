@@ -15,6 +15,7 @@
 #include <G4SystemOfUnits.hh>
 #include <G4Transform3D.hh>
 #include <G4NistManager.hh>
+#include <G4Orb.hh>
 #include <G4Tubs.hh>
 
 #include <algorithm>
@@ -157,10 +158,10 @@ void DetectorConstruction::BuildPmt(G4LogicalVolume* mother, G4VPhysicalVolume* 
     const double a = 0.5 * (cath - w);
     const double h = 0.5 * w + 0.5 * a;  // sector centre offset
     if (w > 0) {
-      auto* xL = new G4LogicalVolume(new G4Box(name + "DeadCrossX", 0.5 * cath, 0.5 * w, 0.5 * tc), Absorber(),
+      auto* xL = new G4LogicalVolume(new G4Box(name + "DeadCrossX", 0.5 * cath, 0.5 * w, 0.5 * tc), DeadCrossMaterial(),
                                      name + "DeadCross");
       new G4PVPlacement(nullptr, G4ThreeVector(0, 0, zc), xL, name + "DeadCross", mother, false, 0, kCheck);
-      auto* yL = new G4LogicalVolume(new G4Box(name + "DeadCrossY", 0.5 * w, 0.5 * a, 0.5 * tc), Absorber(),
+      auto* yL = new G4LogicalVolume(new G4Box(name + "DeadCrossY", 0.5 * w, 0.5 * a, 0.5 * tc), DeadCrossMaterial(),
                                      name + "DeadCross");
       for (int k = 0; k < 2; ++k)
         new G4PVPlacement(nullptr, G4ThreeVector(0, (k ? -1. : 1.) * h, zc), yL, name + "DeadCross", mother, false, k + 1,
@@ -186,11 +187,11 @@ void DetectorConstruction::BuildPmt(G4LogicalVolume* mother, G4VPhysicalVolume* 
   const double tf = tw + tc;
   auto* frameS = new G4SubtractionSolid(name + "Frame", new G4Box("fo", 0.5 * outer, 0.5 * outer, 0.5 * tf),
                                         new G4Box("fi", 0.5 * face, 0.5 * face, 0.5 * tf + 1 * mm));
-  auto* frameL = new G4LogicalVolume(frameS, Absorber(), name + "Frame");
+  auto* frameL = new G4LogicalVolume(frameS, PmtBodyMaterial(), name + "Frame");
   new G4PVPlacement(nullptr, G4ThreeVector(0, 0, z0 + s * 0.5 * tf), frameL, name + "Frame", mother, false, 0, kCheck);
   const double tb = height - tf;
   auto* bodyS = new G4Box(name + "Body", 0.5 * outer, 0.5 * outer, 0.5 * tb);
-  auto* bodyL = new G4LogicalVolume(bodyS, Absorber(), name + "Body");
+  auto* bodyL = new G4LogicalVolume(bodyS, PmtBodyMaterial(), name + "Body");
   new G4PVPlacement(nullptr, G4ThreeVector(0, 0, z0 + s * (tf + 0.5 * tb)), bodyL, name + "Body", mother, false, 0,
                     kCheck);
   (void)motherP;
@@ -214,7 +215,10 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
   const double ringHalf = 0.5 * c.Num("mesh_common/ring/thickness_mm", 1.8) * mm;
 
   // world (absorbing) and the two xenon regions
-  auto* worldS = new G4Box("World", 100. * mm, 100. * mm, 200. * mm);
+  // optical mode: 100 x 100 x 200 mm half sizes (as before); particle mode: room for external sources (config world_half_mm)
+  const double wx = c.Num("world_half_mm/0", 100.) * mm, wy = c.Num("world_half_mm/1", 100.) * mm,
+               wz = c.Num("world_half_mm/2", 200.) * mm;
+  auto* worldS = new G4Box("World", wx, wy, wz);
   auto* worldL = new G4LogicalVolume(worldS, Absorber(), "World");
   auto* worldP = new G4PVPlacement(nullptr, {}, worldL, "World", nullptr, false, 0, kCheck);
 
@@ -234,7 +238,7 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     const double vH = v["height_mm"].get<double>() * mm, vEnd = v["end_thickness_mm"].get<double>() * mm;
     const double zvIn = zBucket - v["bottom_gap_mm"].get<double>() * mm;  // inner bottom face of the vessel
     const double vC = zvIn - vEnd + 0.5 * vH;                             // centre of the vessel (outer)
-    if (vC + 0.5 * vH > 200. * mm || vC - 0.5 * vH < -200. * mm)
+    if (vC + 0.5 * vH > wz || vC - 0.5 * vH < -wz)
       G4Exception("BuildXams", "GEOM030", FatalException, "cryostat vessel does not fit in the world");
 
     auto* vesselS = new G4SubtractionSolid("Vessel", new G4Tubs("VesselO", 0., vOut, 0.5 * vH, 0., 360. * deg),
@@ -421,6 +425,22 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
       auto* sP = new G4PVPlacement(G4Transform3D(rot, G4ThreeVector(r * std::cos(phi), r * std::sin(phi), z - liqC)),
                                    sL, "SiPM", liqL, false, 6 + static_cast<int>(i), kCheck);
       MakeSensor(sL, liqP, sP, c.Num("sipms/pde", 1.0));
+    }
+  }
+  // particle mode: a small capsule around an external source (stops the decay recoil and the betas, as the real source
+  // holder does); config source/capsule {material, radius_mm}, default stainless steel, 1 mm. Only outside the vessel.
+  if (c.Particle() && j.contains("source") && j["source"].contains("position_mm")) {
+    const auto& sp = j["source"]["position_mm"];
+    const G4ThreeVector pos(sp[0].get<double>() * mm, sp[1].get<double>() * mm, sp[2].get<double>() * mm);
+    const double rc = c.Num("source/capsule/radius_mm", 1.0) * mm;
+    const std::string m = c.Str("source/capsule/material", "stainless_steel");
+    G4Material* mat = m == "ptfe" ? Ptfe() : m == "copper" ? G4NistManager::Instance()->FindOrBuildMaterial("G4_Cu") : StainlessSteel();
+    const double vOutR = j.contains("cryostat_vessel") ? 0.5 * j["cryostat_vessel"]["outer_diameter_mm"].get<double>() * mm : 0.;
+    if (rc > 0. && pos.perp() - rc > vOutR && std::abs(pos.x()) + rc < wx && std::abs(pos.y()) + rc < wy && std::abs(pos.z()) + rc < wz) {
+      new G4PVPlacement(nullptr, pos, new G4LogicalVolume(new G4Orb("SourceCapsule", rc), mat, "SourceCapsule"), "SourceCapsule",
+                        worldL, false, 0, kCheck);
+    } else if (rc > 0.) {
+      G4Exception("BuildXams", "GEOM040", JustWarning, "source capsule not placed (inside the vessel or outside the world)");
     }
   }
   return worldP;

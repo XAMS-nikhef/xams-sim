@@ -12,6 +12,10 @@ state before the restructure is tag `optical-sim-final`). Layout:
 | `xamssim/` | simulation chain: config resolution, map registry, CLI (`xamssim status config/runs/<run>.yaml`) |
 | `maps/` | generated maps (not in git) · `results/`, `notes/`, `docs/` as before · `run/` scan output (not in git) |
 
+Geant4 particle mode (plan S2): `xamssim g4 config/runs/<run>.yaml [--events N]` → `run/g4/<run>/deposits.{bin,events.bin,json}`
+(one record per energy deposit in xenon, read with `xamssim.g4io.read`); check: `validation/s2_particle_check.py`,
+`results/s2_particle/`.
+
 Full-chain plan: `docs/xams_sim_plan.md`. Environment for the chain: conda env `xamssim` (Python 3.12, strax 2.2.3,
 fuse 1.6.3, nestpy 2.0.6, amstrax; `pip install -e .[test]`); Geant4 stays in the `g4` env.
 

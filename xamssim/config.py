@@ -36,7 +36,9 @@ SCHEMA = {
     "state": ({"description": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
                "electron_lifetime_us": OPT_NUM, "sensors": dict},
               {"hv_case", "liquid_level_mm"}),
-    "source": ({"isotope": str, "activity_bq": OPT_NUM, "position_mm": (list, type(None)), "collimator": (dict, str, type(None))},
+    "source": ({"isotope": str, "activity_bq": OPT_NUM, "position_mm": (list, type(None)), "collimator": (dict, str, type(None)),
+                "type": str, "energy_keV": OPT_NUM, "direction": str, "half_angle_deg": NUM, "z_target_mm": NUM,
+                "description": str},
                {"isotope"}),
 }
 HV_KEYS = ("A", "G", "C", "BS", "TS", "PMT_T", "PMT_B", "SIPM")

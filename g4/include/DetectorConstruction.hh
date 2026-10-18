@@ -43,6 +43,10 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
   G4Material* Photocathode();
   G4Material* Ptfe();
   G4Material* Absorber();
+  G4Material* Kovar();
+  // materials of parts that are perfect absorbers for optical photons but real matter for particles (particle mode)
+  G4Material* PmtBodyMaterial();   // optical: absorber; particle: config materials pmt_common/body_material (kovar)
+  G4Material* DeadCrossMaterial(); // optical: absorber; particle: stainless steel
   void MakeSensor(G4LogicalVolume* lv, G4VPhysicalVolume* from, G4VPhysicalVolume* to, double qe);
   // reflecting skin on every face of lv: probability `reflectivity` to reflect, of which a fraction `specular` as a
   // mirror (spike) and the rest Lambertian; otherwise absorbed

@@ -95,6 +95,27 @@ G4Material* DetectorConstruction::Absorber() {
   return mat;
 }
 
+G4Material* DetectorConstruction::Kovar() {
+  // composition by mass from config/materials.yaml (kovar: Fe 54, Ni 29, Co 17 %)
+  static G4Material* mat = nullptr;
+  if (mat) return mat;
+  const auto& c = Config::Get();
+  const auto& j = c.J();
+  auto* nist = G4NistManager::Instance();
+  std::vector<std::pair<std::string, double>> comp{{"Fe", 0.54}, {"Ni", 0.29}, {"Co", 0.17}};
+  if (j.contains("materials") && j["materials"].contains("kovar") && j["materials"]["kovar"]["geant4"].contains("composition_by_mass")) {
+    comp.clear();
+    for (const auto& [el, f] : j["materials"]["kovar"]["geant4"]["composition_by_mass"].items()) comp.emplace_back(el, f.get<double>());
+  }
+  mat = new G4Material("Kovar", c.Num("materials/kovar/density_g_cm3", 8.36) * g / cm3, static_cast<int>(comp.size()));
+  for (const auto& [el, f] : comp) mat->AddElement(nist->FindOrBuildElement(el), f);
+  return mat;
+}
+
+G4Material* DetectorConstruction::PmtBodyMaterial() { return Config::Get().Particle() ? Kovar() : Absorber(); }
+
+G4Material* DetectorConstruction::DeadCrossMaterial() { return Config::Get().Particle() ? StainlessSteel() : Absorber(); }
+
 G4Material* DetectorConstruction::Photocathode() {
   // the bulk is irrelevant: photons stop at its surface (detected with probability QE, else absorbed)
   static G4Material* mat = nullptr;

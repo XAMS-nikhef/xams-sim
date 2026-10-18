@@ -1,0 +1,8 @@
+# S2 check run: raised Cs-137 source of the short-fill plan, CM-B state
+state: cmb50
+source: cs137_raised
+n_events: 2000000
+seed: 1
+stop_after: geant4_interactions
+physics:
+  clustering: lineage

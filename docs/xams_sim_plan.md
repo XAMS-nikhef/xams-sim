@@ -5,7 +5,7 @@ extraction and electroluminescence, light collection, sensor response, waveforms
 **unchanged** amstrax processing, so simulation and data are compared with the same code and cuts. Every part can also
 be run on its own, and **one configuration file** drives a complete simulation.
 
-Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18); **S0 and S1 done 2026-10-18**.
+Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18); **S0, S1 and S2 done 2026-10-18**.
 
 ## Principles
 
@@ -180,7 +180,18 @@ Original task list:
 
 **Check:** `xamssim status runs/<run>.yaml` shows the resolved state, source and the map status.
 
-### S2. Geant4 particle mode (2–3 days)
+### S2. Geant4 particle mode (2–3 days) — **done 2026-10-18**
+
+Result: `xamsopt -m particle` (g4/include/ParticleMode.hh): EM option 4 + decay + radioactive decay (decay-time threshold
+raised for Cs-137), source = ion at rest in a 1 mm steel capsule (or a gamma, isotropic or cone), decay products at
+t = 0; one 46-byte record per energy deposit in LXe / GXe + one event record + JSON header (code tables, units, config,
+seed, counts); particle-mode materials: PMT bodies / frames kovar, dead crosses steel, world ±300 mm. Python:
+`xamssim g4 <run>` (config + macro, runs in the `g4` env), `xamssim.g4io.read`; 15 tests. Check
+(`results/s2_particle/`): photopeak 662 keV, Compton edge 477 keV, photopeak fraction ≈ 0.20, photopeak rate vs source
+height; the depth comparison with September data needs the S4 drift model (data z distorted by the slow drift near
+cathode and gate). 2·10⁶ decays ≈ 35 s.
+
+Original task list:
 - xams-g4 with a particle mode: source from `sources/` (isotope via Geant4 radioactive decay, position, collimator),
   full XAMS geometry incl. the region below the cathode and the gas; output per step: event id, x, y, z, t, dE,
   particle, process, track / parent id → binary records + JSON header. Record layout (one C++ struct per step,

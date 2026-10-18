@@ -13,10 +13,14 @@ class Config {
   // convenience: value at a '/'-separated path, e.g. "optics/lxe/refractive_index"; default if absent
   double Num(const std::string& path, double def) const;
   std::string Str(const std::string& path, const std::string& def) const;
+  // run mode: "optical" (default) or "particle" (set from the command line, -m)
+  void SetMode(const std::string& m) { fMode = m; }
+  bool Particle() const { return fMode == "particle"; }
 
  private:
   Config() = default;
   const nlohmann::json* Find(const std::string& path) const;
   nlohmann::json fJson;
   bool fLoaded = false;
+  std::string fMode = "optical";
 };

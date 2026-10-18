@@ -3,6 +3,7 @@
     xamssim status config/runs/cs137_cmb50_001.yaml   resolved state / source, input hashes, map status
     xamssim maps --state cmb50                         map status for one detector state
     xamssim validate config/runs/*.yaml                check run files (and the states / sources they use)
+    xamssim g4 config/runs/<run>.yaml [--events N]      Geant4 particle mode -> run/g4/<run>/deposits.* (plan S2)
 """
 from __future__ import annotations
 
@@ -66,6 +67,12 @@ def cmd_validate(a) -> int:
     return 1 if bad else 0
 
 
+def cmd_g4(a) -> int:
+    from .g4run import run
+    run(a.run, n_events=a.events, seed=a.seed, out_dir=a.out, dry_run=a.dry_run)
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="xamssim", description="XAMS simulation chain (xams-sim)")
     ap.add_argument("--version", action="version", version=f"xamssim {__version__}")
@@ -79,6 +86,13 @@ def main(argv=None) -> int:
     p = sub.add_parser("validate", help="check run configuration files")
     p.add_argument("runs", nargs="+")
     p.set_defaults(func=cmd_validate)
+    p = sub.add_parser("g4", help="Geant4 particle mode for a run (energy deposits)")
+    p.add_argument("run")
+    p.add_argument("--events", type=int, help="number of primaries (default: n_events of the run)")
+    p.add_argument("--seed", type=int)
+    p.add_argument("--out", help="output folder (default run/g4/<run name>)")
+    p.add_argument("--dry-run", action="store_true", help="write config.json and run.mac, do not run Geant4")
+    p.set_defaults(func=cmd_g4)
     a = ap.parse_args(argv)
     try:
         return a.func(a)
