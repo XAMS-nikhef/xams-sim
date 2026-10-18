@@ -5,7 +5,7 @@ extraction and electroluminescence, light collection, sensor response, waveforms
 **unchanged** amstrax processing, so simulation and data are compared with the same code and cuts. Every part can also
 be run on its own, and **one configuration file** drives a complete simulation.
 
-Status: plan (2026-10-16), no code yet.
+Status: plan (2026-10-16; fuse clustering decided 2026-10-18), no code yet.
 
 ## Principles
 
@@ -18,8 +18,11 @@ Status: plan (2026-10-16), no code yet.
     be run by hand; the chain calls them only through their command line and reads their output files.
   - *The event chain* — strax plugins that simulate events quickly, using those maps.
 - **amstrax is not changed.** The chain stops at `raw_records`; from there the normal amstrax plugins take over.
-- **fuse (XENONnT) as a library, not a fork** — if the read-through (step S0) shows it fits: unchanged plugins are
-  imported, XAMS versions are subclasses in xams-sim, missing ones are our own. All settings come from our config.
+- **fuse (XENONnT) as a library, not a fork.** Decision 2026-10-18: use **fuse's clustering** (Geant4 steps →
+  clusters, interaction type, assignment to volumes); the other fuse plugins are decided one by one. Unchanged plugins
+  are imported, XAMS versions are subclasses in xams-sim, missing ones are our own. All settings come from our config.
+  fuse plugins are strax plugins, so the chain runs in a strax context; amstrax stays independent (xams-sim uses it,
+  never the other way round).
 - **No ROOT.** Geant4 writes fixed-size binary records + a JSON header (as optical_sim now); maps are `.npz` / HDF5
   with a JSON manifest.
 - **Provenance everywhere.** Every map and every simulated run records the config, the state, the code versions and
@@ -58,7 +61,7 @@ Status: plan (2026-10-16), no code yet.
 | **efield** | electric field, drift lines, mesh cells | map producer (standalone) | Python → COMSOL Java | geometry, state (HV) | field map, drift map, extraction/EL map | exists (optical_sim/efield), needs map export |
 | **optical maps** | light collection per channel from Geant4 optical scans | map producer (standalone) | Python on xams-g4 output | geometry, materials (fitted optics) | S1 map (x,y,z → channel), S2 pattern map (x,y → channel) | scans exist (optical_sim step 6–8); map format new |
 | **nestpy** | light and charge yields per cluster vs local field | library | Python (NEST) | energy, type, field | photons, electrons | external |
-| **fuse** | XENONnT simulation plugins (clustering, yields, drift, extraction, PMT, waveforms) | library (optional) | Python / strax | — | — | external; decision in S0 |
+| **fuse** | XENONnT simulation plugins; **clustering used** (decided), others (yields, drift, extraction, PMT, waveforms) per plugin | library | Python / strax | deposits table | clusters with type and volume | external; check in S0 |
 | **xams-sim** | the event chain: XAMS plugins, context, CLI, map registry, validation | chain | Python / strax | run config + maps | strax data up to `raw_records` | new |
 | **strax** | plugin framework, lineage, caching | library | Python | — | — | external (STBC: 1.5.4) |
 | **amstrax** (+ amstrax_files) | processing of `raw_records` | library, **unchanged** | Python / strax | raw_records | peaks, events | existing |
@@ -104,7 +107,8 @@ XAMS-nikhef/xams-sim
     config.py    load + validate config, resolve state/source, hash for provenance
     maps.py      map registry and loaders
     context.py   the strax context (XAMS + fuse + amstrax plugins)
-    plugins/     XAMS plugins: input reader, clustering?, drift, extraction/EL, light, sensors, waveforms
+    plugins/     XAMS plugins: input reader (our binary format → fuse's input table), drift, extraction/EL, light,
+                 sensors, waveforms (clustering comes from fuse)
     cli.py       xamssim run / maps / status
   maps/          generated maps + manifest (not in git; large) 
   validation/    comparisons with data (step 7/8 targets, Cs spectra, AFT, drift profile, S2 width)
@@ -120,11 +124,17 @@ repositories per producer. Recommended: one repository; optical_sim becomes its 
 - Clone fuse (read only), list its plugins and all settings (`st.show_config`) in a throwaway environment.
 - Per plugin: usable via config / needs a XAMS subclass / tied to XENON infrastructure (database, URL configs,
   hard-coded PMT counts, 10 ns sampling).
+- Clustering (decided to use, verify): its input table (fields, units, particle / process codes) — this fixes the
+  Geant4 particle-mode output (S2); volumes configurable for XAMS (drift region r < 31 mm gate–cathode, region below
+  the cathode with reverse field, LXe outside the field cage, gas) rather than hard-coded XENONnT geometry; cluster
+  size / time window and their defaults; no hidden database access.
 - Which NEST version and settings does fuse use; any XENONnT tunings (their field ~23 V/cm, ours 100–150 V/cm)?
 - Versions: strax / amstrax (STBC: strax 1.5.4, Python 3.8) vs what fuse needs → one environment or chain and
   amstrax in separate steps (raw_records written to disk in between).
 
-**Check:** decision written down: fuse as library (which plugins) or own plugins; environment and versions fixed.
+**Check:** clustering confirmed usable with XAMS settings (else: copy its code into xams-sim with the BSD-3 notice);
+decision per other fuse plugin written down; environment and versions fixed (one environment, or the chain and amstrax
+separately with `raw_records` on disk in between).
 
 ### S1. Repository, config and map registry (1–2 days)
 - New repo, config schema (states, sources, runs), loader with validation and hashing; move geometry.yaml.
@@ -143,10 +153,14 @@ repositories per producer. Recommended: one repository; optical_sim becomes its 
 compare the photopeak depth profile with data (orphan-S1 / source-position analyses).
 
 ### S3. Input, clustering, yields (2 days)
-- Input plugin (our binary format → the table fuse / our chain expects); clustering of steps; NEST yields per cluster
-  with the **local** field from the field map.
+- Input plugin: our binary format → exactly the table fuse's clustering expects.
+- **fuse clustering** with XAMS settings: volume definitions (drift region, below the cathode, outside the field cage,
+  gas) with their field / behaviour, cluster size and time window.
+- NEST yields per cluster with the **local** field from the field map (fuse's yields plugin or our own, per S0).
 
-**Check:** yields against standalone nestpy at fixed fields (100, 145, 500 V/cm); S1/S2 anticorrelation at 662 keV.
+**Check:** clusters per Cs-137 event and their volumes (single-scatter / multi-scatter / gamma-X fractions for the
+raised source); sensitivity of the photopeak single-scatter fraction to cluster size and time window; yields against
+standalone nestpy at fixed fields (100, 145, 500 V/cm); S1/S2 anticorrelation at 662 keV.
 
 ### S4. Field maps and drift (2–3 days)
 - efield: export of the 3D field map and a drift map per state (end point, drift time, loss flag on a grid), from the
@@ -202,7 +216,7 @@ S8 adds the like-for-like comparison through amstrax.
 
 ## Open questions
 
-1. fuse as library or own plugins (S0).
+1. fuse beyond clustering: which other plugins (yields, drift, extraction, PMT, waveforms) — per plugin in S0.
 2. One repository (optical_sim grows into xams-sim) or separate repositories per producer.
 3. strax / amstrax versions for the simulation environment (STBC runs strax 1.5.4 on Python 3.8).
 4. Where the field map comes from in production: COMSOL file export (security setting) or the printed-map route.
