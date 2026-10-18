@@ -5,14 +5,14 @@ figures and `sim_binned.json` are v4. Changes vs v3 are small: S2 area fraction 
 (v3 0.554–0.597), S1 area fraction top +0.002–0.004 near the cathode, central / ring 1.00–1.03 (v3 1.01–1.04).
 All conclusions below stand. v3 scan outputs: `run/scans_v3_20261006/`.
 
-**Default since 2026-10-06: single scatters** (no alternative S2; `targets/data_2026-10-05_single.json`,
+**Default since 2026-10-06: single scatters** (no alternative S2; `optical/targets/data_2026-10-05_single.json`,
 `top_bottom_vs_r_cs137_single.json`; figures made with them). The tables below are for all events unless marked;
 single-scatter numbers are in the section "Single scatters only".
 
 Data: `analysis_SR2026.2/studies/optsim_targets.py` (stbc-i2, read-only, central v4 = gains v2 + pos_rec_map v0) →
-`targets/data_2026-10-05.json`. Δ750 V runs of 28/29-09: no source (B28, B29), Na-22 (N28, N29), Cs-137 (C28, C29);
+`optical/targets/data_2026-10-05.json`. Δ750 V runs of 28/29-09: no source (B28, B29), Na-22 (N28, N29), Cs-137 (C28, C29);
 S1 and S2, no saturated S2 channel, r < 25 mm, −51.3 < z < −0.5 mm; area fractions with LED gains only (the v2 load
-correction undone). `tools/step7_compare.py` → `compare.png` (simulation band = all optics points at the 4 mm level,
+correction undone). `optical/step7_compare.py` → `compare.png` (simulation band = all optics points at the 4 mm level,
 equal QE top / bottom).
 
 ## Top-sector pattern — matches
@@ -62,7 +62,7 @@ and off-centre events.
 ### Top deficit or bottom excess? (`top_bottom_vs_r.png`)
 
 The area fraction top cannot tell whether the top sees less or the bottom more. Cs-137 photopeak (fixed S2 per
-event, ~120 kPE; LED gains; `analysis_SR2026.2/scratch/top_bottom_vs_r.py` → `targets/top_bottom_vs_r_cs137.json`),
+event, ~120 kPE; LED gains; `analysis_SR2026.2/scratch/top_bottom_vs_r.py` → `optical/targets/top_bottom_vs_r_cs137.json`),
 each ÷ its value at r = 7.5–12.5 mm:
 
 - **Centre (r < 2.5 mm):** top 0.95 and bottom 0.93 — both lower, the bottom does *not* see more; total S2 light 0.93
@@ -75,7 +75,7 @@ each ÷ its value at r = 7.5–12.5 mm:
 
 ### Single scatters only (no alternative S2, `alt_s2_index < 0`)
 
-Same selections with the strict cut (`targets/*_single.json`): it keeps only 20 % (no source), 22 % (Na-22), 25 %
+Same selections with the strict cut (`optical/targets/*_single.json`): it keeps only 20 % (no source), 22 % (Na-22), 25 %
 (Cs-137) of the events — most events have some second S2.
 
 - **Central dip of the small S2s survives** (no source, S2 3–50 kPE: centre / ring 0.69–0.87, centre ≈ 0.48–0.54) —
@@ -85,7 +85,7 @@ Same selections with the strict cut (`targets/*_single.json`): it keeps only 20 
   (strong loss near the wall, more than the optical 0.78), area fraction top 0.90–0.92 at 24 mm (simulation 0.88–0.90;
   all events 0.77–0.78). Centre: area fraction top 1.00, no dip.
 - No-source S2 vs r (3–20 kPE): 0.51 (centre) … 0.65 … 0.59 at 24 mm (all events 0.54 there).
-- **Loose cut** (alternative S2 below 5 % of the main S2; `targets/*_alt0.05.json`): keeps 30 % (no source) / 33 %
+- **Loose cut** (alternative S2 below 5 % of the main S2; `optical/targets/*_alt0.05.json`): keeps 30 % (no source) / 33 %
   (Cs) and lies between all events and single scatters, close to single scatters (no source S2 vs r: 0.50 … 0.65 …
   0.56; Cs photopeak area fraction top at 24 mm 0.86–0.89).
 - S1 area fraction top: single / all 0.91–0.94 near the cathode, ~1.05 in the middle — the depth profile is steeper

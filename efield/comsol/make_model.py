@@ -57,7 +57,7 @@ def main():
     ap.add_argument("--cases", default="", help="comma-separated subset of cases.yaml (default: all)")
     a = ap.parse_args()
 
-    G = yaml.safe_load(open(ROOT / "geometry.yaml"))
+    G = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
     cases = C["cases"]
     if a.cases:

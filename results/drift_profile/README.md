@@ -1,6 +1,6 @@
 # Drift-velocity profile from the S1 area fraction top (2026-10-12)
 
-`python tools/drift_profile.py`: Cs-137 Δ750 V (28/29-09), r < 15 mm, S1 ≥ 20 PE in top and bottom, gate-corrected S2
+`python optical/drift_profile.py`: Cs-137 Δ750 V (28/29-09), r < 15 mm, S1 ≥ 20 PE in top and bottom, gate-corrected S2
 width > 450 ns (no drift-time or S1-AFT consistency cut). Model: z(t) piecewise linear with nodes every 6.2 µs from
 t_gate = 1.15 µs (z = 0) to t_cathode = 38.2 µs (z = −51.8 mm); the 5 inner node depths and ε_S1 fitted to 1 µs medians
 of the S1 AFT with the simulated S1 AFT(z) (best optics). Two samples: photopeak (30 k events) and all Cs events with

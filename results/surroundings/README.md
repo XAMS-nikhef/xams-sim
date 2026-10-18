@@ -8,7 +8,7 @@ Geometry v4 adds
 v3 had an absorbing world around the TPC.
 
 One parameter point (level 4 mm, PTFE R 0.95, specular 0.1, steel R 0.35, Rayleigh 45 cm); v3 = that point of the
-step-8 fit scans, v4 = `scans/check_v4_s2.yaml` / `check_v4_s1.yaml`; `python tools/surroundings_compare.py`.
+step-8 fit scans, v4 = `optical/scans/check_v4_s2.yaml` / `check_v4_s1.yaml`; `python optical/surroundings_compare.py`.
 
 | | S2 top fraction | S2 LCE top / bottom | S1 top fraction | S1 LCE top / bottom |
 |---|---|---|---|---|

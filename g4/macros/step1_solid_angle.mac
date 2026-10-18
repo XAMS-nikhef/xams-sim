@@ -1,0 +1,9 @@
+# Step 1 check: point source in a box of liquid xenon, one square photocathode (48.5 mm, QE 1) at test_distance_mm.
+# Detected fraction must equal the solid angle of the square / 4 pi (optical/check_step1.py runs this for several distances).
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/run/initialize
+/xamsopt/source/shape point
+/xamsopt/source/position 0 0 0 mm
+/run/beamOn 200000

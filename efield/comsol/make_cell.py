@@ -36,7 +36,7 @@ def main():
     ap.add_argument("--hbar", type=float, default=0.012)
     ap.add_argument("--map3d", action="store_true", help="also print the 3D field near the foil (M3 lines) for plot_cell3d.py")
     a = ap.parse_args()
-    G = yaml.safe_load(open(ROOT / "geometry.yaml"))
+    G = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
     mc = G["mesh_common"]
     p, w, t = mc["pitch_mm"], mc["bar_width_mm"], mc["foil_thickness_mm"]

@@ -5,8 +5,8 @@ All commands from `optical_sim/`, inside `conda activate g4`.
 ## Look at the geometry (viewer)
 
 ```bash
-python tools/make_config.py --level 4.0 --out run/config_level4.json
-cd build && ./xamsopt -c ../run/config_level4.json -o /tmp/vis.bin
+python optical/make_config.py --level 4.0 --out run/config_level4.json
+cd g4/build && ./xamsopt -c ../../run/config_level4.json -o /tmp/vis.bin
 ```
 
 A Qt window opens (drag = rotate, scroll = zoom). Type commands in the box at the bottom:
@@ -28,8 +28,8 @@ Only the xenon is drawn see-through: in this viewer, see-through volumes inside 
 The viewer is a rendering; for the exact geometry ask Geant4's navigator which volume sits at every grid point:
 
 ```bash
-cd build && ./xamsopt -c ../run/config_level4.json -o /tmp/s.bin section.mac && cd ..
-python tools/plot_section.py build/section_xz.bin --zoom 25 50 -14 22    # → build/section_xz.png
+cd g4/build && ./xamsopt -c ../../run/config_level4.json -o /tmp/s.bin section.mac && cd ../..
+python optical/plot_section.py g4/build/section_xz.bin --zoom 25 50 -14 22    # → g4/build/section_xz.png
 ```
 
 `section.mac` makes an x–z plane at y = 0 and an x–y plane through the gate; the command is
@@ -38,13 +38,13 @@ python tools/plot_section.py build/section_xz.bin --zoom 25 50 -14 22    # → b
 ## One run
 
 ```bash
-cat > build/my_run.mac <<'MAC'
+cat > g4/build/my_run.mac <<'MAC'
 /run/initialize
 /xamsopt/source/shape s2
 /xamsopt/source/rmax 30 mm
 /run/beamOn 1000000
 MAC
-cd build && ./xamsopt -c ../run/config_level4.json -o ../run/my_run.bin -s 1 -d my_run.mac && cd ..
+cd g4/build && ./xamsopt -c ../../run/config_level4.json -o ../../run/my_run.bin -s 1 -d my_run.mac && cd ../..
 ```
 
 | option | meaning |
@@ -80,21 +80,21 @@ grid:                         # every combination is one point
 ```
 
 ```bash
-python tools/run_scan.py scans/my_scan.yaml --jobs 8
+python optical/run_scan.py scans/my_scan.yaml --jobs 8
 ```
 
 Interrupted? Run it again: finished parts are skipped. To redo a scan from scratch, first move `run/scans/my_scan/`
-away. Existing scan files: `scans/s2_optics.yaml`, `s1_optics.yaml`, `s2_rayleigh.yaml`, `design_ptfe_*.yaml`
-(written by `scans/make_design_ptfe.py`), `step5_reference*.yaml`.
+away. Existing scan files: `optical/scans/s2_optics.yaml`, `s1_optics.yaml`, `s2_rayleigh.yaml`, `design_ptfe_*.yaml`
+(written by `optical/scans/make_design_ptfe.py`), `step5_reference*.yaml`.
 
 ## Changing parameters or the design
 
-- One value for one run: `python tools/make_config.py --level 3.0 --set optics.stainless_steel_reflectivity=0.5 --out run/my.json`.
+- One value for one run: `python optical/make_config.py --level 3.0 --set optics.stainless_steel_reflectivity=0.5 --out run/my.json`.
 - Permanent geometry / optics changes: edit `geometry.yaml` (every value has its source written next to it).
-- Design options without changing the code: `extra_ptfe` (extra PTFE cylinders, see `scans/make_design_ptfe.py`).
-- New kinds of parts need C++ in `src/XamsGeometry.cc`.
+- Design options without changing the code: `extra_ptfe` (extra PTFE cylinders, see `optical/scans/make_design_ptfe.py`).
+- New kinds of parts need C++ in `g4/src/XamsGeometry.cc`.
 
 ## Checks
 
-`python tools/check_step1.py` … `check_step5.py` re-validate the program (each prints `PASSED` / `FAILED`); run them
+`python optical/check_step1.py` … `check_step5.py` re-validate the program (each prints `PASSED` / `FAILED`); run them
 after changing C++ code. See [Validation](validation.md).

@@ -1,8 +1,8 @@
 # Step 8 with Cs-137 photopeak events only (geometry v4, 2026-10-09)
 
-Data: `targets/data_2026-10-09_photopeak.json` (`analysis_SR2026.2/studies/optsim_targets.py` with `PHOTOPEAK=1`,
+Data: `optical/targets/data_2026-10-09_photopeak.json` (`analysis_SR2026.2/studies/optsim_targets.py` with `PHOTOPEAK=1`,
 read-only, central v4): Cs-137 Δ750 V (C28 + C29), single scatters, cS1 photopeak ±0.5 σ, 34 592 events. S2 ≈ 120 kPE,
-S1 ≈ 1400 PE — no small signals. `python tools/step8_fit.py --targets=data_2026-10-09_photopeak.json --key=cs137
+S1 ≈ 1400 PE — no small signals. `python optical/step8_fit.py --targets=data_2026-10-09_photopeak.json --key=cs137
 --out=step8_photopeak` (same 81-point grid, same method as `results/step8/`).
 
 | | no source (step 8) | **Cs-137 photopeak** |

@@ -2,7 +2,7 @@
 
 Question: what changes if the anode mesh is rotated by 120° relative to the gate? A square mesh (and the 456-hole
 pattern) repeats every 90°, so 120° = **30° relative rotation**. Scans `anode_rotation_s2` / `_s1` (anode at 29.4° =
-as now, aligned with the gate, vs 149.4°; level 4 mm, middle optics; 4·10⁷ photons each). `tools/anode_rotation.py`.
+as now, aligned with the gate, vs 149.4°; level 4 mm, middle optics; 4·10⁷ photons each). `optical/anode_rotation.py`.
 
 | | anode as now | anode +120° |
 |---|---|---|

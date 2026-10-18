@@ -1,6 +1,6 @@
 # Two checks of the drift-field / SiPM hypothesis (2026-10-12)
 
-`python tools/sipm_checks.py runtimes.json sc_hv.jsonl` (run start times from the run database and HV lines from the
+`python optical/sipm_checks.py runtimes.json sc_hv.jsonl` (run start times from the run database and HV lines from the
 slow-control archive, both read-only).
 
 ## 1. Apparent electron lifetime versus radius — strongly radius-dependent

@@ -1,6 +1,6 @@
 # S2 width maps: the central dip is a population of narrow S2s (2026-10-09)
 
-`python tools/s2width_map.py` (data `analysis_SR2026.2/outputs/s2_channels.npz`; quality cuts: S1 ≥ 20 PE in top and
+`python optical/s2width_map.py` (data `analysis_SR2026.2/outputs/s2_channels.npz`; quality cuts: S1 ≥ 20 PE in top and
 bottom, S1 AFT consistent with the drift time; width50 corrected to the gate with k = 3600 ns²/µs).
 
 | | width50 at gate, centre r < 2.5 | ring 7.5–12.5 | narrow (< 450 ns) centre / ring |

@@ -1,6 +1,6 @@
 # Where does the Cs-137 photopeak cS2 spread come from? Unbiased map (2026-10-12)
 
-`python tools/spread_map.py`: Cs-137 photopeak (Δ750 V, all source positions), clean cuts, r < 22 mm; spread =
+`python optical/spread_map.py`: Cs-137 photopeak (Δ750 V, all source positions), clean cuts, r < 22 mm; spread =
 1.4826 · MAD / median per cell (relative to the cell's own median, so slow yield gradients do not count); total and
 bottom-PMT cS2 (lifetime-corrected, LED gains). Global: total 0.427, bottom 0.400.
 

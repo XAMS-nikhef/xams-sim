@@ -47,17 +47,17 @@ u = np.where(np.isin(top["sensor"], (1, 3)), 1, -1)    # per photon; mean over a
 ## Worked example
 
 ```bash
-python examples/my_first_analysis.py
+python optical/examples/my_first_analysis.py
 ```
 
 It shows what a scan contains, one photon record, the S2 top fraction overall and versus radius, the sector shares
 for S2s in a small spot, where the undetected photons went, and saves a figure. Copy it and change it. For larger
-examples see `tools/step6_results.py` (figures of step 6) and `tools/step7_compare.py` (comparison with data in the
+examples see `optical/step6_results.py` (figures of step 6) and `optical/step7_compare.py` (comparison with data in the
 same bins as the data analysis).
 
 ## Comparing with data
 
-The measured numbers are in `targets/data_2026-10-05.json` (made by
+The measured numbers are in `optical/targets/data_2026-10-05.json` (made by
 `analysis_SR2026.2/studies/optsim_targets.py`: S2 / S1 area fraction top per source, vs S2 size, r and z, and the
 top-array asymmetries u, v vs position). Remember the x mirror between the frames and that the data area fractions
 depend on the top-PMT load.

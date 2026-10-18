@@ -25,27 +25,27 @@ results). **Findings: PDF note `notes/XAMS_optical_simulation_2026-10-05.pdf`** 
 
 ```bash
 conda activate g4
-mkdir -p build && cd build && cmake .. && make -j8 && cd ..
-python tools/make_config.py --level 4.0 --out run/config.json
-build/xamsopt -c run/config.json -o run/photons.bin build/<macro>.mac
+cmake -S g4 -B g4/build && cmake --build g4/build -j8
+python optical/make_config.py --level 4.0 --out run/config.json
+g4/build/xamsopt -c run/config.json -o run/photons.bin g4/build/<macro>.mac
 ```
 
 Look at the geometry:
 
 ```bash
-cd build && ./xamsopt -c ../run/config.json -o /tmp/vis.bin             # Qt viewer; /run/beamOn 20 draws photons
-cd build && ./xamsopt -c ../run/config.json -o /tmp/vis.bin section.mac  # exact cross sections from Geant4's navigator
-python tools/plot_section.py build/section_xz.bin                      # -> build/section_xz.png (--zoom u0 u1 v0 v1)
+cd g4/build && ./xamsopt -c ../../run/config.json -o /tmp/vis.bin             # Qt viewer; /run/beamOn 20 draws photons
+cd g4/build && ./xamsopt -c ../../run/config.json -o /tmp/vis.bin section.mac  # exact cross sections from Geant4's navigator
+python optical/plot_section.py g4/build/section_xz.bin                      # -> g4/build/section_xz.png (--zoom u0 u1 v0 v1)
 ```
 
 Production scans (parameter grid in `scans/<name>.yaml`, output in `run/scans/<name>/`):
 
 ```bash
-python tools/run_scan.py scans/s2_optics.yaml --jobs 8
+python optical/run_scan.py optical/scans/s2_optics.yaml --jobs 8
 python -c "import sys; sys.path.insert(0, 'tools'); from scan_data import load, top_fraction; ..."
 ```
 
-Checks: `python tools/check_step1.py`, `check_step2.py`, `check_step3.py`, `check_step4.py`, `check_step5.py` (each prints PASSED / FAILED).
+Checks: `python optical/check_step1.py`, `check_step2.py`, `check_step3.py`, `check_step4.py`, `check_step5.py` (each prints PASSED / FAILED).
 
 ## Model v1
 

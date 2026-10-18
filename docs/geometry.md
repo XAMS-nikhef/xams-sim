@@ -2,7 +2,7 @@
 
 All numbers live in `geometry.yaml`, each with its source (drawings in `reference/XAMS design/`: grid assembly,
 PTFE cylinder, field shaping, PTFE bucket, inner cryostat vessel; thesis; position reconstruction v2; the user).
-Built by `src/XamsGeometry.cc`.
+Built by `g4/src/XamsGeometry.cc`.
 
 ![Cross section y = 0](results/geometry/section_xz.png)
 
@@ -45,7 +45,7 @@ the anode ring sits in the anode–top-screen gap; the copper rings are hidden b
 ## Effect of the surroundings (v4 vs v3)
 
 One parameter point (level 4 mm, PTFE R 0.95 / specular 0.1, steel R 0.35, Rayleigh 45 cm;
-`tools/surroundings_compare.py`, `results/surroundings/`). Bucket + vessel alone changed < 1 %; with the PTFE around
+`optical/surroundings_compare.py`, `results/surroundings/`). Bucket + vessel alone changed < 1 %; with the PTFE around
 the PMTs: S2 light collection top +6.6 %, bottom +8.5 %, S2 top fraction 0.563 → 0.558; S1 top +9 %, bottom +7 %, S1
 top fraction 0.177 → 0.179. The shapes (vs r, vs z) do not change. Still ~10 % of the S2 light ends on the vessel
 (it leaves sideways through the gate–anode and anode–top-screen gaps). All results were rerun with v4 on

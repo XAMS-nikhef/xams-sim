@@ -1,7 +1,7 @@
 run/
 build/
 __pycache__/
-examples/*.png
+optical/examples/*.png
 site/
 build_dev/
 .DS_Store

@@ -7,10 +7,10 @@ build and run inside it:
 ```bash
 conda activate g4
 cd /Users/acolijn/Documents/XAMS/optical_sim
-mkdir -p build && cd build && cmake .. && make -j8 && cd ..
+cmake -S g4 -B g4/build && cmake --build g4/build -j8
 ```
 
-- After editing C++ code (`src/`, `include/`): `cd build && make -j8`.
-- After editing a macro in `macros/`: `cp macros/*.mac build/` (or rerun `cmake ..`, which copies them).
+- After editing C++ code (`g4/src/`, `g4/include/`): `cmake --build g4/build -j8`.
+- After editing a macro in `g4/macros/`: `cp g4/macros/*.mac g4/build/` (or rerun `cmake -S g4 -B g4/build`, which copies them).
 - Python analysis of existing output does **not** need `g4`: any Python with numpy and matplotlib works (e.g.
-  `~/miniconda3/bin/python`). `tools/run_scan.py` and `tools/make_config.py` need PyYAML (present in `g4`).
+  `~/miniconda3/bin/python`). `optical/run_scan.py` and `optical/make_config.py` need PyYAML (present in `g4`).

@@ -11,8 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from make_note import (AMBER, GREEN, RES, ROOT, W, P, PageBreak, SimpleDocTemplate, Spacer, box, bullets, cap, h1,  # noqa: E402
                        h2, img, mm, small, sub, table, A4)
 
-T_NONE = json.load(open(ROOT / "targets" / "data_2026-10-11_clean.json"))
-T_PP = json.load(open(ROOT / "targets" / "data_2026-10-11_photopeak_clean.json"))
+T_NONE = json.load(open(ROOT / "optical" / "targets" / "data_2026-10-11_clean.json"))
+T_PP = json.load(open(ROOT / "optical" / "targets" / "data_2026-10-11_photopeak_clean.json"))
 J = json.load(open(RES / "clean_joint" / "summary.json"))
 FN = json.load(open(RES / "clean_fit_none" / "summary.json"))
 FP = json.load(open(RES / "clean_fit_photopeak" / "summary.json"))

@@ -5,7 +5,7 @@
 region" share of v3 (S2 22 %, S1 11 %) now ends on the vessel (S2 10 %), bucket (1.7 %), copper rings (1.7 %) and more
 on the meshes / rings. The text below gives the v3 numbers.
 
-Made by `tools/step6_results.py` from the scans `s2_optics` (27 points: level 2/3/4 mm × PTFE R 0.90/0.95/0.99 ×
+Made by `optical/step6_results.py` from the scans `s2_optics` (27 points: level 2/3/4 mm × PTFE R 0.90/0.95/0.99 ×
 steel R 0.2/0.35/0.5, 10⁷ photons each), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸). Geometry v3: everything from the
 drawings — grid assemblies, PTFE cylinder, copper field-shaping rings, and the mesh foils as built (solid foil with
 456 etched holes). QE 0.33 on both PMTs, SiPM PDE 1. Everything outside |x|, |y| < 60 mm is black.

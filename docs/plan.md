@@ -39,7 +39,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - Check passed: OpNovice2 builds and its `fresnel.mac` runs (batch, 5 s, no exceptions); Fresnel reflection, total
   internal reflection (mean 68°, beyond the 46° critical angle for n = 1.40 / 1.01) and refraction behave as expected.
   (Its reference output comes from an older Geant4 with other units, so only the physics was compared.)
-- Config: `tools/make_config.py --level <mm> [--set path=value] --out run/<name>.json` turns `geometry.yaml` into the
+- Config: `optical/make_config.py --level <mm> [--set path=value] --out run/<name>.json` turns `geometry.yaml` into the
   JSON the C++ code will read: one liquid-level scenario, free parameters at the middle of their range unless set,
   derived liquid-surface z, meshes sorted by z; refuses missing required values and impossible levels; defaults for the
   two open second-order values (mesh ring inner Ø 64 mm, foil in the middle of the ring).
@@ -66,7 +66,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   + `<file>.volumes.json`). Sequential run manager (fast enough; per-thread output would be needed for MT).
 - Photocathodes: optical surface dielectric_metal, REFLECTIVITY 0, EFFICIENCY = QE; sensor id = copy number
   (0 bottom, 1–4 top sectors I–IV, 6/7 SiPMs, 10 test cathode).
-- Python: `tools/read_output.py` (numpy reader, summary), `tools/check_step1.py` (the check below).
+- Python: `optical/read_output.py` (numpy reader, summary), `optical/check_step1.py` (the check below).
 - Build: `conda activate g4; mkdir build; cd build; cmake ..; make` (macros are copied into `build/`).
 - **Check passed:** point source, 48.5 mm square cathode (QE 1) at 10 / 30 / 60 mm, 2·10⁵ photons each: detected
   fraction 0.32626 / 0.12946 / 0.04435 against the solid angle 0.32624 / 0.12932 / 0.04484 (pulls 0.02, 0.19, −1.06);
@@ -85,7 +85,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   (G4_STAINLESS-STEEL; optics via its surface, step 4), photocathode (G4_Al; detection via its surface). All optical
   properties flat over 6–8 eV (178 nm).
 - Test geometry `test_interface` (liquid below z = 0, gas above, plain boundary) and a `beam` source
-  (`/xamsopt/source/direction`); `tools/check_step2.py`, macro `step2_interface.mac`.
+  (`/xamsopt/source/direction`); `optical/check_step2.py`, macro `step2_interface.mac`.
 - **Check passed:** beam from the liquid onto the surface at 0–80°, 10⁵ photons per angle, random linear polarisation:
   reflected fraction equals (Rs + Rp)/2 from 6.6 % at normal incidence to 37.7 % at 35.5°, and 100 % (total internal
   reflection) from 37° on (critical angle 36.3°). All pulls within ±1.4 except 30° (+2.5), which a rerun with 4·10⁵
@@ -108,7 +108,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   formula for a foil of thickness 0.15 mm).
 
 **Done (2026-10-05).**
-- `src/XamsGeometry.cc`, geometry_mode `xams`: absorbing world; liquid xenon box (z −90 mm to the liquid surface) and
+- `g4/src/XamsGeometry.cc`, geometry_mode `xams`: absorbing world; liquid xenon box (z −90 mm to the liquid surface) and
   gas xenon box (surface to +45 mm), ±60 mm in x, y. The PTFE cylinder lies entirely in the liquid (gate is below the
   surface in every scenario), so no split at the liquid level is needed.
 - Meshes (top screen 18, anode 8 in gas; gate 0, cathode −51.8, bottom screen −59.6 in liquid), all at 29.4° to the
@@ -121,11 +121,11 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   body. SiPMs (copies 6, 7) on the PTFE inner wall at azimuth 0° / 90°, z −25 mm.
 - Viewing: `xamsopt -c config.json` without a macro opens the Qt viewer (`vis_interactive.mac`: media hidden, colours,
   axes; `/run/beamOn N` draws photon tracks). `/xamsopt/section file plane offset umin umax vmin vmax step` asks
-  Geant4's navigator for the volume at every point of a grid (`section.mac`), `tools/plot_section.py` draws it
+  Geant4's navigator for the volume at every point of a grid (`section.mac`), `optical/plot_section.py` draws it
   (`build/section_xz.png`, `section_xz_zoom.png`, `section_gate_xy.png`).
 - **Checks passed:** overlap check at every placement clean; the cross sections match section A–A (z positions, ring
   and PTFE radii, liquid surface at +4 mm) and the gate drawing (pitch, hole, crossing at the centre). Mesh
-  transparency (`tools/check_step3.py`, geometry_mode `test_mesh`, black bars, beam over a 25 mm disc, 2·10⁵ photons
+  transparency (`optical/check_step3.py`, geometry_mode `test_mesh`, black bars, beam over a 25 mm disc, 2·10⁵ photons
   per point, θ = 0–75°, φ = 0 / 29.4 / 45°): Geant4 agrees photon by photon with an analytic ray trace through the bar
   lattice (agreement 1.000000 in all 15 settings), and the transmitted fraction follows
   T = (h − t|tanθ cosφ|)(h − t|tanθ sinφ|)/p² from 0.888 at normal incidence to 0.62 at 75° (pulls within ±2.4).
@@ -151,7 +151,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - New test geometry `test_surface` (beam in liquid xenon onto a PTFE or steel slab); macros `step4_surface.mac`,
   `step4_xams.mac`; S2-like test source: cylinder r < 25 mm, z 4.0–7.9 mm (a first version up to 8.0 mm started
   photons inside the anode foil — they were absorbed at birth; the source must stay below the foil, 7.925 mm).
-- **Checks passed** (`tools/check_step4.py`):
+- **Checks passed** (`optical/check_step4.py`):
   (a) single surface, 2·10⁵ photons, θ = 0 / 30 / 60°: reflected fraction = R (PTFE 0.95 and 0.90, steel 0.35; pulls
   ≤ 1.1); specular fraction 0.199 for f = 0.2 (pull −0.9), none for f = 0; diffuse part Lambertian (⟨cos⟩ = 0.667,
   KS p ≥ 0.1).
@@ -176,12 +176,12 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   pattern, z slices) are made by binning afterwards, one run per parameter point.
 - Output for production (`xamsopt -d`): records only for detected photons; every photon is counted in
   `<file>.summary.json` (end code × end volume, detected per sensor, seed, config).
-- `tools/run_scan.py scans/<name>.yaml`: parameter grid (liquid level and any config path) → one config per point,
+- `optical/run_scan.py scans/<name>.yaml`: parameter grid (liquid level and any config path) → one config per point,
   each point split into parallel parts with their own seeds; resumable; output in `run/scans/<name>/`.
-  `tools/scan_data.py`: reads a scan (records, tallies, timing), `top_fraction()`.
+  `optical/scan_data.py`: reads a scan (records, tallies, timing), `top_fraction()`.
 - Scan sets ready for step 6: `s2_optics` (level × PTFE reflectivity × steel reflectivity, 27 points × 10⁷),
   `s2_rayleigh` (Rayleigh length × PTFE specular fraction, 9 × 10⁷), `s1_optics` (PTFE reflectivity, 3 × 10⁸).
-- **Check passed** (`tools/check_step5.py`): source z ranges as expected for levels 2 and 4 and for S1; z, r², φ
+- **Check passed** (`optical/check_step5.py`): source z ranges as expected for levels 2 and 4 and for S1; z, r², φ
   uniform (KS p ≥ 0.01); every photon counted once, one record per detected photon. Reference runs (4·10⁶ photons,
   middle-of-range optics, level 4): S2 top fraction 0.5663 ± 0.0009 (0.16 %), S1 0.1775 ± 0.0007 (0.39 %) — below
   0.5 % per point. Speed 1.5–1.6·10⁵ photons/s per process; 8 in parallel on the Mac → 4·10⁶ photons in 3 s.
@@ -196,7 +196,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - Where the light is lost (meshes, PTFE, liquid surface, escape) — this answers *why*.
 - **Check:** results stable against the photon number and the seed; sensible limits (black walls, perfect walls).
 
-**Done (2026-10-05).** Results and figures in `results/step6/` (`README.md`), made by `tools/step6_results.py` from
+**Done (2026-10-05).** Results and figures in `results/step6/` (`README.md`), made by `optical/step6_results.py` from
 the scans `s2_optics` (27 points), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸), `s2_ring` (4; ring inner Ø robustness).
 - S2 top fraction 0.53–0.59 over all parameter ranges (data at low load 0.52); liquid level hardly matters (+0.009
   from 2 to 4 mm); strongest knobs PTFE specular fraction, steel and PTFE reflectivity. Ring inner Ø (open value)
@@ -217,7 +217,7 @@ the scans `s2_optics` (27 points), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸), 
   fraction).
 
 **Done (2026-10-05).** `analysis_SR2026.2/studies/optsim_targets.py` (stbc-i2, read-only, central v4) →
-`targets/data_2026-10-05.json`; `tools/step7_compare.py` → `results/step7/compare.png`; details in
+`optical/targets/data_2026-10-05.json`; `optical/step7_compare.py` → `results/step7/compare.png`; details in
 `results/step7/README.md`.
 - Top-sector pattern (u, v vs position, posrec v2): data inside the simulation band over ±24 mm, same for every
   source — the geometry is right.
@@ -235,7 +235,7 @@ the scans `s2_optics` (27 points), `s2_rayleigh` (9), `s1_optics` (3 × 10⁸), 
   calibration of the top PMT, mesh transparency, a missing part).
 
 **Done (2026-10-05).** First the geometry was completed from the drawings (v3: grid assemblies, PTFE cylinder, copper
-field-shaping rings, mesh foils as built with 456 etched holes) and every scan rerun. Then `tools/step8_fit.py`: 81-point
+field-shaping rings, mesh foils as built with 456 etched holes) and every scan rerun. Then `optical/step8_fit.py`: 81-point
 grid (PTFE R × PTFE specular × steel R × Rayleigh) for S2 and S1, two efficiency factors per point (ε_S2, ε_S1 on the
 top/bottom ratio), shapes fitted to the no-source data (S2 vs r, S1 vs z, u/v). Result: shapes reproduced;
 ε_S2 = 1.13 (1.07–1.22), ε_S1 = 0.77 (0.71–0.80) — two different factors, the S1 one consistent with the top-PMT

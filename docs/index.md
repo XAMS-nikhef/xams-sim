@@ -25,9 +25,9 @@ Full write-up: the PDF note `notes/XAMS_optical_simulation_2026-10-07.pdf` and t
 ```bash
 conda activate g4
 cd /Users/acolijn/Documents/XAMS/optical_sim
-mkdir -p build && cd build && cmake .. && make -j8 && cd ..        # once
-python tools/make_config.py --level 4.0 --out run/config_level4.json
-cd build && ./xamsopt -c ../run/config_level4.json -o /tmp/vis.bin  # the viewer
+cmake -S g4 -B g4/build && cmake --build g4/build -j8        # once
+python optical/make_config.py --level 4.0 --out run/config_level4.json
+cd g4/build && ./xamsopt -c ../../run/config_level4.json -o /tmp/vis.bin  # the viewer
 ```
 
 Then: [how it works](concepts.md) → [running](running.md) → [your own analysis](analysis.md).

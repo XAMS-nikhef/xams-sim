@@ -1,9 +1,9 @@
 # Pitfalls
 
 - **Run Geant4 only inside `conda activate g4`**, otherwise it cannot find its data files and stops.
-- **Macros:** an edited macro in `macros/` is only used after copying it to `build/`.
-- **Moved folder:** after renaming / moving `optical_sim`, reconfigure the build (remove `build/CMakeCache.txt`,
-  `cmake -S . -B build`), the cache keeps absolute paths.
+- **Macros:** an edited macro in `g4/macros/` is only used after copying it to `g4/build/`.
+- **Moved folder:** after renaming / moving the repository, reconfigure the build (remove `g4/build/CMakeCache.txt`,
+  `cmake -S g4 -B g4/build`), the cache keeps absolute paths.
 - **Note PDF:** `notes/make_note.py` needs reportlab (base conda Python, not in `g4`).
 - **Scans skip finished parts:** after a geometry or code change, move the old `run/scans/<name>/` away first, or the
   old results are reused.
@@ -15,4 +15,4 @@
 - **Free parameters** (reflectivities, Rayleigh and absorption length, PTFE specular fraction) sit at the middle of
   their range unless set (`--set` or a scan grid).
 - **Equal QE** (0.33) on both PMTs; the data top/bottom ratio also contains the relative QE and gain calibration.
-- `run/` and `build/` are not in git; everything there can be regenerated.
+- `run/` and `g4/build/` are not in git; everything there can be regenerated.

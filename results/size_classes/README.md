@@ -1,6 +1,6 @@
 # Best optics against the data per S2 size class (2026-10-09)
 
-`python tools/size_classes.py`: step-8 best optics (PTFE R 0.95, specular 0.1, steel R 0.2, Rayleigh 45 cm), only the
+`python optical/size_classes.py`: step-8 best optics (PTFE R 0.95, specular 0.1, steel R 0.2, Rayleigh 45 cm), only the
 scale ε fitted per sample; χ² for r ≥ 5 mm (7 dof), floor 0.01. See `summary.json` and `size_classes.png`.
 
 | sample | ε | χ² / 7 | centre ÷ model |

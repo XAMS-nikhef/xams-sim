@@ -1,6 +1,6 @@
 # S1 area fraction top versus drift time (2026-10-09)
 
-`python tools/s1aft_depth.py` (data: `analysis_SR2026.2/studies/s2_channels.py`, now with the S1 AFT, LED gains).
+`python optical/s1aft_depth.py` (data: `analysis_SR2026.2/studies/s2_channels.py`, now with the S1 AFT, LED gains).
 Calibration = median S1 AFT versus drift time of normal events (S2 > 20 kPE, r < 18 mm, outside the y < 0 region,
 S1 > 100 PE); each event's S1 AFT → drift time t_S1; t_S1 − t_drift ≈ 0 when the S1 comes from where the drift time
 says. Groups: y < 0 region (y < −3, r 10–18 mm, S2 > 50 kPE) vs mirror (y > 3); central small-S2 population (no

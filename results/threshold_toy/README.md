@@ -5,7 +5,7 @@ light for S2 ≥ 3 kPE, at the centre and in the ring alike. Centre / ring of th
 every S2 size (data 0.69 → 0.87 → 1.02). It also gives no S2-size dependence of the area fraction top (toy 0.585–0.588
 for 3 kPE … 300 kPE, data 0.68 → 0.52).
 
-`tools/threshold_toy.py` (60 000 events, 26 s) → `threshold_toy.png`, `summary.json`.
+`optical/threshold_toy.py` (60 000 events, 26 s) → `threshold_toy.png`, `summary.json`.
 
 ## What the toy does
 

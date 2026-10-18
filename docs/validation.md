@@ -1,6 +1,6 @@
 # Validation
 
-Each implementation step ended with a check against an analytic result (`tools/check_step1.py` … `check_step5.py`,
+Each implementation step ended with a check against an analytic result (`optical/check_step1.py` … `check_step5.py`,
 each prints `PASSED` / `FAILED`; details in the [plan](plan.md)).
 
 | step | check | result |

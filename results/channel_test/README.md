@@ -3,7 +3,7 @@
 Data: `analysis_SR2026.2/studies/s2_channels.py` (stbc-i2, read-only, central v4): single scatters at Δ750 V, S2 area
 per channel from the stored peaks (matched to the main S2 by time; `event_area_per_channel` fails to compute in this
 amstrax), LED gains. Simulation: per-sensor light map, 81 fit_s2 points pooled (geometry v4).
-`python tools/channel_test.py` → `channel_test.png`, `low_region_vs_drift.png`, `summary.json`.
+`python optical/channel_test.py` → `channel_test.png`, `low_region_vs_drift.png`, `summary.json`.
 
 **A. Channel calibration is fine.** Relative top gains that make the measured channel shares match the simulation:
 0.98 / 1.03 / 0.95 / 1.04 (ch1–4, Cs-137 photopeak) and 0.97 / 1.02 / 0.97 / 1.04 (no-source S2 > 20 kPE); share

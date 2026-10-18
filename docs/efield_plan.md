@@ -80,7 +80,7 @@ PTFE 2.1, liquid level 4 mm above the gate) and every conductor by its potential
 - SiPM (E6 only): 3 × 3 mm plane at the bottom of a 1 mm deep square hole in the PTFE wall; grounded by default
   (option: a set voltage, e.g. for checks).
 
-**Check:** plotted (r, z) section on top of the optical-model section (`tools/plot_section.py`): same positions of
+**Check:** plotted (r, z) section on top of the optical-model section (`optical/plot_section.py`): same positions of
 meshes, rings, PTFE, level, bucket and vessel.
 
 ## E2. 2D axisymmetric field (1 day)
