@@ -37,40 +37,25 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Using it:
-      - How it works: concepts.md
-      - Setup: setup.md
-      - Running: running.md
-      - Output files: output.md
-      - Your own analysis: analysis.md
-      - Pitfalls: pitfalls.md
-  - The model:
-      - Geometry: geometry.md
-      - Optics and parameters: optics.md
-      - Validation: validation.md
-  - Results:
-      - Summary: results.md
-      - First physics (step 6): results/step6/README.md
-      - Data comparison (step 7): results/step7/README.md
-      - Fit and dead-cross test (step 8): results/step8/README.md
-      - Design study (extra PTFE): results/design_ptfe/README.md
-      - Anode mesh rotated by 120°: results/anode_rotation/README.md
-      - Surroundings (bucket, vessel, PMT holders): results/surroundings/README.md
-      - Fit with photopeak events: results/step8_photopeak/README.md
-      - Threshold toy (central dip): results/threshold_toy/README.md
-      - S2 width map: results/s2width_map/README.md
-      - S2 AFT per size class: results/size_classes/README.md
-      - S1 AFT vs drift time: results/s1aft_depth/README.md
-      - S1-AFT cut and energy spectrum: results/s1cut_spectrum/README.md
-      - Top-PMT channel test: results/channel_test/README.md
-      - Drift-velocity profile: results/drift_profile/README.md
-      - Ring shadows: results/ring_shadows/README.md
-      - Source position: results/source_position/README.md
-      - cS2 spread map: results/spread_map/README.md
-      - SiPM checks: results/sipm_checks/README.md
-      - Particle mode check (S2, Cs-137): results/s2_particle/README.md
+  - Getting started:
+      - Installation: setup.md
+      - Quick start: quickstart.md
+      - Configuration: configuration.md
+  - Running:
+      - Particle mode: particle.md
+      - Optical simulation: optical.md
+      - Viewers: viewers.md
+      - Electric field: efield.md
+  - Output:
+      - Output formats: output.md
+      - Reading the output: analysis.md
   - Reference:
-      - File map: files.md
-      - Implementation plan: plan.md
-      - E-field plan: efield_plan.md
-      - Full simulation chain plan: xams_sim_plan.md
+      - xamsg4 program: xamsg4.md
+      - xamssim package: xamssim.md
+      - Geometry: geometry.md
+      - Optics: optics.md
+      - Validation checks: validation.md
+  - Development:
+      - Development guide: development.md
+      - Roadmap (full chain): xams_sim_plan.md
+      - Electric-field plan: efield_plan.md

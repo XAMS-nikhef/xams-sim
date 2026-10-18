@@ -1,10 +1,10 @@
-# Geometry (v4, from the drawings)
+# Geometry
 
 All dimensions live in `config/geometry.yaml` (material properties and optics in `config/materials.yaml`), each with its source (drawings in `reference/XAMS design/`: grid assembly,
 PTFE cylinder, field shaping, PTFE bucket, inner cryostat vessel; thesis; position reconstruction v2; the user).
 Built by `g4/src/XamsGeometry.cc`.
 
-![Cross section y = 0](results/geometry/section_xz.png)
+![Cross section y = 0](img/geometry_section_xz.png)
 
 *Cross section at y = 0 from Geant4's own navigator — exactly what the simulation uses.*
 
@@ -22,7 +22,7 @@ Built by `g4/src/XamsGeometry.cc`.
 | PTFE cylinder | Ø62 / Ø72 mm, 50.85 mm long, in the bores of the gate and cathode rings, against the gate foil; 0.8 mm gap above the cathode foil (real) |
 | copper rings | four field-shaping rings Ø72–92.6 × 1.8 mm around the PTFE, centres at z = −10.6, −20.4, −30.2, −40.0 mm (8 mm gaps; gate ring → ring 1 assumed 8 mm) |
 | PMTs | two R12699: silica window 54.6 mm square, 2.5 mm thick; photocathode 48.5 mm square behind it (top: 4 sectors 24.25 mm = ch1–ch4); absorbing frame and body. Windows at z = +22.5 (top, facing down) and −64.1 mm (bottom, facing up) |
-| SiPMs | two, on the PTFE inner wall at z = −25 mm, azimuth 0° and 90° |
+| SiPMs | two, on the PTFE inner wall at z = −25 mm (azimuths in `geometry.yaml`: 0° / 90°; the field model uses 90° / 180° from the data — to be reconciled) |
 | outside the vessel | absorbing ("World"; no photon gets there) |
 
 Consequences: the gate–anode gap is open sideways between r = 36 and 46 mm (both ring bodies point away from it);
@@ -30,30 +30,18 @@ the anode ring sits in the anode–top-screen gap; the copper rings are hidden b
 
 ## Close-ups
 
-![Gate, anode, top screen](results/geometry/section_xz_zoom_top.png){ width="48%" }
-![Copper ring 4, cathode, bottom screen](results/geometry/section_xz_zoom_bottom.png){ width="48%" }
+![Gate, anode, top screen](img/geometry_section_xz_zoom_top.png){ width="48%" }
+![Copper ring 4, cathode, bottom screen](img/geometry_section_xz_zoom_bottom.png){ width="48%" }
 
-![Gate mesh: 456 etched holes](results/geometry/section_gate_xy.png){ width="48%" }
-![Seen from the top (top PMT hidden)](results/geometry/view_top.png){ width="48%" }
+![Gate mesh: 456 etched holes](img/geometry_section_gate_xy.png){ width="48%" }
+![Seen from the top (top PMT hidden)](img/geometry_view_top.png){ width="48%" }
 
-![3-D view](results/geometry/view.png){ width="48%" }
-![3-D view, cut](results/geometry/view_cut.png){ width="48%" }
+![Whole setup: TPC in the PTFE bucket in the steel vessel](img/geometry_section_xz_wide.png){ width="48%" }
+![Viewer start view (cut open)](img/geometry_view_cut_v4.png){ width="48%" }
 
-![Whole setup: TPC in the PTFE bucket in the steel vessel](results/geometry/section_xz_wide.png){ width="48%" }
-![Viewer start view (cut open)](results/geometry/view_cut_v4.png){ width="48%" }
-
-## Effect of the surroundings (v4 vs v3)
-
-One parameter point (level 4 mm, PTFE R 0.95 / specular 0.1, steel R 0.35, Rayleigh 45 cm;
-`optical/surroundings_compare.py`, `results/surroundings/`). Bucket + vessel alone changed < 1 %; with the PTFE around
-the PMTs: S2 light collection top +6.6 %, bottom +8.5 %, S2 top fraction 0.563 → 0.558; S1 top +9 %, bottom +7 %, S1
-top fraction 0.177 → 0.179. The shapes (vs r, vs z) do not change. Still ~10 % of the S2 light ends on the vessel
-(it leaves sideways through the gate–anode and anode–top-screen gaps). All results were rerun with v4 on
-2026-10-07; the fit gives ε_S2 1.17 / ε_S1 0.74 (v3: 1.23 / 0.79), within the ranges of v3.
-
-![v4 vs v3](results/surroundings/compare.png)
+Pictures made with `/xamsg4/section` + `optical/plot_section.py` and the viewer (geometry version 4).
 
 ## Not (yet) in the model
 
 The three PTFE pillars between gate and anode; holders and structure outside the rings; the weir notch; the SiPM
-filters; the vessel lid and what hangs from it. ~10 % of the S2 light ends on the vessel (see above).
+filters; the vessel lid and what hangs from it. 

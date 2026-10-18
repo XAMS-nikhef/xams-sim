@@ -3,7 +3,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 COMSOL="${COMSOL:-/Applications/COMSOL62/Multiphysics/bin/comsol}"
-PY="${PY:-/Users/acolijn/miniconda3/envs/g4/bin/python}"
+PY="${PY:-python}"   # the active conda env (xamssim)
 EL="$1"; shift
 cd "$HERE"
 "$PY" make_cell.py "$EL" "$@"

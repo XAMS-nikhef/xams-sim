@@ -1,13 +1,24 @@
-# Validation
+# Validation checks
 
-Each implementation step ended with a check against an analytic result (`optical/check_step1.py` … `check_step5.py`,
-each prints `PASSED` / `FAILED`; details in the [plan](plan.md)).
+Run them after changing C++ code or the geometry (in the `xamssim` env; each starts `xamsg4` itself):
 
-| step | check | result |
+```bash
+python optical/check_step1.py      # ... check_step5.py; each prints PASSED or FAILED
+python -m pytest tests             # Python package
+```
+
+| check | what it tests | pass criterion |
 |---|---|---|
-| 1 skeleton | point source in front of a 48.5 mm cathode at 10 / 30 / 60 mm | detected fraction = solid angle (pulls 0.02, 0.19, −1.06) |
-| 2 materials | beam onto the liquid–gas surface at 0–80° | reflected fraction = (Rs + Rp)/2; total internal reflection from the critical angle 36.3° |
-| 3 geometry | overlap check; cross sections vs drawings; collimated beam through one mesh at θ = 0–75°, φ = 0 / 29.4 / 45° | no overlaps; Geant4 = analytic ray trace photon by photon (3·10⁶ photons); transmission 0.888 at normal incidence and the expected drop with angle |
-| 4 surfaces | beam onto PTFE / steel; XAMS with black vs R = 0 surfaces; XAMS with R = 1 | reflected fraction = R, specular share = f, diffuse part Lambertian; black = R 0; bookkeeping closes at R = 1 |
-| 5 sources | z ranges vs liquid level; uniformity; bookkeeping; precision | as expected; every photon counted once; S2 top fraction ±0.16 % at 4·10⁶ photons |
-| 6 physics | each scan point split into two halves with independent seeds | agree (worst pull 2.3) |
+| `check_step1.py` | point source in front of a 48.5 mm photocathode at 10 / 30 / 60 mm (`test_box`) | detected fraction = solid angle |
+| `check_step2.py` | beam onto the liquid–gas surface at 0–80° (`test_interface`) | reflected fraction = (Rs + Rp)/2; total internal reflection beyond the critical angle (36.3°) |
+| `check_step3.py` | collimated beam through one mesh at θ = 0–75°, φ = 0 / 29.4 / 45° (`test_mesh`); overlap check | Geant4 = analytic ray trace photon by photon; transmission 0.888 at normal incidence |
+| `check_step4.py` | beam onto PTFE / steel (`test_surface`); XAMS with black vs R = 0 surfaces; XAMS with R = 1 | reflected fraction = R, specular share = f, diffuse part Lambertian; bookkeeping closes |
+| `check_step5.py` | source z ranges vs liquid level, uniformity, bookkeeping, precision (needs the scan `run/scans/step5_reference`) | as expected; every photon counted once |
+| `tests/` | configuration, map keys, registry, materials, particle-mode helpers and reader, launcher | pytest |
+
+Known: `check_step4.py` part (c) (bookkeeping with all surfaces at R = 1) fails with the v4 geometry, which has
+absorbing parts (copper, bucket, vessel) the v1-era check does not expect; `check_step5.py` needs its reference scan to
+exist. Both behave the same since before the restructure (tag `optical-sim-final`).
+
+The particle mode is checked with `validation/s2_particle_check.py` (Cs-137 spectrum: photopeak, Compton edge;
+photopeak rate and depth profile).

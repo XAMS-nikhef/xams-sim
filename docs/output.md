@@ -1,42 +1,84 @@
-# Output files
+# Output formats
 
-Every run writes three files: `xxx.bin`, `xxx.bin.summary.json`, `xxx.bin.volumes.json`.
+All binary files are fixed-size little-endian records, readable with `numpy.fromfile`; no ROOT. Coordinates in mm in
+the geometry frame (z = 0 at the gate foil, z up; the data frame is mirrored in x: x_data = −x_sim).
 
-## `xxx.bin` — one record per photon
+## Particle mode — `run/g4/<run>/`
 
-36 bytes per photon (with `-d`: per detected photon), little-endian, in this order:
+### `deposits.bin` — one record per energy deposit (46 bytes)
+
+One record per Geant4 step with energy deposited in liquid or gas xenon.
+
+| field | type | meaning |
+|---|---|---|
+| `event` | int32 | event number |
+| `x, y, z` | float32, mm | mid-point of the step |
+| `t` | float64, ns | post-step time (decay products start at 0) |
+| `edep` | float32, keV | deposited energy |
+| `particle` | int16 | code of the particle (name in the header) |
+| `parent_particle` | int16 | code of the parent's particle (`none` for primaries) |
+| `track`, `parent` | int32 | Geant4 track ids (parent 0 for primaries) |
+| `creaproc` | int16 | code of the process that created the track (`primary` for primaries) |
+| `edproc` | int16 | code of the process that limited the step (`eIoni`, `compt`, `phot`, `msc`, …) |
+| `volume` | int16 | code of the volume (`Liquid`, `Gas`, `gateHole`, …) |
+
+### `deposits.events.bin` — one record per event (28 bytes)
+
+`event` (int32), `x_pri, y_pri, z_pri` (float32, mm: primary vertex), `n_deposits` (int32), `edep_lxe`, `edep_gxe`
+(float32, keV: total per event in liquid and gas).
+
+### `deposits.json` — header
+
+`deposit_dtype`, `event_dtype` (field names and numpy types) and their byte sizes; `units`; `codes` (code → name
+tables: `particle`, `process`, `volume`); `info` (config path, seed, macro, the full config); `counts` (events,
+deposits, events with a deposit in the liquid). The code tables are built during the run: always decode with the
+header of the same run.
+
+## Optical mode
+
+Every run writes `xxx.bin`, `xxx.bin.summary.json` and `xxx.bin.volumes.json`.
+
+### `xxx.bin` — one record per photon (36 bytes)
+
+With `-d` only detected photons get a record (all photons are still counted in the summary).
 
 | field | type | meaning |
 |---|---|---|
 | `event` | int32 | photon number in the run |
 | `x0, y0, z0` | float32, mm | start position |
 | `x1, y1, z1` | float32, mm | end position |
-| `end_code` | int16 | 1 detected · 2 absorbed in the xenon · 3 absorbed on a surface (also: entered an absorbing material) · 4 left the world · 0 unknown (should not happen) |
+| `end_code` | int16 | 1 detected · 2 absorbed in the xenon · 3 absorbed on a surface (also: entered an absorbing material) · 4 left the world · 0 unknown |
 | `sensor` | int16 | 0 bottom PMT · 1–4 top-PMT sectors I–IV (= ch1–ch4) · 6, 7 SiPMs · −1 not detected |
-| `volume` | int16 | where it ended: index into `xxx.bin.volumes.json` (e.g. `anodeBar`, `PTFE`, `World`) |
-| `n_refl` | int16 | number of reflections on the way (Fresnel, total internal, PTFE, steel, copper) |
+| `volume` | int16 | where it ended: index into `xxx.bin.volumes.json` |
+| `n_refl` | int16 | number of reflections on the way |
 
-## `xxx.bin.summary.json` — every photon counted
+"Detected" includes the QE: photons that reached a photocathode but were not converted end with code 3 on
+`TopPMTSector` / `BottomPMTCathode`.
 
-`n_photons`; `tally` = list of `{end_code, volume, n}` over all photons (also undetected ones without a record);
-`detected_by_sensor`; `info` (config, seed, macro). Use it for fractions of all emitted photons.
+### `xxx.bin.summary.json`
 
-## `xxx.bin.volumes.json`
+`n_photons`; `tally` = list of `{end_code, volume, n}` over all photons; `detected_by_sensor`; `info` (config,
+seed, macro). Use it for fractions of all emitted photons.
 
-Volume index → name. Names: `<mesh>Foil` (the steel of a mesh foil: bars and unetched cells, mesh = top_screen / anode / gate / cathode / bottom_screen), `<mesh>Hole` (in an etched opening),
-`<mesh>Ring` (ring body), `<mesh>Rim` (foil on the ring face), `PTFE`, `PTFE_gas`, `CopperRing`, `TopPMTSector`,
-`BottomPMTCathode`, `TopPMTWindow`, `*Frame`, `*Body`, `SiPM`, `Liquid`, `Gas`, `World` (= left the modelled region).
+### `xxx.bin.volumes.json`
 
-## Scan directories
+Volume index → name: `<mesh>Foil` (steel of a mesh foil), `<mesh>Hole` (an etched opening), `<mesh>Ring`,
+`<mesh>Rim`, `PTFE`, `PTFE_gas`, `CopperRing`, `TopPMTSector`, `BottomPMTCathode`, `TopPMTWindow`, `*Frame`,
+`*Body`, `SiPM`, `Liquid`, `Gas`, `Vessel`, `Bucket`, `World`; `<mesh>` = top_screen, anode, gate, cathode,
+bottom_screen.
 
-`run/scans/<name>/`: `points.json` (index: parameters of every point), per point `point_<i>.json` (its config) and
-per part k = 0..7 `point_<i>_<k>.bin` (+ the two JSON files, `.log`, `.mac`), `timing.json`.
+### Scan folders — `run/scans/<name>/`
 
-## Coordinates and conventions
+`points.json` (index: parameters of every point), per point `point_<i>.json` (its config) and per part
+`point_<i>_<k>.bin` (+ the two JSON files, `.log`, `.mac`), `timing.json`.
 
-- mm; z = 0 at the gate foil, z up. Liquid surface at z = level (2–4 mm). Anode +8, top screen +18, cathode −51.8,
-  bottom screen −59.6; top-PMT window +22.5, bottom-PMT window −64.1.
-- Top sectors seen from above: I at (−x, +y), II (+x, +y), III (−x, −y), IV (+x, −y).
-- **The data frame (position reconstruction v2) is mirrored in x:** x_data = −x_sim, y_data = y_sim.
-- "Detected" includes the QE (0.33). Photons that reached a photocathode but were not converted end with code 3 on
-  `TopPMTSector` / `BottomPMTCathode`.
+## Electric field — `results/efield/comsol/`
+
+`checks.json` (built-in checks per case), `maps_rz.npz` (V, E_r, E_z on the (r, z) plane through the first SiPM per
+case; `r`, `z` axes), `cell_<electrode>.json`, plots. The solved models are `efield/comsol/build/*.mph`.
+
+## Sensors and coordinates (both modes)
+
+- Top-PMT sectors seen from above: I at (−x, +y), II (+x, +y), III (−x, −y), IV (+x, −y).
+- z: liquid surface at the level (4 mm), anode +8, top screen +18, cathode −51.8, bottom screen −59.6, top-PMT window
+  +22.5, bottom-PMT window −64.1 mm.

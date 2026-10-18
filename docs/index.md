@@ -1,47 +1,52 @@
-# XAMS optical simulation
+# xams-sim — manual
 
-A Geant4 simulation of how the 178 nm scintillation light travels through the XAMS TPC: through the liquid and the
-gas, through (and onto) the five etched meshes, reflecting on PTFE and steel, until it reaches a photocathode or is
-lost. Built to answer whether the light distribution we see — in particular the low S2 light on the top PMT — follows
-from the geometry.
+xams-sim simulates the XAMS dual-phase xenon TPC. It contains one Geant4 program, one Python package and the
+electric-field models, all driven from a common configuration (geometry, materials, detector states, sources):
 
-![XAMS geometry, cut open](results/geometry/view_cut_v4.png){ width="420" }
+| part | what it does | where |
+|---|---|---|
+| **`xamsg4`** | Geant4 program with two modes: **optical** (178 nm photons through the TPC → light collection per sensor) and **particle** (radioactive sources / gammas → energy deposits in the xenon) | `g4/` (C++), built to `g4/build/xamsg4` |
+| **`xamssim`** | Python package and command: configuration and validation, running both modes, viewers, map registry, readers; later the strax event chain | `xamssim/` |
+| **efield** | electric field and electron drift: COMSOL models of the full TPC and of single mesh cells, generated from the configuration | `efield/` |
+| **optical tools** | scans of the optical model, fits, readers | `optical/` |
+| **configuration** | `geometry.yaml`, `materials.yaml`, detector states, sources, simulation runs | `config/` |
 
-## Main findings so far (geometry v4 from the drawings, 7 October 2026)
+![XAMS geometry in the viewer, cut open](img/geometry_view_cut_v4.png){ width="420" }
 
-- **Geometry and optics give an S2 top fraction of 0.52–0.58**, almost independent of the liquid level. Data without a
-  source are close (0.55 at 10–20 kPE); the much lower Cs-137 / Na-22 values are the load effect of the top PMT.
-- **The top-sector light pattern matches the data** over ±24 mm for every source: the geometry is right.
-- **Fit (step 8):** the shapes of S2 vs r, S1 vs z and the sector pattern are reproduced with two efficiency factors
-  on the top/bottom ratio, ε_S2 = 1.17 and ε_S1 = 0.74 (single scatters; QE ratio and the top-PMT small-signal loss);
-  low steel reflectivity preferred, the other optical parameters are not constrained. The central dip of the S2 top fraction in the data is not an insensitive cross on the PMT.
-- Only ~25 % of the S2 photons reach a photocathode; PTFE also between gate, anode and top screen would give ~+36 %.
-- The surroundings (PTFE bucket, cryostat vessel) change nothing; the PTFE PMT holders add 7–9 % light on both PMTs.
+## The simulation chain
 
-Full write-up: the PDF note `notes/XAMS_optical_simulation_2026-10-07.pdf` and the [Results](results.md) pages.
-
-## Quick start
-
-```bash
-conda activate g4 && cd ~/Documents/XAMS/xams-sim
-cmake -S g4 -B g4/build && cmake --build g4/build -j8   # once: compile xamsg4 (the only thing that needs g4)
-conda activate xamssim
-xamssim optical --vis --state cmb50                     # the optical viewer
-xamssim optical optical/scans/fit_s2.yaml               # an optical scan
-xamssim particle config/runs/s2_cs137_raised.yaml       # Cs-137 energy deposits (particle mode)
+```
+source ──xamsg4 particle──► energy deposits ──► clusters ──► photons + electrons (NEST, local field)
+                                                                │                 │
+                                          light maps (xamsg4 optical) ◄── S1     drift (field maps, efield)
+                                                                │                 │
+                                                                │       extraction + electroluminescence ──► S2 photons
+                                                                ▼                                              │
+                                              photoelectrons per channel ◄──────────── light maps ◄────────────┘
+                                                                │
+                                              PMT / SiPM response ──► raw_records ──► amstrax (unchanged)
 ```
 
-Then: [how it works](concepts.md) → [running](running.md) → [your own analysis](analysis.md).
+Available now: the optical mode (with fitted optics), the particle mode, the field models, configuration and map
+registry. The event chain from deposits onwards (strax plugins, partly from XENONnT's fuse) is being built — see the
+[roadmap](xams_sim_plan.md). Results of studies made with xams-sim are not in this manual: they are in the PDF notes
+(`notes/`) and the `results/` folders of the repository.
+
+## Where to start
+
+1. [Installation](setup.md) — the two conda environments, building `xamsg4`.
+2. [Quick start](quickstart.md) — the main commands and what they produce.
+3. [Configuration](configuration.md) — how a simulation is described.
+4. Running: [particle mode](particle.md), [optical simulation](optical.md), [viewers](viewers.md),
+   [electric field](efield.md).
+5. [Output formats](output.md) and [reading the output](analysis.md).
 
 ## This documentation
 
-Written in Markdown in `xams-sim/docs/`, built with MkDocs (same setup as the XAMS handbook). To read it in a
-browser:
+Markdown in `docs/`, built with MkDocs:
 
 ```bash
-cd ~/Documents/XAMS/xams-sim
-conda activate xamssim && mkdocs serve   # then open http://127.0.0.1:8000
+conda activate xamssim && cd ~/Documents/XAMS/xams-sim && mkdocs serve   # http://127.0.0.1:8000
 ```
 
-(the `xamssim` env has MkDocs from `requirements-docs.txt`; any Python env with `pip install -r requirements-docs.txt` works too). `mkdocs build` writes a
-static site to `site/`.
+`mkdocs build` writes the static site to `site/` (not in git). The build is strict: broken links stop it.

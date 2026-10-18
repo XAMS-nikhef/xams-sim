@@ -186,10 +186,9 @@ Result: `xamsg4 -m particle` (g4/include/ParticleMode.hh): EM option 4 + decay +
 raised for Cs-137), source = ion at rest in a 1 mm steel capsule (or a gamma, isotropic or cone), decay products at
 t = 0; one 46-byte record per energy deposit in LXe / GXe + one event record + JSON header (code tables, units, config,
 seed, counts); particle-mode materials: PMT bodies / frames kovar, dead crosses steel, world ±300 mm. Python:
-`xamssim particle <run>` (config + macro, runs in the `g4` env), `xamssim.g4io.read`; 15 tests. Check
-(`results/s2_particle/`): photopeak 662 keV, Compton edge 477 keV, photopeak fraction ≈ 0.20, photopeak rate vs source
-height; the depth comparison with September data needs the S4 drift model (data z distorted by the slow drift near
-cathode and gate). 2·10⁶ decays ≈ 35 s.
+`xamssim particle <run>` (config + macro, `xamsg4` started in the `g4` env), `xamssim.g4io.read`; tests. Check:
+`validation/s2_particle_check.py` (results in `results/s2_particle/`); the depth comparison with data needs the S4
+drift model.
 
 Original task list:
 - xams-g4 with a particle mode: source from `sources/` (isotope via Geant4 radioactive decay, position, collimator),
