@@ -92,7 +92,9 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
     lxe, gxe = mats["liquid_xenon"]["density_g_cm3"], mats["gas_xenon"]["density_g_cm3"]
     return dict(
         path=str(g4_dir), file_name="deposits", g4_output_hash=g4_output_hash or g4io.output_hash(g4_dir),
+        preselect_r_max_cm=volumes(res)["r_field_cage_cm"],
         source_rate=p["source_rate_hz"], n_interactions_per_chunk=1e5,
+        first_chunk_left=0,                      # fuse default 1 ms: negative chunk start if the first event is earlier
         # clustering
         **(dict(time_threshold=p["time_threshold_ns"], gamma_distance_threshold=p["gamma_distance_threshold_cm"],
                 brem_distance_threshold=p["brem_distance_threshold_cm"]) if p["clustering"] == "lineage" else
@@ -130,7 +132,22 @@ def context(run_path, g4_out=None, store=STORE, **overrides):
     st = strax.Context(storage=[strax.DataDirectory(str(store))], register=plugins(physics(res)["clustering"]),
                        config=cfg)
     st.set_context_config({"check_available": ()})
-    return st, res.run_key()
+    _check_g4(res, gdir)
+    return st, res.run_path.stem
+
+
+def _check_g4(res: Resolved, gdir: Path) -> None:
+    """Warn when the Geant4 output was made for another Geant4 configuration than the run file now gives (geometry,
+    materials, liquid level, source, events, seed; Resolved.g4_key). The data stay consistent either way: the Geant4
+    output hash is in the lineage."""
+    import json
+    try:
+        made = json.loads((gdir / "config.json").read_text()).get("xamssim", {}).get("g4_key")
+    except (OSError, ValueError):
+        return
+    if made and made != res.g4_key():
+        print(f"WARNING: {gdir.name}: Geant4 output made for another Geant4 configuration (g4 key {made}, the run "
+              f"file now gives {res.g4_key()}): rerun xamssim particle {res.run_path.name} if Geant4 should follow")
 
 
 # chain products (config.PRODUCTS) implemented so far -> strax data type

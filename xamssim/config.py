@@ -150,6 +150,14 @@ class Resolved:
     def map_keys(self) -> dict:
         return {kind: short_hash(inp) for kind, inp in self.map_inputs().items()}
 
+    def g4_key(self) -> str:
+        """Hash of what the Geant4 particle run depends on: geometry, materials, liquid level, source, events, seed,
+        production cut (not the HV, the maps or the chain settings)."""
+        return short_hash({"geometry": self._geometry_physical(), "materials": self.materials,
+                           "liquid_level_mm": self.state["liquid_level_mm"], "source": self.source,
+                           "n_events": self.run["n_events"], "seed": self.run["seed"],
+                           "production_cut_mm": (self.run.get("physics") or {}).get("production_cut_mm")})
+
     def run_key(self) -> str:
         """Hash of everything that defines the simulated run (for provenance / strax run ids)."""
         return short_hash({"run": self.run, "state": self.state, "source": self.source, "maps": self.map_keys()})

@@ -14,6 +14,7 @@ Translation:
     time       ns (each event starts at the decay: xamsg4 resets the clock of decay products)
 
 Lineage: `g4_output_hash` (content of the Geant4 output, from its header) is a tracked option.
+Pre-selection: only decays with a deposit inside the field-cage radius (`preselect_r_max_cm`) go to the clustering.
 Options as in ChunkInput: `path` is the run directory (`<data>/g4/<run>`), `file_name` the stem (`deposits`);
 `entry_start` / `entry_stop` select events by their index in the run.
 """
@@ -32,12 +33,19 @@ export, __all__ = strax.exporter()
 PROCESS_ALIASES = {"RadioactiveDecay": "RadioactiveDecayBase", "Radioactivation": "RadioactiveDecayBase"}
 
 
-def deposits_frame(path, entry_start: int = 0, entry_stop: int | None = None) -> tuple[pd.DataFrame, int]:
-    """Our deposits as the DataFrame fuse's `_awkwardify_df` takes (cm, names), sorted by event; and the event count."""
+def deposits_frame(path, entry_start: int = 0, entry_stop: int | None = None,
+                   r_max_mm: float | None = None) -> tuple[pd.DataFrame, int]:
+    """Our deposits as the DataFrame fuse's `_awkwardify_df` takes (cm, names), sorted by event; and the event count.
+    r_max_mm: keep only events with at least one deposit at r < r_max_mm (whole events: all their deposits)."""
     h, dep, ev = g4io.read(path, mmap=True)
     n_events = len(ev)
     stop = n_events if entry_stop is None else min(int(entry_stop), n_events)
     sel = (dep["event"] >= int(entry_start)) & (dep["event"] < stop)
+    if r_max_mm is not None:
+        inner = np.hypot(dep["x"], dep["y"]) < r_max_mm
+        keep = np.zeros(n_events, bool)
+        keep[np.asarray(dep["event"][inner])] = True
+        sel &= keep[np.asarray(dep["event"])]
     d = np.asarray(dep[sel])
     d = d[np.argsort(d["event"], kind="stable")]
     for f in ("track", "parent"):
@@ -68,8 +76,10 @@ class XamsG4Loader(file_loader):
         super().__init__(*args, **kwargs)
         self.file_type = "csv"            # routes output_chunk() to _load_csv_file (replaced below)
 
+    r_max_mm = None
+
     def _load_csv_file(self):
-        df, n_events = deposits_frame(self.file, self.entry_start, self.entry_stop)
+        df, n_events = deposits_frame(self.file, self.entry_start, self.entry_stop, self.r_max_mm)
         interactions = self._awkwardify_df(df)
         return interactions, n_events, 0, n_events
 
@@ -78,8 +88,12 @@ class XamsG4Loader(file_loader):
 class XamsG4Input(ChunkInput):
     """`geant4_interactions` from xamsg4 particle-mode output (<data>/g4/<run>/deposits.*)."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
+    preselect_r_max_cm = straxen.URLConfig(
+        type=(int, float), help="keep only decays with a deposit inside this radius (the field cage: nothing outside "
+                                "it reaches a volume), so clustering skips the rest [cm]",
+    )
     g4_output_hash = straxen.URLConfig(
         type=str, help="content hash of the Geant4 output (xamssim.g4io.output_hash): tracked, so a new Geant4 run "
                        "of the same run file gets new strax data (fuse does not track path / file_name)",
@@ -108,4 +122,5 @@ class XamsG4Input(ChunkInput):
             fixed_event_spacing=self.fixed_event_spacing,
             log=self.log,
         )
+        self.file_reader.r_max_mm = float(self.preselect_r_max_cm) * 10.0
         self.file_reader_iterator = self.file_reader.output_chunk()

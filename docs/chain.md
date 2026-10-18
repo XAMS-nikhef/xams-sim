@@ -111,11 +111,17 @@ permittivities), so states with the same inputs share it and any change of an in
 
 ## Output and reading it
 
-strax data in `<data>/strax/`, run id = the run key (`xamssim status <run>`: a hash of the run file, state, source and
-map keys). Each product is stored under its lineage hash: plugin versions and tracked settings, including the field
-map file (its path holds the map key) and `g4_output_hash`, a content hash of the Geant4 output (the config it ran
-with incl. the xams-sim version, seed, counts; not file paths). Changing an option, a map or rerunning Geant4 gives new
-data next to the old; nothing stale is reused.
+strax data in `<data>/strax/`, run id = the name of the run file. Each product is stored under its lineage hash:
+plugin versions and tracked settings, including `g4_output_hash` (a content hash of the Geant4 output: the config it
+ran with incl. the xams-sim version, seed, counts; not file paths), the map files (their paths hold the map keys), the
+lifetime and the transport constants. Changing an option or a map, or rerunning Geant4, makes new data for exactly the
+steps it affects; the clustering is redone only when the Geant4 output or the clustering settings change. Keep run
+file names unique (they also name the Geant4 output folder). When the run file now asks for another Geant4
+configuration than the output was made with (`g4_key`: geometry, materials, level, source, events, seed), the chain
+warns.
+
+Pre-selection: only decays with a deposit inside the field-cage radius go to the clustering (`preselect_r_max_cm`);
+nothing outside it can reach a volume.
 
 ```python
 from xamssim import chain

@@ -75,7 +75,8 @@ def build(res: Resolved, out_dir: Path, n_events: int, seed: int) -> tuple[Path,
         "source": src,
         "world_half_mm": [max(300.0, reach), max(300.0, reach), max(300.0, abs(src["position_mm"][2]) + 50.0)],
         "particle": {"production_cut_mm": float(res.run.get("physics", {}).get("production_cut_mm", 0.1))},
-        "xamssim": {"run": str(res.run_path), "run_key": res.run_key(), "state": res.state_name, "source": res.source_name,
+        "xamssim": {"run": str(res.run_path), "run_key": res.run_key(), "g4_key": res.g4_key(),
+                    "state": res.state_name, "source": res.source_name,
                     "seed": seed, "n_events": n_events, "code_version": git_version()},
     })
     cfg_path.write_text(json.dumps(cfg, indent=1))
