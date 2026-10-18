@@ -1,6 +1,6 @@
 # Setup
 
-Two conda environments ([README](../README.md) "Environments and commands"):
+Two conda environments (see also the README of the repository, section "Environments and commands"):
 
 - **`g4`** — Geant4 11.3.2 with its data files, Qt viewer, cmake, a C++ compiler, nlohmann/json: needed to **compile**
   the program `g4/build/xamsg4`, and by `xamsg4` at run time (libraries, data paths).

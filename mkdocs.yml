@@ -56,6 +56,19 @@ nav:
       - Design study (extra PTFE): results/design_ptfe/README.md
       - Anode mesh rotated by 120°: results/anode_rotation/README.md
       - Surroundings (bucket, vessel, PMT holders): results/surroundings/README.md
+      - Fit with photopeak events: results/step8_photopeak/README.md
+      - Threshold toy (central dip): results/threshold_toy/README.md
+      - S2 width map: results/s2width_map/README.md
+      - S2 AFT per size class: results/size_classes/README.md
+      - S1 AFT vs drift time: results/s1aft_depth/README.md
+      - S1-AFT cut and energy spectrum: results/s1cut_spectrum/README.md
+      - Top-PMT channel test: results/channel_test/README.md
+      - Drift-velocity profile: results/drift_profile/README.md
+      - Ring shadows: results/ring_shadows/README.md
+      - Source position: results/source_position/README.md
+      - cS2 spread map: results/spread_map/README.md
+      - SiPM checks: results/sipm_checks/README.md
+      - Particle mode check (S2, Cs-137): results/s2_particle/README.md
   - Reference:
       - File map: files.md
       - Implementation plan: plan.md
