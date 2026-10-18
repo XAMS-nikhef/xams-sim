@@ -23,8 +23,11 @@ Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18)
   are imported, XAMS versions are subclasses in xams-sim, missing ones are our own. All settings come from our config.
   fuse plugins are strax plugins, so the chain runs in a strax context; amstrax stays independent (xams-sim uses it,
   never the other way round).
-- **No ROOT.** Geant4 writes fixed-size binary records + a JSON header (as optical_sim now); maps are `.npz` / HDF5
-  with a JSON manifest.
+- **No ROOT, no CSV.** Geant4 writes fixed-size binary records + a JSON header (as optical_sim now); particle and
+  process names stored as small integer codes with the lookup table in the header; our input plugin turns them into
+  fuse's table. CSV only for small tests (fuse's CSV reader loads the whole file into memory; text is 3–5× larger,
+  slow and rounds numbers). Parquet / HDF5 only if compression or partial reading is needed later. Maps are `.npz` /
+  HDF5 with a JSON manifest.
 - **Provenance everywhere.** Every map and every simulated run records the config, the state, the code versions and
   the date; strax lineage does this automatically for the chain.
 - Each step ends with a check; a step is done when its check passes. Rough effort in brackets.
@@ -171,13 +174,19 @@ separately with `raw_records` on disk in between).
 ### S2. Geant4 particle mode (2–3 days)
 - xams-g4 with a particle mode: source from `sources/` (isotope via Geant4 radioactive decay, position, collimator),
   full XAMS geometry incl. the region below the cathode and the gas; output per step: event id, x, y, z, t, dE,
-  particle, process, track / parent id → binary records + JSON header.
+  particle, process, track / parent id → binary records + JSON header. Record layout (one C++ struct per step,
+  ~40–50 bytes): event id, x, y, z [mm], t [ns], dE [keV], particle code, parent particle code, track id, parent id,
+  creation-process code, deposit-process code; per event the primary position. The JSON header holds the code → name
+  tables (Geant4 particle / process names), units, geometry hash, source, seed, Geant4 and code versions. Python
+  reads a file with `np.fromfile(path, dtype)`.
 
 **Check:** Cs-137 deposit spectrum (photopeak fraction, Compton edge) and the depth profile for the raised source;
 compare the photopeak depth profile with data (orphan-S1 / source-position analyses).
 
 ### S3. Input, clustering, yields (2 days)
-- Input plugin: our binary format → exactly the table fuse's clustering expects.
+- Input plugin: our binary format → exactly the table fuse's clustering expects (`geant4_interactions`: positions in
+  cm, codes translated back to particle / process names), reading file by file in chunks (not the whole run at once),
+  placing events on a timeline at the source rate.
 - **fuse clustering** with XAMS settings: volume definitions (drift region, below the cathode, outside the field cage,
   gas) with their field / behaviour, cluster size and time window.
 - NEST yields per cluster with the **local** field from the field map (fuse's yields plugin or our own, per S0).

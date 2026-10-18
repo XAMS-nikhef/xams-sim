@@ -19,7 +19,7 @@ chain needs XENON database access once the settings below are given.
 
 ## What fuse contains (strax plugins)
 
-- **micro-physics**: `ChunkInput` (Geant4 ROOT **or CSV**) → clustering, either `FindCluster` + `MergeCluster`
+- **micro-physics**: `ChunkInput` (Geant4 ROOT or CSV; neither used for XAMS production, see decision 3) → clustering, either `FindCluster` + `MergeCluster`
   (time windows + DBSCAN) or `LineageClustering` + `MergeLineage` (per particle track) → `VolumeProperties`,
   `VolumeSelection`, `DefaultSimulation` (region of interest) → `ElectricField` (field map in r, z) → `NestYields` →
   `MicroPhysicsSummary`.
@@ -36,7 +36,7 @@ range, gains). The S1 / S2 / PMT stages need many XAMS values and maps in fuse's
 
 ## Offline test with XAMS settings (`micro_test.py`)
 
-Synthetic Cs-137-like events (CSV, mm): a 662 keV photo-absorption, a Compton + photo-absorption pair, a gamma-X pair
+Synthetic Cs-137-like events (CSV, mm — fine for a handful of test events, not for productions): a 662 keV photo-absorption, a Compton + photo-absorption pair, a gamma-X pair
 (one site in the drift region, one below the cathode) and a deposit in the gas; our COMSOL field map for CM-B (−50 V
 margin, `cmb50`) converted to straxen's map format (r, z in cm, |E| in V/cm); XAMS volumes; default NEST.
 
@@ -72,7 +72,11 @@ fluctuations, with the expected photon / electron anticorrelation.
    merge, but lineage is physically motivated and is fuse's newer method.)
 3. **Input**: our own input plugin that provides `geant4_interactions` with fuse's table: x, y, z [cm], t [ns],
    ed [keV], type, trackid, parenttype, parentid, creaproc, edproc (Geant4 process names), eventid, x_pri, y_pri, z_pri.
-   This fixes the Geant4 particle-mode output (S2 of the plan). fuse's CSV reader (mm) is a usable stopgap.
+   This fixes the Geant4 particle-mode output (S2 of the plan): **binary records + JSON header**, particle / process
+   names as integer codes with the lookup table in the header, translated by our input plugin. **CSV only for small
+   tests** (as here): text is 3–5× larger than binary, slow to write and parse, rounds numbers, carries no metadata,
+   and fuse's CSV reader loads the whole file into memory (a Cs-137 production of 10⁶ events is ~3 × 10⁸ steps:
+   tens of GB as CSV). No ROOT. Parquet / HDF5 only if compression or partial reading is needed later.
 4. **Environment** for S1 (`xamssim`): Python 3.12, strax 2.2.3, straxen 4.1.1, xenon-fuse 1.6.3, nestpy 2.0.6,
    amstrax + amstrax_files from master — one environment for the chain and amstrax.
 5. **Other fuse stages** (drift, extraction, S2, S1/S2 photons, delayed electrons, PMT/DAQ): configurable in
