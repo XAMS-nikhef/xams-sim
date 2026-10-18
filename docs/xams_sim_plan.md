@@ -270,9 +270,16 @@ from detector effects.
 **Check:** amstrax processes simulated runs unchanged; the same analysis cuts give the same distributions as data
 (cS1, cS2, widths, AFT, drift time) within the known differences.
 
-### S9. Validation suite and docs (2 days)
-- `validation/`: one command per comparison (data targets from analysis_SR2026.2), report per state.
+### S9. Validation suite, overview and docs (2–3 days)
+- Validation: one command per comparison with data (targets from analysis_SR2026.2), report per state; the comparisons
+  themselves are studies in `../simulations/`.
+- `xamssim list`: overview of everything in the data folder — per run (study, run file, state, source, run key): the
+  Geant4 output (events, output hash, xams-sim version), the strax products made with their lineage hashes and whether
+  they are current for the run file as it is now (state, maps, settings, Geant4 output), and the maps per state
+  (present / missing / stale). Optional: `--prune` lists outdated data that can be removed (never deletes by itself).
 - Docs: config reference, how to run each producer and the chain, how to add a state or a source.
+- Later, when productions run on STBC (after S8): a web page in the style of the xams-dashboard on top of `xamssim
+  list` and the map registry (studies, runs, status, starting productions). Not before the chain is complete.
 
 ## Effort
 

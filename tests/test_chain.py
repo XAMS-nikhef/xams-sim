@@ -66,6 +66,26 @@ def flat_map(path, ez=-145.0, ex=0.0):
     return path
 
 
+def test_g4_output_hash(tmp_path):
+    import shutil
+    from xamssim import g4io
+    write_g4(tmp_path / "a", ROWS, 6)
+    h = json.loads((tmp_path / "a" / "deposits.json").read_text())
+    h["files"] = {"deposits": str(tmp_path / "a" / "deposits.bin")}
+    h["info"] = {"config_json": json.dumps({"seed": 1, "xamssim": {"run": "/abs/path/run.yaml", "n_events": 6}}),
+                 "config": str(tmp_path / "a" / "config.json")}
+    (tmp_path / "a" / "deposits.json").write_text(json.dumps(h))
+    shutil.copytree(tmp_path / "a", tmp_path / "moved")
+    h2 = json.loads((tmp_path / "moved" / "deposits.json").read_text())
+    h2["files"] = {"deposits": "/elsewhere/deposits.bin"}
+    h2["info"]["config"] = "/elsewhere/config.json"
+    (tmp_path / "moved" / "deposits.json").write_text(json.dumps(h2))
+    assert g4io.output_hash(tmp_path / "a") == g4io.output_hash(tmp_path / "moved")      # paths do not count
+    h2["info"]["config_json"] = json.dumps({"seed": 2, "xamssim": {"run": "/abs/path/run.yaml", "n_events": 6}})
+    (tmp_path / "moved" / "deposits.json").write_text(json.dumps(h2))
+    assert g4io.output_hash(tmp_path / "a") != g4io.output_hash(tmp_path / "moved")      # content does
+
+
 def test_fieldmap_3d(tmp_path):
     m = fieldmap.FieldMap(flat_map(tmp_path / "f.npz", ez=-145.0, ex=100.0))
     assert m(0, 0, -25)[0] == pytest.approx(145.0)
@@ -104,3 +124,9 @@ def test_chain_end_to_end(tmp_path):
     drift = s[s["vol_id"] == 1]
     assert np.all(drift["electrons"] > 0) and np.all(drift["photons"] > 0)
     assert s[s["vol_id"] == 2]["electrons"][0] == 0                            # no S2 below the cathode
+    # new Geant4 output for the same run file -> new lineage of everything downstream (not reused)
+    key = st.key_for(rid, "clustered_interactions").lineage_hash
+    write_g4(tmp_path / "g4", ROWS[:-1], 6)
+    st2, _ = chain.context(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml", g4_out=tmp_path / "g4",
+                           store=tmp_path / "strax", xams_efield_map=str(flat_map(tmp_path / "f.npz")))
+    assert st2.key_for(rid, "clustered_interactions").lineage_hash != key

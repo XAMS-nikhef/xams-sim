@@ -271,7 +271,8 @@ def main():
     if missing:
         raise SystemExit(f"no description for plugins {missing}: add them to WHAT")
     gdir = chain.g4_dir(res)
-    settings = chain.settings(res, gdir, xams_efield_map=str(ROOT / "maps" / "field" / "KEY" / "efield_xyz.npz"))
+    settings = chain.settings(res, gdir, xams_efield_map=str(ROOT / "maps" / "field" / "KEY" / "efield_xyz.npz"),
+                              g4_output_hash="(content hash of the Geant4 output)")
     fig_architecture(maps.KINDS, list(config.PRODUCTS)); fig_chain(pl)
 
     # tables read from the configuration

@@ -47,3 +47,26 @@ def code(h: dict, table: str, name: str) -> int:
     """Code of a name (-1 if it never occurred)."""
     t = h["codes"].get(table, [])
     return t.index(name) if name in t else -1
+
+
+def _drop_paths(obj):
+    """The object without absolute file paths (they change when a folder moves, the content does not)."""
+    if isinstance(obj, dict):
+        return {k: _drop_paths(v) for k, v in obj.items() if not (isinstance(v, str) and v.startswith("/"))}
+    if isinstance(obj, list):
+        return [_drop_paths(v) for v in obj]
+    return obj
+
+
+def output_hash(path) -> str:
+    """Content hash of a particle-mode output: the full config Geant4 ran with (geometry, materials, source, physics,
+    seed, xams-sim version), the event and deposit counts, the code tables and record layout — not file paths.
+    The chain's input plugin tracks it, so new Geant4 output never reuses old strax data."""
+    from .config import short_hash
+    h = json.loads(_stem(path).with_suffix(".json").read_text())
+    h = {k: v for k, v in h.items() if k != "files"}
+    info = dict(h.get("info", {}))
+    if "config_json" in info:
+        info["config_json"] = json.loads(info["config_json"])
+    h["info"] = info
+    return short_hash(_drop_paths(h))

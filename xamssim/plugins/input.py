@@ -13,6 +13,7 @@ Translation:
     track ids  kept int32 here (fuse's reshape only takes int32/64), stored as int16 by fuse; beyond int16: error
     time       ns (each event starts at the decay: xamsg4 resets the clock of decay products)
 
+Lineage: `g4_output_hash` (content of the Geant4 output, from its header) is a tracked option.
 Options as in ChunkInput: `path` is the run directory (`<data>/g4/<run>`), `file_name` the stem (`deposits`);
 `entry_start` / `entry_stop` select events by their index in the run.
 """
@@ -21,6 +22,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import strax
+import straxen
 from fuse.plugins.micro_physics.input import ChunkInput, file_loader
 
 from .. import g4io
@@ -76,7 +78,12 @@ class XamsG4Loader(file_loader):
 class XamsG4Input(ChunkInput):
     """`geant4_interactions` from xamsg4 particle-mode output (<data>/g4/<run>/deposits.*)."""
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
+
+    g4_output_hash = straxen.URLConfig(
+        type=str, help="content hash of the Geant4 output (xamssim.g4io.output_hash): tracked, so a new Geant4 run "
+                       "of the same run file gets new strax data (fuse does not track path / file_name)",
+    )
 
     def setup(self):
         super(ChunkInput, self).setup()   # FuseBasePlugin: rng, logging

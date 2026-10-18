@@ -18,6 +18,7 @@ from pathlib import Path
 
 from . import g4bin
 from .config import DATA, ROOT, ConfigError, Resolved, resolve
+from .maps import git_version
 
 # Z of the elements of common calibration sources (fallback: periodictable)
 Z = {"H": 1, "Na": 11, "K": 19, "Co": 27, "Kr": 36, "Rb": 37, "Y": 39, "Cs": 55, "Ba": 56, "Eu": 63, "Pb": 82, "Bi": 83,
@@ -75,7 +76,7 @@ def build(res: Resolved, out_dir: Path, n_events: int, seed: int) -> tuple[Path,
         "world_half_mm": [max(300.0, reach), max(300.0, reach), max(300.0, abs(src["position_mm"][2]) + 50.0)],
         "particle": {"production_cut_mm": float(res.run.get("physics", {}).get("production_cut_mm", 0.1))},
         "xamssim": {"run": str(res.run_path), "run_key": res.run_key(), "state": res.state_name, "source": res.source_name,
-                    "seed": seed, "n_events": n_events},
+                    "seed": seed, "n_events": n_events, "code_version": git_version()},
     })
     cfg_path.write_text(json.dumps(cfg, indent=1))
     mac = out_dir / "run.mac"

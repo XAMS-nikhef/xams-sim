@@ -36,7 +36,7 @@ Exit code 2 and a one-line message for configuration errors.
 | `g4config.py` | geometry.yaml + materials.yaml (+ level, overrides) → `config.json` for `xamsg4` (both modes); `python -m xamssim.g4config` |
 | `run_scan.py`, `scan_data.py`, `read_output.py` | optical scans: runner (`make_points`), reader of a whole scan (`load`, `top_fraction`), reader of one photon file (`read`, `summary`) |
 | `section.py` | draws the exact cross sections written by `/xamsg4/section`; `python -m xamssim.section` |
-| `g4io.py` | `read(path, mmap=False)` → header, deposits, events; `names(h, table, codes)`; `code(h, table, name)` |
+| `g4io.py` | `read(path, mmap=False)` → header, deposits, events; `names(h, table, codes)`; `code(h, table, name)`; `output_hash(path)` (content hash for the lineage) |
 | `cli.py` | the command line |
 
 ## Tests

@@ -88,13 +88,14 @@ def plugins(clustering: str) -> list:
             mp.MicroPhysicsSummary]
 
 
-def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None) -> dict:
-    from . import fieldmap
+def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4_output_hash: str | None = None) -> dict:
+    from . import fieldmap, g4io
     p = physics(res)
     mats = res.materials["materials"]
     lxe, gxe = mats["liquid_xenon"]["density_g_cm3"], mats["gas_xenon"]["density_g_cm3"]
     return dict(
-        path=str(g4_dir), file_name="deposits", source_rate=p["source_rate_hz"], n_interactions_per_chunk=1e5,
+        path=str(g4_dir), file_name="deposits", g4_output_hash=g4_output_hash or g4io.output_hash(g4_dir),
+        source_rate=p["source_rate_hz"], n_interactions_per_chunk=1e5,
         # clustering
         **(dict(time_threshold=p["time_threshold_ns"], gamma_distance_threshold=p["gamma_distance_threshold_cm"],
                 brem_distance_threshold=p["brem_distance_threshold_cm"]) if p["clustering"] == "lineage" else
@@ -152,6 +153,11 @@ def run(run_path, target: str | None = None, g4_out=None) -> int:
         raise ConfigError(f"target '{target}' not implemented (available: {list(TARGETS)})")
     st, run_id = context(run_path, g4_out=g4_out)
     t0 = time.time()
+    # store the clusters and their volumes too (all clusters, also the dropped ones), then the target; fuse saves a
+    # product only when it is the single target of a request (SaveWhen.TARGET), hence one make per product
+    if target == "quanta":
+        for t in ("clustered_interactions", "volume_properties"):
+            st.make(run_id, t)
     d = st.get_array(run_id, TARGETS[target])
     print(f"run {res.run_path.name} (run id {run_id}): {TARGETS[target]} — {len(d)} rows, "
           f"{len(np.unique(d['eventid'])) if len(d) else 0} events, {time.time() - t0:.0f} s; stored in {STORE}")

@@ -92,8 +92,11 @@ permittivities), so states with the same inputs share it and any change of an in
 
 ## Output and reading it
 
-strax data in `<data>/strax/`, run id = the run key (`xamssim status <run>`). The stored data depend on the plugin
-settings (strax lineage), so changing an option and rerunning gives new data next to the old.
+strax data in `<data>/strax/`, run id = the run key (`xamssim status <run>`: a hash of the run file, state, source and
+map keys). Each product is stored under its lineage hash: plugin versions and tracked settings, including the field
+map file (its path holds the map key) and `g4_output_hash`, a content hash of the Geant4 output (the config it ran
+with incl. the xams-sim version, seed, counts; not file paths). Changing an option, a map or rerunning Geant4 gives new
+data next to the old; nothing stale is reused.
 
 ```python
 from xamssim import chain
