@@ -1,0 +1,8 @@
+# Detector state: short-fill REF-a (Oct-2024 fields at today's liquid level).
+description: "short fill REF-a: anode +1550, gate -1200, cathode -1700, BS -1000, TS -500 V"
+hv_case: refa
+liquid_level_mm: 4.0
+pressure_bar: 2.0            # assumed
+electron_lifetime_us: null
+sensors:
+  pmt_hv_v: {top: -1000, bottom: -1000}

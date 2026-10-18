@@ -11,3 +11,8 @@ results/**/*.npz
 notes/*.pdf
 # interactive 3D views (efield/comsol/plot_cell3d.py), 10-25 MB each: regenerate
 results/efield/comsol/cell3d_*.html
+
+# xams-sim generated maps (only the README is tracked)
+maps/*
+!maps/README.md
+*.egg-info/

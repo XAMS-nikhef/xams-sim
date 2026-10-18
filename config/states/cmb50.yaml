@@ -1,0 +1,8 @@
+# Detector state: short-fill CM-B with a -50 V SiPM margin (SiPMs ≈ 50 V below their surroundings), 100 V/cm.
+description: "short fill CM-B, -50 V margin: anode +2503, gate +303 (NaI channel), cathode -215, BS -65 V"
+hv_case: cmb50
+liquid_level_mm: 4.0
+pressure_bar: 2.0            # assumed
+electron_lifetime_us: null   # unknown until measured in the short fill
+sensors:
+  pmt_hv_v: {top: -1000, bottom: -1000}

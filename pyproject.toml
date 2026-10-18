@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xamssim"
+dynamic = ["version"]
+description = "XAMS simulation chain: config, map registry and strax plugins (on fuse + amstrax)"
+requires-python = ">=3.11"
+dependencies = ["pyyaml", "numpy"]
+
+[project.optional-dependencies]
+chain = ["strax==2.2.3", "xenon-fuse==1.6.3", "nestpy==2.0.6"]
+test = ["pytest"]
+
+[project.scripts]
+xamssim = "xamssim.cli:main"
+
+[tool.setuptools]
+packages = ["xamssim"]
+
+[tool.setuptools.dynamic]
+version = {attr = "xamssim.__version__"}

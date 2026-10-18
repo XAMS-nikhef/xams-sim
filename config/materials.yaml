@@ -1,0 +1,10 @@
+# Material properties for the simulation chain that are not optical (the optical properties and their fitted ranges
+# stay in geometry.yaml `optics` for now). Units: g/cm³, relative permittivity.
+liquid_xenon:
+  density_g_cm3: 2.86        # used in S0 (fuse VolumeProperties); LXe at ~ -98 °C, ~2 bar
+  relative_permittivity: 1.96
+gas_xenon:
+  density_g_cm3: 0.018       # ~2 bar, ~175 K (ideal gas estimate)
+  relative_permittivity: 1.00
+ptfe:
+  relative_permittivity: 2.1

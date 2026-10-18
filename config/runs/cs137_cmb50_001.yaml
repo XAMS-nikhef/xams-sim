@@ -1,0 +1,9 @@
+# One simulation run = this file. State and source are references; everything else comes from config/.
+state: cmb50
+source: cs137_raised
+n_events: 200000
+seed: 1
+stop_after: raw_records      # or an intermediate product (quanta, drifted_electrons, photoelectrons, ...)
+physics:
+  clustering: lineage        # S0 decision
+  nest_model: default
