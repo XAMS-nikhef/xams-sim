@@ -80,9 +80,9 @@ def test_fieldmap_3d(tmp_path):
 def test_volumes_and_physics():
     res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
     v = chain.volumes(res)
-    assert v["xenonnt_z_gate_mesh"] == 0 and v["xenonnt_z_cathode"] == pytest.approx(-5.18)
-    assert v["xenonnt_sensitive_volume_radius"] == pytest.approx(3.1)
-    assert v["xenonnt_z_lxe"] == pytest.approx(res.state["liquid_level_mm"] / 10)
+    assert v["z_gate_cm"] == 0 and v["z_cathode_cm"] == pytest.approx(-5.18)
+    assert v["r_field_cage_cm"] == pytest.approx(3.1)
+    assert v["z_liquid_cm"] == pytest.approx(res.state["liquid_level_mm"] / 10)
     assert chain.physics(res)["clustering"] == "lineage"
     res.run["physics"] = {"clustering": "lineage", "bogus": 1}
     with pytest.raises(ConfigError):

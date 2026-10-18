@@ -31,19 +31,20 @@ Geant4 11 process name `RadioactiveDecay` → `RadioactiveDecayBase` (the name f
 
 ## Settings from the configuration
 
-| fuse option | value | from |
+| option | value | from |
 |---|---|---|
-| `xenonnt_z_gate_mesh`, `xenonnt_z_cathode` | gate and cathode mesh z | `geometry.yaml` (`meshes`) |
-| `xenonnt_sensitive_volume_radius` | inner radius of the PTFE cylinder (3.1 cm) | `geometry.yaml` (`ptfe_cylinder`) |
-| `xenonnt_z_bottom_pmts`, `xenonnt_z_top_pmts` | PMT window z | `geometry.yaml` (`pmts`) |
-| `xenonnt_z_lxe` | gate z + liquid level | state (`liquid_level_mm`) |
-| `xenon_density_tpc`, `_below_cathode`, `_gas_phase` | liquid / gas xenon density | `materials.yaml` |
+| `z_gate_cm`, `z_cathode_cm` | gate and cathode mesh z | `geometry.yaml` (`meshes`) |
+| `z_liquid_cm` | gate z + liquid level | state (`liquid_level_mm`) |
+| `z_bottom_pmt_cm`, `z_top_pmt_cm` | PMT window z | `geometry.yaml` (`pmts`) |
+| `r_field_cage_cm` | inner radius of the PTFE cylinder (3.1 cm) | `geometry.yaml` (`ptfe_cylinder`) |
+| `density_liquid_g_cm3`, `density_gas_g_cm3` | liquid / gas xenon density | `materials.yaml` |
 | `xams_efield_map` | `<data>/maps/field/<key>/efield_xyz.npz` | map registry, state's field key |
 | `nest_er_yields_parameters`, `nest_nr_yields_parameters`, `nest_width_parameters` | `-1`, `-1`, `{}` (NEST defaults) | fixed |
 | clustering, `source_rate` | run file `physics` block | below |
 
-Four volumes, all with r < 3.1 cm: fuse's three plus the liquid between the gate and the surface. fuse itself keeps only
-the drift region and the region below the cathode; XAMS keeps all four.
+Four volumes, all with r < 3.1 cm (`XamsVolumeProperties`; fuse's own volume plugins are not used: they know three
+volumes, named after XENONnT, and keep two). Ids 1–3 are the ids fuse uses, so fuse plugins downstream read them as
+usual.
 
 | volume (`vol_id`) | z range | density | electrons kept |
 |---|---|---|---|

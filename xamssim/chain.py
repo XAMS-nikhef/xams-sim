@@ -9,19 +9,18 @@ Plugins (fuse 1.6.3 unless noted):
     clustered_interactions   LineageClustering + MergeLineage   (physics.clustering: lineage, default)
                              FindCluster + MergeCluster         (physics.clustering: dbscan)
     volume_properties, interactions_in_roi                      XamsVolumeProperties, XamsVolumeSelection (xamssim.plugins:
-                                                                fuse's volumes + liquid above the gate, all kept),
-                                                                DefaultSimulation
+                                                                four XAMS volumes, all kept), fuse DefaultSimulation
     electric_field_values    XamsElectricField (xamssim.plugins) — |E| at (x, y, z) from the state's 3D field map
     quanta                   NestYields — NEST with the local field and the xenon density of the volume
     microphysics_summary     MicroPhysicsSummary
 
-Every XENONnT default that matters is overridden from the configuration:
+All settings come from the configuration (fuse plugin defaults are XENONnT values; every one that matters is set):
     volumes (cm)   drift region  gate mesh z .. cathode z, r < PTFE cylinder inner radius          (geometry.yaml)
                    below cathode cathode z .. bottom PMT window, same radius
                    above gate    gate .. liquid surface (gate + liquid level of the state)
                    gas           liquid surface .. top PMT window
     densities      liquid / gas xenon from materials.yaml
-    field          maps/field/<key>/efield_xyz.npz of the state (3D, from the COMSOL model)
+    field          <data>/maps/field/<key>/efield_xyz.npz of the state (3D, from the COMSOL model)
     NEST           default NEST ER / NR models (parameters -1), no extra width parameters
 
 Clustering and timeline options come from the run file's `physics` block (PHYSICS_DEFAULTS).
@@ -60,16 +59,16 @@ def physics(res: Resolved) -> dict:
 
 
 def volumes(res: Resolved) -> dict:
-    """fuse volume settings (cm) from geometry.yaml and the state's liquid level."""
+    """Volume settings of XamsVolumeProperties (cm) from geometry.yaml and the state's liquid level."""
     g = res.geometry
     z = {m["name"]: m["z_mm"] for m in g["meshes"]}
     pmt = {p["name"]: p["window_z_mm"] for p in g["pmts"]}
     r = g["ptfe_cylinder"]["inner_diameter_mm"] / 2
     return dict(
-        xenonnt_z_gate_mesh=z["gate"] / 10, xenonnt_z_cathode=z["cathode"] / 10,
-        xenonnt_sensitive_volume_radius=r / 10,
-        xenonnt_z_bottom_pmts=pmt["bottom"] / 10, xenonnt_z_top_pmts=pmt["top"] / 10,
-        xenonnt_z_lxe=(z["gate"] + res.state["liquid_level_mm"]) / 10,
+        z_gate_cm=z["gate"] / 10, z_cathode_cm=z["cathode"] / 10,
+        z_liquid_cm=(z["gate"] + res.state["liquid_level_mm"]) / 10,
+        z_bottom_pmt_cm=pmt["bottom"] / 10, z_top_pmt_cm=pmt["top"] / 10,
+        r_field_cage_cm=r / 10,
     )
 
 
@@ -103,8 +102,7 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None) ->
                 tag_cluster_by="energy")),
         # volumes, densities
         **volumes(res),
-        xenon_density_tpc=lxe, xenon_density_below_cathode=lxe, xenon_density_gas_phase=gxe,
-        create_S2_xenonnt_gas_phase=True,          # keep the electrons of gas clusters (above gate: plugin default)
+        density_liquid_g_cm3=lxe, density_gas_g_cm3=gxe,
         # field, NEST
         xams_efield_map=str(xams_efield_map or fieldmap.path(res)),
         nest_er_yields_parameters=-1, nest_nr_yields_parameters=-1, nest_width_parameters={},

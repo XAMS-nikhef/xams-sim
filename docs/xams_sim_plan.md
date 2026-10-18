@@ -233,9 +233,16 @@ standalone nestpy at fixed fields (100, 145, 500 V/cm); S1/S2 anticorrelation at
   point, drift time, loss flag on a grid) and the mesh-cell fields near gate, cathode and anode.
 - Drift plugin: drift time from v(E), longitudinal / transverse diffusion, lifetime, losses (wall, SiPM, through the
   cathode holes), position at the gate; delayed-electron model as an option (paper).
+- Volumes from the geometry and the field instead of z-planes: `XamsVolumeProperties` (S3) re-derives liquid / gas and
+  the regions from flat planes and one radius, an approximation of what Geant4 and the field map already know.
+  Replace it by: the medium (liquid / gas) from Geant4's volume code per deposit (carried through the input and the
+  clustering), and what happens to the electrons from the drift map (end point: gate / surface, cathode, wall, SiPM),
+  so "below the cathode", "above the gate" and "outside the field cage" follow from the field, not from fixed planes.
+  The z-plane settings (`z_*_cm`, `r_field_cage_cm`) then go away.
 
-**Check:** drift-time profile and maximum drift time against data (`results/drift_profile`), apparent lifetime vs
-radius (`results/sipm_checks`) for the Sept state.
+**Check:** drift-time profile and maximum drift time against data (drift-profile study,
+`../simulations/2026-10-12_efield_sipm_and_spread/`), apparent lifetime vs radius (SiPM checks, same study) for the
+Sept state; volumes: clusters per medium equal the Geant4 energy per volume, and electron end points per region.
 
 ### S5. Extraction and electroluminescence (1–2 days)
 - Extraction probability vs field below the surface; S2 photons per electron and their timing along the gas path
