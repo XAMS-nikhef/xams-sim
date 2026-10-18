@@ -35,13 +35,13 @@ Then: [how it works](concepts.md) → [running](running.md) → [your own analys
 
 ## This documentation
 
-Written in Markdown in `optical_sim/docs/`, built with MkDocs (same setup as the XAMS handbook). To read it in a
+Written in Markdown in `xams-sim/docs/`, built with MkDocs (same setup as the XAMS handbook). To read it in a
 browser:
 
 ```bash
-cd /Users/acolijn/Documents/XAMS/optical_sim
-../xams-handbook/.venv/bin/python3 -m mkdocs serve   # then open http://127.0.0.1:8000
+cd ~/Documents/XAMS/xams-sim
+conda activate xamssim && mkdocs serve   # then open http://127.0.0.1:8000
 ```
 
-(or `pip install -r requirements-docs.txt` in any Python environment and `mkdocs serve`). `mkdocs build` writes a
+(the `xamssim` env has MkDocs from `requirements-docs.txt`; any Python env with `pip install -r requirements-docs.txt` works too). `mkdocs build` writes a
 static site to `site/`.

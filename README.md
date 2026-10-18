@@ -43,7 +43,7 @@ Geant4 optical simulation of the XAMS TPC, to find out how much of the observed 
 low S2 light on the top PMT) follows from the geometry: the etched meshes, the liquid surface, the PTFE cylinder and the
 PMT photocathodes.
 
-**Documentation: MkDocs site in [`docs/`](docs/index.md)** — `../xams-handbook/.venv/bin/mkdocs serve` and open
+**Documentation: MkDocs site in [`docs/`](docs/index.md)** — `conda activate xamssim; mkdocs serve` and open
 http://127.0.0.1:8000 (how it works, running, output format, your own analysis, geometry, optics, validation,
 results). **Findings: PDF note `notes/XAMS_optical_simulation_2026-10-05.pdf`** (`python notes/make_note.py`).
 

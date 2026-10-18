@@ -1,6 +1,6 @@
 # Your own analysis
 
-Reading the output needs only numpy (no Geant4). From `optical_sim/`:
+Reading the output needs only numpy (no Geant4). From the repository root (`xams-sim/`), in the `xamssim` env:
 
 ```python
 import sys; sys.path.insert(0, "tools")

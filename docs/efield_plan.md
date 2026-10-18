@@ -33,7 +33,7 @@ Principles, as for the optical model:
 ## Layout
 
 ```
-optical_sim/
+xams-sim/
   geometry.yaml            ← extended in E0: SiPM holes / packages / foil, chain resistors, electrode HV defaults
   efield/
     cases/*.yaml           one HV setting each: electrode voltages, SiPM state (grounded / floating / V), surface charge
