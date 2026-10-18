@@ -6,8 +6,8 @@ simulation (scans s2_optics, s1_optics), in the same bins.
 
 Sim band = all s2_optics points at the 4 mm level (PTFE R 0.90-0.99, steel R 0.2-0.5) / all s1_optics points.
 Data: LED gains (load correction undone), no source / Na-22 / Cs-137 at Δ750 V. Equal QE top / bottom in the sim.
-Frames: data x runs along +u (towards ch1/ch3), the sim's +x towards sectors II/IV (ch2/ch4): x_data = -x_sim,
-y_data = y_sim.
+Frame: the geometry is in the data frame (geometry v5): +x towards ch1/ch3 (+u), +y towards ch1/ch2. Scans made with
+geometry v4 or older are mirrored in x and must be redone.
 """
 import json
 import sys
@@ -32,7 +32,7 @@ LAB = {"none": "data, no source", "na22": "data, Na-22", "cs137": "data, Cs-137"
 def sim_binned(p, edges):
     rec = p["rec"]
     det = rec[np.isin(rec["sensor"], (0,) + TOP)]
-    x, y = -det["x0"], det["y0"]                     # data frame
+    x, y = det["x0"], det["y0"]
     r = np.hypot(x, y)
     out = {}
     out["s2_aft_vs_r"] = [top_fraction(det[(r >= a) & (r < b)])[0] for a, b in zip(edges["r"][:-1], edges["r"][1:])]

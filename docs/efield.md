@@ -32,7 +32,10 @@ python efield/comsol/plot_compare.py cmb_m100 cmb50 cmb cmb_p100   # half-planes
 
 `run.sh` writes the Java model (`make_model.py` → `efield/comsol/build/XAMS_efield.java`), compiles it, solves all
 listed cases in one sweep (~1.5 min, ~2.3 M elements), saves `build/XAMS_efield.mph` (open it in the COMSOL GUI) and
-parses the log (`parse_log.py`) into `results/efield/comsol/checks.json` and `maps_rz.npz`.
+parses the log (`parse_log.py`) into `results/efield/comsol/checks.json` and `maps_rz.npz` (a failed solve, e.g. no
+licence, leaves both unchanged). The 3D field of a solved case goes to the [simulation chain](chain.md#field-map) with
+`xamssim maps --state <state> --export field`, which reads the `.mph` through COMSOL's API (package `mph`). All
+geometry, including the SiPMs, comes from `config/geometry.yaml`; `cases.yaml` holds only voltages.
 
 Model: the inside of the grounded vessel; PTFE bucket with liquid xenon up to the level, gas elsewhere; the meshes as
 solid conducting discs with their rings (etched holes not resolved — see the mesh cell below); PTFE cylinder with
@@ -67,9 +70,10 @@ a SiPM, a mesh bar or the edge. In liquid xenon electrons follow the field lines
 
 ## COMSOL notes
 
-- COMSOL's default security setting forbids the Java model to write files outside its own folders. The model is
-  therefore saved with `comsol batch -outputfile`, and the (r, z) and cell maps are printed to the log (`MAP`, `M3`
-  lines) and parsed in Python. The 3D box exports around the SiPMs (`export: [sipm]`) need *Preferences → Security →
-  File system access: All files*.
+- COMSOL's security setting *File system access: Limited* (`security.external.filepermission=limited`) forbids the
+  compiled Java model to write files outside COMSOL's own folders. The model is therefore saved with
+  `comsol batch -outputfile`, and the (r, z) and cell maps are printed to the log (`MAP`, `M3` lines) and parsed in
+  Python. Field maps for the chain are read from the saved `.mph` with `mph` (Python), so they need no file access
+  from COMSOL. Only the 3D box exports around the SiPMs (`export: [sipm]`) need *File system access: All files*.
 - The models are regenerated from the YAML files on every run: change `cases.yaml`, `geometry.yaml` or
   `materials.yaml`, not the generated Java.

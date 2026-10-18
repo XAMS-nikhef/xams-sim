@@ -49,7 +49,8 @@
 - Scans skip finished parts: after a geometry or code change move the old `run/scans/<name>/` away first.
 - Optical `-d` output holds only detected photons; use `n_photons` / the tally for fractions of all photons.
 - Particle-mode code tables are built per run: decode with the header of the same run.
-- Frames: x_data = −x_sim.
+- One frame: `geometry.yaml` (v5) is in the data frame; Geant4, COMSOL and the chain use it as is. Optical scans made
+  with geometry v4 or older are mirrored in x (`config.json` → `meta.version`).
 - Free optical parameters sit at the middle of their range unless set (`--set`, scan grid).
 - `notes/make_note.py` needs reportlab (base conda Python).
 - `nestpy` must stay below 2.1 for fuse 1.6.3.

@@ -46,6 +46,9 @@ def main():
         if "liq_gap" in pts and pts["liq_gap"]["Ez"]:
             d["gas_over_liquid_gap"] = round(pts["gas_gap"]["Ez"] / pts["liq_gap"]["Ez"], 4)
         res["cases"][n] = d
+    if not res["cases"]:
+        # failed solve (licence, model error): keep the results of the last good run
+        raise SystemExit("no CHECK lines in the log (solve failed?); results/efield/comsol/ left unchanged")
     json.dump(res, open(OUT / "checks.json", "w"), indent=1)
     if maps:
         out = {}

@@ -97,7 +97,7 @@ Existing: `cs137_raised`, `cs137_sept` (position unknown), `cs137_r130_cathode`,
 | `n_events` | yes | number of primaries (decays or gammas) |
 | `seed` | yes | random seed |
 | `stop_after` | | last product of the chain: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`, `extracted_electrons`, `s2_photons`, `photoelectrons`, `raw_records` (default) |
-| `physics` | | options, e.g. `clustering: lineage`, `production_cut_mm: 0.1` |
+| `physics` | | options: `clustering`, `source_rate_hz`, lineage / DBSCAN cluster settings, `production_cut_mm` (list and defaults: [Simulation chain](chain.md#physics-options-run-file)) |
 
 Unknown keys are rejected.
 

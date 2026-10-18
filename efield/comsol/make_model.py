@@ -4,7 +4,7 @@ efield/cases.yaml. Build and solve it with efield/comsol/run.sh (compile + comso
 open in the COMSOL GUI with geometry, materials, physics, mesh, study (one auxiliary sweep over all cases) and plots in
 place.
 
-Model (3D, mm, z = 0 at the gate, frame as geometry.yaml; SiPM azimuths in the data x-y frame):
+Model (3D, mm, z = 0 at the gate; all geometry from geometry.yaml, data frame):
 - domain: the gas cavity of the grounded inner cryostat vessel (between its blind flanges); PTFE bucket with liquid xenon up to the level, gas elsewhere;
 - meshes (top screen, anode, gate, cathode, bottom screen) as solid conducting discs r < 36 mm (the etched holes are
   not resolved) plus their support rings (r 36-46.3 mm, on the side given by foil_side);
@@ -16,7 +16,7 @@ Checks (printed as CHECK lines, parsed by run.sh -> results/efield/checks.json):
 (V_gate - V_cathode) / 51.8 mm, liquid / gas field ratio in the extraction gap, potential at the SiPM height near the
 wall, field in the SiPM hole.
 
-    python efield/comsol/make_model.py [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm] [--cases sept,cma,cmb]
+    python efield/comsol/make_model.py --states sept,cmb50 [--cases X --level L] [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm]
 """
 import argparse
 import math
@@ -54,16 +54,20 @@ def main():
     ap.add_argument("--hmax-sipm", type=float, default=0.25, help="max element size in the SiPM holes [mm]")
     ap.add_argument("--hmax", type=float, default=8.0, help="global max element size [mm]")
     ap.add_argument("--no-sipm", action="store_true", help="leave the SiPMs out (axisymmetric reference)")
-    ap.add_argument("--cases", default="", help="comma-separated subset of cases.yaml (default: all)")
+    ap.add_argument("--states", default="", help="states (config/states): their HV cases and liquid level")
+    ap.add_argument("--cases", default="", help="extra HV cases of cases.yaml (without --states: needs --level)")
+    ap.add_argument("--level", type=float, help="liquid level above the gate [mm] for --cases without --states")
     a = ap.parse_args()
+    from xamssim.config import ConfigError, efield_selection
+    try:
+        cases, level = efield_selection(a.states, a.cases, a.level)
+    except ConfigError as e:
+        raise SystemExit(f"make_model: {e}")
 
     G = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))
     MAT = yaml.safe_load(open(ROOT / "config" / "materials.yaml"))["materials"]
     eps = {k: str(v["electrical"]["relative_permittivity"]) for k, v in MAT.items() if v["electrical"]["kind"] == "dielectric"}
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
-    cases = C["cases"]
-    if a.cases:
-        cases = {k: cases[k] for k in a.cases.split(",")}
     names = list(cases)
 
     # ---------------------------------------------------------------- geometry numbers
@@ -79,7 +83,6 @@ def main():
     z_ptfe_bot = -50.925                                     # 0.875 mm above the cathode mid-plane (geometry.yaml)
     fsr = G["field_shaping_rings"]
     t_fsr = fsr["thickness_mm"]
-    level = C["liquid_level_mm"]
     bk = G["ptfe_bucket"]
     rim = level + bk["weir_below_rim_mm"]
     bk_bottom = rim - bk["height_mm"]
@@ -94,7 +97,10 @@ def main():
     pz = {p["name"]: p["window_z_mm"] for p in G["pmts"]}
     ph = G["pmt_ptfe"]
     ap50 = ph["aperture_square_mm"]
-    sp = C["sipm"]
+    sg = G["sipms"]                                    # SiPMs from geometry.yaml (data frame)
+    if len(set(sg["z_mm"])) != 1:
+        raise SystemExit("make_model: SiPMs at different heights not supported yet")
+    sp = dict(azimuth_deg=sg["azimuth_deg"], z_mm=sg["z_mm"][0], size_mm=sg["active_mm"][0], recess_mm=sg["recess_mm"])
 
     j = J()
     j('Model model = ModelUtil.create("Model");')
@@ -109,6 +115,7 @@ def main():
     for n, v, d in par:
         j(f'model.param().set("{n}", "{v}[V]", "{d}");')
     j('model.param().set("icase", "1", "case index (auxiliary sweep)");')
+    j(f'model.param().set("level", "{level}[mm]", "liquid level above the gate (from the state)");')
     R = C["field_cage"]["resistors_gohm"]
     for i, r in enumerate(R, 1):
         j(f'model.param().set("R{i}", "{r}[Gohm]", "chain resistor {i}");')

@@ -41,9 +41,9 @@ int DetectorConstruction::BuildMesh(G4LogicalVolume* mother, const std::string& 
   // that is not etched (clipped at r_vis). The holes are then real openings (also in the viewer).
   // Without a hole list (test geometries) every cell fully inside r_vis is a hole.
   const auto& c = Config::Get();
-  const double t = c.Num("mesh_common/foil_thickness_mm", 0.15) * mm;
-  const double w = c.Num("mesh_common/bar_width_mm", 0.15) * mm;
-  const double p = c.Num("mesh_common/pitch_mm", 2.60) * mm;
+  const double t = c.Req("mesh_common/foil_thickness_mm") * mm;
+  const double w = c.Req("mesh_common/bar_width_mm") * mm;
+  const double p = c.Req("mesh_common/pitch_mm") * mm;
   const double h = p - w;  // hole / cell side
   const double eps = 1e-4 * mm;
 
@@ -134,12 +134,12 @@ int DetectorConstruction::BuildMesh(G4LogicalVolume* mother, const std::string& 
 void DetectorConstruction::BuildPmt(G4LogicalVolume* mother, G4VPhysicalVolume* motherP, const std::string& name,
                                     double window_z, bool facing_down, bool sectors) {
   const auto& c = Config::Get();
-  const double outer = c.Num("pmt_common/outer_square_mm", 56.0) * mm;
-  const double face = c.Num("pmt_common/window_face_square_mm", 54.6) * mm;
-  const double cath = c.Num("pmt_common/photocathode_square_mm", 48.5) * mm;
-  const double tw = c.Num("pmt_common/window_thickness_mm", 2.5) * mm;
-  const double height = c.Num("pmt_common/height_mm", 14.8) * mm;
-  const double qe = c.Num("pmt_common/qe_178nm", 0.33);
+  const double outer = c.Req("pmt_common/outer_square_mm") * mm;
+  const double face = c.Req("pmt_common/window_face_square_mm") * mm;
+  const double cath = c.Req("pmt_common/photocathode_square_mm") * mm;
+  const double tw = c.Req("pmt_common/window_thickness_mm") * mm;
+  const double height = c.Req("pmt_common/height_mm") * mm;
+  const double qe = c.Req("pmt_common/qe_178nm");
   const double tc = 0.1 * mm;  // photocathode layer
   const double s = facing_down ? +1. : -1.;  // direction from the window face into the PMT
   const double z0 = window_z;                 // mother-local z of the window's outer face
@@ -170,8 +170,19 @@ void DetectorConstruction::BuildPmt(G4LogicalVolume* mother, G4VPhysicalVolume* 
     }
     auto* secS = new G4Box(name + "Sector", 0.5 * a, 0.5 * a, 0.5 * tc);
     auto* secL = new G4LogicalVolume(secS, Photocathode(), name + "Sector");
-    // sectors I (-x, +y), II (+x, +y), III (-x, -y), IV (+x, -y) = copy numbers 1-4 = channels ch1-ch4
-    const double xs[4] = {-h, +h, -h, +h}, ys[4] = {+h, +h, -h, -h};
+    // sectors I-IV = copy numbers 1-4 = channels ch1-ch4, at the quadrants of config pmts[top].sector_quadrant
+    // (data frame: I (+x, +y), II (-x, +y), III (+x, -y), IV (-x, -y))
+    const nlohmann::json* quad = nullptr;
+    for (const auto& pm : c.J()["pmts"])
+      if (pm.value("name", "") == "top" && pm.contains("sector_quadrant")) quad = &pm["sector_quadrant"];
+    if (!quad)
+      G4Exception("BuildPmt", "GEOM050", FatalException, "pmts[top].sector_quadrant missing in the config");
+    double xs[4], ys[4];
+    const char* sec[4] = {"I", "II", "III", "IV"};
+    for (int i = 0; i < 4; ++i) {
+      xs[i] = (*quad)[sec[i]][0].get<double>() * h;
+      ys[i] = (*quad)[sec[i]][1].get<double>() * h;
+    }
     for (int i = 0; i < 4; ++i) {
       auto* secP = new G4PVPlacement(nullptr, G4ThreeVector(xs[i], ys[i], zc), secL, name + "Sector", mother, false,
                                      i + 1, kCheck);
@@ -209,10 +220,10 @@ G4VPhysicalVolume* DetectorConstruction::BuildTestMesh() {
 G4VPhysicalVolume* DetectorConstruction::BuildXams() {
   const auto& c = Config::Get();
   const auto& j = c.J();
-  const double zl = c.Num("liquid/surface_z_mm", 4.0) * mm;
-  const double rRingIn = 0.5 * c.Num("mesh_common/ring/inner_diameter_mm", 64.0) * mm;
-  const double rRingOut = 0.5 * c.Num("mesh_common/ring/outer_diameter_mm", 92.6) * mm;
-  const double ringHalf = 0.5 * c.Num("mesh_common/ring/thickness_mm", 1.8) * mm;
+  const double zl = c.Req("liquid/surface_z_mm") * mm;
+  const double rRingIn = 0.5 * c.Req("mesh_common/ring/inner_diameter_mm") * mm;
+  const double rRingOut = 0.5 * c.Req("mesh_common/ring/outer_diameter_mm") * mm;
+  const double ringHalf = 0.5 * c.Req("mesh_common/ring/thickness_mm") * mm;
 
   // world (absorbing) and the two xenon regions
   // world half sizes: config world_half_mm (default 160 x 160 x 260 mm: both cryostat vessels; particle mode: larger
@@ -245,10 +256,10 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     // (XAMS_cryostat.pdf, simplified); centred on cryostat_vessel/center_z_mm (XAMS in the middle of the vessel)
     const double vIn = 0.5 * v["inner_diameter_mm"].get<double>() * mm, vOut = 0.5 * v["outer_diameter_mm"].get<double>() * mm;
     const double vH = v["height_mm"].get<double>() * mm;  // gas cavity between the blind flanges
-    const double vF = 0.5 * c.Num("cryostat_vessel/flange/outer_diameter_mm", 202.5) * mm;
-    const double vR = c.Num("cryostat_vessel/flange/ring_thickness_mm", 21.) * mm;
-    const double vB = c.Num("cryostat_vessel/flange/blind_thickness_mm", 24.) * mm;
-    const double vC = c.Num("cryostat_vessel/center_z_mm", -25.9) * mm;
+    const double vF = 0.5 * c.Req("cryostat_vessel/flange/outer_diameter_mm") * mm;
+    const double vR = c.Req("cryostat_vessel/flange/ring_thickness_mm") * mm;
+    const double vB = c.Req("cryostat_vessel/flange/blind_thickness_mm") * mm;
+    const double vC = c.Req("cryostat_vessel/center_z_mm") * mm;
     if (zBucket < vC - 0.5 * vH || zRim > vC + 0.5 * vH)
       G4Exception("BuildXams", "GEOM031", FatalException, "the PTFE bucket does not fit in the inner vessel");
     vesselTop = vC + 0.5 * vH + vB;
@@ -267,10 +278,10 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
       const auto& o = j["cryostat_outer"];
       const double oIn = 0.5 * o["inner_diameter_mm"].get<double>() * mm, oOut = 0.5 * o["outer_diameter_mm"].get<double>() * mm;
       const double oH = o["height_mm"].get<double>() * mm;
-      const double oF = 0.5 * c.Num("cryostat_outer/flange/outer_diameter_mm", 290.) * mm;
-      const double oR = c.Num("cryostat_outer/flange/ring_thickness_mm", 12.) * mm;
-      const double oB = c.Num("cryostat_outer/flange/blind_thickness_mm", 12.) * mm;
-      const double oC = vC - c.Num("cryostat_outer/inner_vessel_offset_mm", -24.) * mm;
+      const double oF = 0.5 * c.Req("cryostat_outer/flange/outer_diameter_mm") * mm;
+      const double oR = c.Req("cryostat_outer/flange/ring_thickness_mm") * mm;
+      const double oB = c.Req("cryostat_outer/flange/blind_thickness_mm") * mm;
+      const double oC = vC - c.Req("cryostat_outer/inner_vessel_offset_mm") * mm;
       if (oF > wx || oF > wy || oC + 0.5 * oH + oB > wz || oC - 0.5 * oH - oB < -wz)
         G4Exception("BuildXams", "GEOM032", FatalException, "the outer vessel does not fit in the world (world_half_mm)");
       if (vF > oIn || vesselTop > oC + 0.5 * oH || vesselBot < oC - 0.5 * oH)
@@ -345,8 +356,8 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
   // mesh assemblies (drawing "XAMS_XAMS grid assy.pdf"): foil mid-plane at the mesh z; inside the ring bore the foil is
   // the etched mesh (bar layer), from the bore to the foil edge it lies on the ring face (foil rim); the ring body
   // (assembly thickness minus foil) is on the other side of the foil ("foil_side" up: body below, down: body above)
-  const double tFoil = c.Num("mesh_common/foil_thickness_mm", 0.15) * mm;
-  const double rFoil = 0.5 * c.Num("mesh_common/foil_diameter_mm", 80.0) * mm;
+  const double tFoil = c.Req("mesh_common/foil_thickness_mm") * mm;
+  const double rFoil = 0.5 * c.Req("mesh_common/foil_diameter_mm") * mm;
   const double bodyT = 2 * ringHalf - tFoil;
   auto* bodyL = new G4LogicalVolume(new G4Tubs("MeshRingBody", rRingIn, rRingOut, 0.5 * bodyT, 0., 360. * deg),
                                     StainlessSteel(), "MeshRing");
@@ -377,10 +388,10 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
 
   // PTFE cylinder (drawing "PTFE_cylinder.pdf"): in the bores of the gate and cathode rings, from z_top down over its
   // length (all in the liquid)
-  const double rIn = 0.5 * c.Num("ptfe_cylinder/inner_diameter_mm", 62.0) * mm;
-  const double wall = c.Num("ptfe_cylinder/wall_thickness_mm", 5.0) * mm;
-  const double zt = c.Num("ptfe_cylinder/z_top_mm", -0.075) * mm;
-  const double zb = zt - c.Num("ptfe_cylinder/length_mm", 50.85) * mm;
+  const double rIn = 0.5 * c.Req("ptfe_cylinder/inner_diameter_mm") * mm;
+  const double wall = c.Req("ptfe_cylinder/wall_thickness_mm") * mm;
+  const double zt = c.Req("ptfe_cylinder/z_top_mm") * mm;
+  const double zb = zt - c.Req("ptfe_cylinder/length_mm") * mm;
   if (zt > zGate - 0.5 * tFoil + 1e-6 * mm || zb < zCath + 0.5 * tFoil - 1e-6 * mm)
     G4Exception("BuildXams", "GEOM011", FatalException, "PTFE cylinder does not fit between the gate and cathode foils");
   auto* ptfeL = new G4LogicalVolume(new G4Tubs("PTFE", rIn, rIn + wall, 0.5 * (zt - zb), 0., 360. * deg), Ptfe(),
@@ -446,7 +457,7 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     const auto& h = j["pmt_ptfe"];
     const double rO = 0.5 * h["outer_diameter_mm"].get<double>() * mm;
     const double ap = h["aperture_square_mm"].get<double>() * mm;
-    const double height = c.Num("pmt_common/height_mm", 14.8) * mm;
+    const double height = c.Req("pmt_common/height_mm") * mm;
     for (const auto& pm : j["pmts"]) {
       const std::string name = pm["name"].get<std::string>();
       const bool top = name == "top";

@@ -72,7 +72,7 @@ def light_map(cell=1.0, rmax=27.0):
         for q in p["parts"]:
             rec = read(ROOT / "run" / "scans" / "fit_s2" / q["file"])[0]
             rec = rec[np.isin(rec["sensor"], CH)]
-            x, y = -rec["x0"], rec["y0"]                    # data frame
+            x, y = rec["x0"], rec["y0"]
             for c in CH:
                 m = rec["sensor"] == c
                 H[c] += np.histogram2d(x[m], y[m], bins=nb, range=[[-rmax, rmax], [-rmax, rmax]])[0]

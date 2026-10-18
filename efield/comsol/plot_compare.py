@@ -27,7 +27,7 @@ OUT = ROOT / "results" / "efield" / "comsol"
 def main():
     names = sys.argv[1:]
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
-    zs = C["sipm"]["z_mm"]
+    zs = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))["sipms"]["z_mm"][0]
     M = np.load(OUT / "maps_rz.npz")
     r, z = M["r"], M["z"]
     fig, ax = plt.subplots(1, len(names), figsize=(3.6 * len(names), 7.2), sharey=True)

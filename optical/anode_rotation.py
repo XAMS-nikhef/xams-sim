@@ -61,8 +61,8 @@ def main():
         pe = np.arange(-24, 24.1, 2)
         pcen = 0.5 * (pe[1:] + pe[:-1])
         m = np.abs(top["y0"]) < 3
-        nu, _ = np.histogram(-top["x0"][m], pe)
-        uu = np.histogram(-top["x0"][m], pe, weights=u[m])[0] / nu
+        nu, _ = np.histogram(top["x0"][m], pe)
+        uu = np.histogram(top["x0"][m], pe, weights=u[m])[0] / nu
         ue = np.sqrt((1 - uu ** 2) / nu)
         res[str(a)] = dict(
             s2_top_fraction=f2, s2_err=e2,

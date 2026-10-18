@@ -44,6 +44,7 @@ nav:
   - Running:
       - Particle mode: particle.md
       - Optical simulation: optical.md
+      - Simulation chain: chain.md
       - Viewers: viewers.md
       - Electric field: efield.md
   - Output:

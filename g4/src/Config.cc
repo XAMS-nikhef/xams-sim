@@ -1,5 +1,7 @@
 #include "Config.hh"
 
+#include <G4Exception.hh>
+
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -37,6 +39,14 @@ const nlohmann::json* Config::Find(const std::string& path) const {
 double Config::Num(const std::string& path, double def) const {
   const auto* n = Find(path);
   return (n && n->is_number()) ? n->get<double>() : def;
+}
+
+double Config::Req(const std::string& path) const {
+  const auto* n = Find(path);
+  if (!n || !n->is_number())
+    G4Exception("Config::Req", "CONF010", FatalException,
+                ("required config value '" + path + "' missing (geometry.yaml / materials.yaml / state)").c_str());
+  return n->get<double>();
 }
 
 std::string Config::Str(const std::string& path, const std::string& def) const {

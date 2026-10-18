@@ -2,7 +2,11 @@
 
 All dimensions live in `config/geometry.yaml` (material properties and optics in `config/materials.yaml`), each with its source (drawings in `reference/XAMS design/`: grid assembly,
 PTFE cylinder, field shaping, PTFE bucket, inner cryostat vessel, the cryostat `XAMS_cryostat.pdf`; thesis; position reconstruction v2; the user).
-Built by `g4/src/XamsGeometry.cc`.
+Built by `g4/src/XamsGeometry.cc`; the COMSOL field model (`efield/comsol/make_model.py`) reads the same file.
+
+**Frame:** the data frame of the position reconstruction (since geometry v5): z = 0 at the gate, z up; +x towards the
+top-PMT sectors I and III (ch1, ch3), +y towards I and II (ch1, ch2). Every program works in this frame; there are no
+conversions.
 
 ![Cross section y = 0](img/geometry_section_xz.png)
 
@@ -23,7 +27,7 @@ Built by `g4/src/XamsGeometry.cc`.
 | PTFE cylinder | Ø62 / Ø72 mm, 50.85 mm long, in the bores of the gate and cathode rings, against the gate foil; 0.8 mm gap above the cathode foil (real) |
 | copper rings | four field-shaping rings Ø72–92.6 × 1.8 mm around the PTFE, centres at z = −10.6, −20.4, −30.2, −40.0 mm (8 mm gaps; gate ring → ring 1 assumed 8 mm) |
 | PMTs | two R12699: silica window 54.6 mm square, 2.5 mm thick; photocathode 48.5 mm square behind it (top: 4 sectors 24.25 mm = ch1–ch4); absorbing frame and body. Windows at z = +22.5 (top, facing down) and −64.1 mm (bottom, facing up) |
-| SiPMs | two, on the PTFE inner wall at z = −25 mm (azimuths in `geometry.yaml`: 0° / 90°; the field model uses 90° / 180° from the data — to be reconciled) |
+| SiPMs | two, on the PTFE inner wall at z = −25 mm, azimuths 90° / 180° (data frame), 1 mm recessed |
 | outside the outer vessel | vacuum ("World", ±160 × ±160 × ±260 mm by default, larger in the particle mode if the source needs it); no lab, no support structure |
 
 Consequences: the gate–anode gap is open sideways between r = 36 and 46 mm (both ring bodies point away from it);

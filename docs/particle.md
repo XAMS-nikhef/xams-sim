@@ -58,5 +58,5 @@ From `config/sources/<name>.yaml` ([configuration](configuration.md#sources-conf
 
 ## Positions and frames
 
-Records are in the geometry frame (mm, z = 0 at the gate). The data frame of the position reconstruction is mirrored
-in x (x_data = −x_sim).
+Records are in the geometry frame, which is the data frame of the position reconstruction (mm, z = 0 at the gate; +x
+towards top-PMT sectors I / III, +y towards I / II; `geometry.yaml` v5).

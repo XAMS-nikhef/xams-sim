@@ -1,6 +1,8 @@
 # HV cases for the electric-field model (efield). One entry per setting; voltages in V.
 # A = anode, G = gate, C = cathode, BS = bottom screen, TS = top screen, PMT_T / PMT_B = PMT bodies (photocathode HV,
 # assumption: the whole PMT box at that potential), SIPM = SiPM planes (grounded = 0).
+# Only voltages here: all geometry (incl. the SiPMs) comes from config/geometry.yaml, the liquid level from the state
+# (config/states/*.yaml); a solve takes HV case and level from the states (run.sh --states sept,cmb50).
 # Field-cage rings between gate and cathode follow from the resistor chain (field_cage below).
 # Sources: measurements/run_overview.md (SR-2026.2 settings) and the short-fill run plan
 # (measurements/next_fill/plan/XAMS_runplan_short_fill.pdf, 2026-10-12).
@@ -13,14 +15,6 @@ field_cage:
   resistors_gohm: [1.0, 1.0, 1.0, 1.0, 1.0]   # gate -> ring 1 -> ring 2 -> ring 3 -> ring 4 -> cathode (design 5 x 1 GOhm,
                                                # Flierman thesis p.102; ~5 GOhm in operation)
 
-sipm:                        # model: grounded 3 x 3 mm conducting plane, recessed 1 mm into the PTFE cylinder (user,
-                             # 2026-10-12); no package, PCB, cables or foil
-  azimuth_deg: [90.0, 180.0] # data x-y frame (results/sipm_checks, spread map); geometry.yaml says 0 / 90 — to be checked
-  z_mm: -25.325              # midway between field-shaping rings 2 (-20.425) and 3 (-30.225)
-  size_mm: 3.0
-  recess_mm: 1.0
-
-liquid_level_mm: 4.0         # above the gate (SR-2026.2)
 
 cases:
   sept:  {A: 2500, G: -2500, C: -3250, BS: -1000, TS: -100, PMT_T: -950,  PMT_B: -800,  SIPM: 0, export: [planes, sipm],

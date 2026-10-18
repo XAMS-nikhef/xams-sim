@@ -138,7 +138,7 @@ def main(out):
                   "gas n = 1.00 above"],
         ["PMTs", "two R12699: silica window 54.6 mm square, 2.5 mm, n = 1.60; photocathode 48.5 mm square with QE 0.33 "
                  "(top: 4 sectors = ch1–ch4); frame and body absorbing"],
-        ["SiPMs", "two, on the PTFE inner wall at z = −25 mm, azimuth 0° / 90°"],
+        ["SiPMs", "two, on the PTFE inner wall at z = −25 mm, azimuth 90° / 180° (data frame)"],
         ["PMT holders", "PTFE plate between screen ring and PMT window (50 mm square opening) and block around each PMT "
                         "(slot 56 / 56.9 mm), out to r = 46.3 mm"],
         ["bucket, vessel", "the TPC hangs in a PTFE bucket (Ø112/132 mm, 129 mm; the weir 1.78 mm below the rim sets the "

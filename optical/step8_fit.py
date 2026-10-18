@@ -53,10 +53,10 @@ def frac(k, n):
 
 
 def bin_s2(rec, ed):
-    """S2 observables in the data bins and frame (x_data = -x_sim): AFT vs r, u(x), v(y), each with errors"""
+    """S2 observables in the data bins: AFT vs r, u(x), v(y), each with errors"""
     pm = np.isin(rec["sensor"], np.append(TOP, 0))
     d = rec[pm]
-    x, y = -d["x0"], d["y0"]
+    x, y = d["x0"], d["y0"]
     r = np.hypot(x, y)
     istop = np.isin(d["sensor"], TOP)
     re = np.asarray(ed["r"])
@@ -64,7 +64,7 @@ def bin_s2(rec, ed):
     n, _ = np.histogram(r, re)
     aft, aft_e = frac(kt, n)
     t = d[istop]
-    xt, yt = -t["x0"], t["y0"]
+    xt, yt = t["x0"], t["y0"]
     su = np.where(np.isin(t["sensor"], (1, 3)), 1.0, -1.0)
     sv = np.where(np.isin(t["sensor"], (1, 2)), 1.0, -1.0)
     pe = np.asarray(ed["pos"])

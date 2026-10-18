@@ -178,14 +178,11 @@ def resolve(run_path) -> Resolved:
     missing_hv = [k for k in HV_KEYS if k not in hv_case]
     if missing_hv:
         raise ConfigError(f"{HV_CASES}: case '{hv_name}' lacks {missing_hv}")
-    if cases.get("liquid_level_mm") is not None and cases["liquid_level_mm"] != state["liquid_level_mm"]:
-        raise ConfigError(f"liquid level differs: state {sp.name} {state['liquid_level_mm']} mm, "
-                          f"{HV_CASES.name} {cases['liquid_level_mm']} mm (the field maps use the latter)")
 
     geo, mat = load_materials_and_geometry()
     return Resolved(run_path=run_path, run=run, state_name=run["state"], state=state, source_name=run["source"],
                     source=source, geometry=geo, materials=mat,
-                    hv_case=hv_case, hv_global={k: cases[k] for k in ("field_cage", "sipm") if k in cases})
+                    hv_case=hv_case, hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
 
 
 def resolve_state(state_name: str) -> Resolved:
@@ -200,4 +197,27 @@ def resolve_state(state_name: str) -> Resolved:
     geo, mat = load_materials_and_geometry()
     return Resolved(run_path=sp, run=tmp, state_name=state_name, state=state, source_name="-", source={},
                     geometry=geo, materials=mat,
-                    hv_case=cases["cases"][state["hv_case"]], hv_global={k: cases[k] for k in ("field_cage", "sipm") if k in cases})
+                    hv_case=cases["cases"][state["hv_case"]], hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
+
+
+def efield_selection(states: str = "", cases: str = "", level: float | None = None) -> tuple[dict, float]:
+    """HV cases and liquid level for one COMSOL solve (all cases of a solve share the geometry, so one level).
+
+    states="sept,cmb50": the states' HV cases and their (common) liquid level — the normal way;
+    cases="cmb_p100,..." + level: HV cases without a state (field studies), level given explicitly.
+    """
+    all_cases = load_yaml(HV_CASES)["cases"]
+    if states:
+        st = {n: load_yaml(_named("state", n)) for n in states.split(",")}
+        levels = {s["liquid_level_mm"] for s in st.values()}
+        if len(levels) != 1:
+            raise ConfigError(f"states {sorted(st)} have different liquid levels {sorted(levels)}: solve them separately")
+        lv = levels.pop()
+        if level is not None and level != lv:
+            raise ConfigError(f"--level {level} differs from the states' liquid level {lv} mm")
+        names = list(dict.fromkeys(s["hv_case"] for s in st.values()))
+        names += [c for c in (cases.split(",") if cases else []) if c not in names]
+        return {n: all_cases[n] for n in names}, float(lv)
+    if not cases or level is None:
+        raise ConfigError("give --states (HV case and level from the states) or --cases with --level")
+    return {n: all_cases[n] for n in cases.split(",")}, float(level)

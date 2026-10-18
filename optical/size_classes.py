@@ -58,7 +58,7 @@ def main():
     aft = ev["top"] / (ev["top"] + ev["bot"])
     r = np.hypot(ev["x"], ev["y"])
     det = rec[np.isin(rec["sensor"], (0, 1, 2, 3, 4))]
-    xs, ys = -det["x0"], det["y0"]
+    xs, ys = det["x0"], det["y0"]
     rs, top = np.hypot(xs, ys), np.isin(det["sensor"], (1, 2, 3, 4))
     half_sim = {}
     for lab, cond_d, cond_s in (("y > 0", ev["y"] > 0, ys > 0), ("y < 0", ev["y"] < 0, ys < 0)):

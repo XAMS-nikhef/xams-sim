@@ -1,5 +1,5 @@
 #!/bin/bash
-# One mesh cell (gate or cathode): generate, solve, plot.   efield/comsol/run_cell.sh gate|cathode [--cases a,b,c]
+# One mesh cell (gate or cathode): generate, solve, plot.   efield/comsol/run_cell.sh gate|cathode --states a,b [--cases c --level L]
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 COMSOL="${COMSOL:-/Applications/COMSOL62/Multiphysics/bin/comsol}"

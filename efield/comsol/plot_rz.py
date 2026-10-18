@@ -51,7 +51,7 @@ def drift(fr, fz, r0, z0, step=0.05, nmax=40000):
 
 def main():
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
-    sp = C["sipm"]
+    sp = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))["sipms"]
     M = np.load(OUT / "maps_rz.npz")
     r, z = M["r"], M["z"]
     names = sys.argv[1:] or sorted({k.rsplit("_", 1)[0] for k in M.files if k.endswith("_V")})
@@ -65,7 +65,7 @@ def main():
         fig, ax = plt.subplots(1, 2, figsize=(16, 8.2), gridspec_kw={"width_ratios": [1.45, 1]})
         res = {"case": n, "note": c.get("note", ""), "drift_field_nominal_V_cm": round(enom, 1), "lines": []}
         starts = [(r0, z0) for z0 in np.arange(-50, -1, 3.0) for r0 in (-29.5, -27, -24, -20, -12, 0, 12, 20, 24, 27, 29.5)]
-        zs = sp["z_mm"]
+        zs = sp["z_mm"][0]
         starts += [(r0, z0) for z0 in np.arange(zs - 8, zs + 8.1, 0.5) for r0 in (29.0, 30.0, 30.6)]
         for k, (a, zoom) in enumerate(zip(ax, (None, (22, 33, zs - 9, zs + 9)))):
             vmax = 2.5 * enom if enom > 0 else E[np.isfinite(E)].max()

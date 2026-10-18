@@ -24,11 +24,12 @@ MANIFEST = MAPS / "manifest.json"
 
 # kind -> producer, command template, step of the plan that adds the export to the registry, first product needing it
 KINDS = {
-    "field": dict(producer="efield (COMSOL, full TPC)", make="efield/comsol/run.sh --cases {hv_case}", export_step="S4",
+    "field": dict(producer="efield (COMSOL, full TPC)",
+                  make="efield/comsol/run.sh --states {state} && xamssim maps --state {state} --export field", export_step="S3",
                   needed_for="quanta"),
     "drift": dict(producer="efield drift (field map + v(E))", make="(from the field map; drift export in S4)", export_step="S4",
                   needed_for="drifted_electrons"),
-    "extraction_el": dict(producer="efield mesh cell (COMSOL)", make="efield/comsol/run_cell.sh stack --cases {hv_case}",
+    "extraction_el": dict(producer="efield mesh cell (COMSOL)", make="efield/comsol/run_cell.sh stack --states {state}",
                           export_step="S5", needed_for="extracted_electrons"),
     "s1_light": dict(producer="optical (Geant4 optical scan)", make="python optical/run_scan.py optical/scans/fit_s1.yaml",
                      export_step="S6", needed_for="photoelectrons"),

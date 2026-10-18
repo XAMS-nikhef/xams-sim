@@ -10,8 +10,9 @@ TPC field gives there (drift field from (V_gate - V_cathode) / 51.8 mm; the anod
 All cases of the selection are solved in one auxiliary sweep. The plane y = 0 (through the hole centre and across a bar,
 a symmetry plane) is printed to the log as MAP lines; plot_cell.py draws |E|, equipotentials, field and drift lines.
 
-    python efield/comsol/make_cell.py gate|cathode [--cases sept,cmb50,refa]   (writes build/XAMS_cell_<el>.java)
-    efield/comsol/run_cell.sh gate|cathode [--cases ...]                       (generate, solve, parse, plot)
+    python efield/comsol/make_cell.py gate|cathode --states sept,cmb50,refa   (writes build/XAMS_cell_<el>.java)
+    efield/comsol/run_cell.sh gate|cathode --states ...                       (generate, solve, parse, plot)
+    (--cases X --level L for HV cases without a state)
 """
 import argparse
 from pathlib import Path
@@ -31,7 +32,9 @@ def main():
     ap.add_argument("electrode", choices=("gate", "cathode", "stack", "stackx"),
                     help="stack = gate + liquid surface + anode mesh + top screen, anode aligned with the gate; "
                          "stackx = the same with the anode shifted by half a pitch in x")
-    ap.add_argument("--cases", default="sept,refa,cmb50,bs2,bs3")
+    ap.add_argument("--states", default="", help="states (config/states): their HV cases and liquid level")
+    ap.add_argument("--cases", default="", help="extra HV cases of cases.yaml (without --states: needs --level)")
+    ap.add_argument("--level", type=float, help="liquid level above the gate [mm] for --cases without --states")
     ap.add_argument("--hmax", type=float, default=0.06)
     ap.add_argument("--hbar", type=float, default=0.012)
     ap.add_argument("--map3d", action="store_true", help="also print the 3D field near the foil (M3 lines) for plot_cell3d.py")
@@ -44,9 +47,12 @@ def main():
     mc = G["mesh_common"]
     p, w, t = mc["pitch_mm"], mc["bar_width_mm"], mc["foil_thickness_mm"]
     h = p / 2
-    names = a.cases.split(",")
-    cases = C["cases"]
-    level = C["liquid_level_mm"]
+    from xamssim.config import ConfigError, efield_selection
+    try:
+        cases, level = efield_selection(a.states, a.cases, a.level)
+    except ConfigError as e:
+        raise SystemExit(f"make_cell: {e}")
+    names = list(cases)
     L = 51.8
     stack = a.electrode.startswith("stack")
     za = next(m["z_mm"] for m in G["meshes"] if m["name"] == "anode")

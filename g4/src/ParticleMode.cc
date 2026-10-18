@@ -121,7 +121,7 @@ ParticleGenerator::ParticleGenerator() : fGun(std::make_unique<G4ParticleGun>(1)
   fIsotope = type == "isotope";
   if (!fIsotope) {
     fGun->SetParticleDefinition(G4Gamma::Definition());
-    fGun->SetParticleEnergy(c.Num("source/energy_keV", 661.657) * keV);
+    fGun->SetParticleEnergy(c.Req("source/energy_keV") * keV);
   }
   const auto& j = c.J();
   G4ThreeVector pos;
@@ -140,8 +140,8 @@ void ParticleGenerator::GeneratePrimaries(G4Event* event) {
   if (fIsotope && !fIonSet) {
     // ions exist only after the physics is built, so look the ion up at the first event
     const auto& c = Config::Get();
-    auto* ion = G4IonTable::GetIonTable()->GetIon(static_cast<int>(c.Num("source/Z", 55)),
-                                                  static_cast<int>(c.Num("source/A", 137)), 0. * keV);
+    auto* ion = G4IonTable::GetIonTable()->GetIon(static_cast<int>(c.Req("source/Z")),
+                                                  static_cast<int>(c.Req("source/A")), 0. * keV);
     fGun->SetParticleDefinition(ion);
     fGun->SetParticleCharge(0. * eplus);
     fGun->SetParticleEnergy(0.);  // at rest: decays in place

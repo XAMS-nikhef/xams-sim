@@ -47,7 +47,7 @@ def sim_maps():
             rec = read(ROOT / "run" / "scans" / "fit_s2" / q["file"])[0]
             for s in range(5):
                 m = rec["sensor"] == s
-                H[s] += np.histogram2d(-rec["x0"][m], rec["y0"][m], bins=[E, E])[0]
+                H[s] += np.histogram2d(rec["x0"][m], rec["y0"][m], bins=[E, E])[0]
     np.savez(cache, H=H)
     return H
 

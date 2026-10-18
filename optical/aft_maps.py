@@ -2,7 +2,7 @@
 """2D maps of the S2 area fraction top (AFT): simulation vs data (follow-up of the central dip, step 7/8).
 
 Simulation: AFT versus the generated S2 position, from the photon records of the 81 fit_s2 points (geometry v4,
-pooled: ~6e7 detected photons), data frame x_data = -x_sim, same 1.5 mm grid as the data.
+pooled: ~6e7 detected photons), same 1.5 mm grid as the data (geometry in the data frame since v5).
 Data: analysis_SR2026.2/outputs/aft_maps.npz (studies/aft_maps.py on stbc-i2, read-only, central v4): no-source AFT
 per S2 size class on x-y and on the raw asymmetries u-v, event counts, and the Cs-137 photopeak cS2 yield map.
 
@@ -39,7 +39,7 @@ def sim_maps(edges):
     for p in idx["points"]:
         for q in p["parts"]:
             rec = read(ROOT / "run" / "scans" / "fit_s2" / q["file"])[0]
-            x, y, s = -rec["x0"], rec["y0"], rec["sensor"]
+            x, y, s = rec["x0"], rec["y0"], rec["sensor"]
             t = np.isin(s, TOP)
             T += np.histogram2d(x[t], y[t], bins=[edges, edges])[0]
             B += np.histogram2d(x[s == 0], y[s == 0], bins=[edges, edges])[0]

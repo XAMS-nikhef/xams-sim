@@ -31,7 +31,7 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction() = default;
 
 void PrimaryGeneratorAction::SetZRangeFromConfig() {
   const auto& c = Config::Get();
-  const double half = 0.5 * c.Num("mesh_common/foil_thickness_mm", 0.15) * mm + 0.01 * mm;
+  const double half = 0.5 * c.Req("mesh_common/foil_thickness_mm") * mm + 0.01 * mm;
   double anode = 0, gate = 0, cathode = 0;
   for (const auto& m : c.J()["meshes"]) {
     const auto n = m["name"].get<std::string>();
@@ -41,7 +41,7 @@ void PrimaryGeneratorAction::SetZRangeFromConfig() {
     if (n == "cathode") cathode = z;
   }
   if (fShape == "s2") {
-    fZmin = c.Num("liquid/surface_z_mm", 4.0) * mm;
+    fZmin = c.Req("liquid/surface_z_mm") * mm;
     fZmax = anode - half;
   } else {
     fZmin = cathode + half;

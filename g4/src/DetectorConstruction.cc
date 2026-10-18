@@ -30,14 +30,14 @@ G4Material* DetectorConstruction::LiquidXenon() {
   if (mat) return mat;
   const auto& cfg = Config::Get();
   // density / temperature / pressure from config/materials.yaml (via make_config.py); defaults = 2 bar, 175 K (NIST)
-  mat = new G4Material("LXe", 54., cfg.Num("materials/liquid_xenon/geant4/molar_mass_g_mol", 131.29) * g / mole,
-                       cfg.Num("materials/liquid_xenon/density_g_cm3", 2.8748) * g / cm3, kStateLiquid,
-                       cfg.Num("materials/liquid_xenon/temperature_k", 175.) * kelvin,
-                       cfg.Num("materials/liquid_xenon/pressure_bar", 2.) * bar);
+  mat = new G4Material("LXe", 54., cfg.Req("materials/liquid_xenon/geant4/molar_mass_g_mol") * g / mole,
+                       cfg.Req("materials/liquid_xenon/density_g_cm3") * g / cm3, kStateLiquid,
+                       cfg.Req("materials/liquid_xenon/temperature_k") * kelvin,
+                       cfg.Req("materials/liquid_xenon/pressure_bar") * bar);
   auto* mpt = new G4MaterialPropertiesTable();
-  mpt->AddProperty("RINDEX", kEnergies, Flat(cfg.Num("optics/lxe/refractive_index", 1.69)));
-  mpt->AddProperty("ABSLENGTH", kEnergies, Flat(cfg.Num("optics/lxe/absorption_length_cm", 1e6) * cm));
-  mpt->AddProperty("RAYLEIGH", kEnergies, Flat(cfg.Num("optics/lxe/rayleigh_length_cm", 1e6) * cm));
+  mpt->AddProperty("RINDEX", kEnergies, Flat(cfg.Req("optics/lxe/refractive_index")));
+  mpt->AddProperty("ABSLENGTH", kEnergies, Flat(cfg.Req("optics/lxe/absorption_length_cm") * cm));
+  mpt->AddProperty("RAYLEIGH", kEnergies, Flat(cfg.Req("optics/lxe/rayleigh_length_cm") * cm));
   mat->SetMaterialPropertiesTable(mpt);
   return mat;
 }
@@ -47,12 +47,12 @@ G4Material* DetectorConstruction::GasXenon() {
   if (mat) return mat;
   const auto& cfg = Config::Get();
   // saturated vapour above the liquid (config/materials.yaml); the density does not matter optically (n = 1.00)
-  mat = new G4Material("GXe", 54., cfg.Num("materials/gas_xenon/geant4/molar_mass_g_mol", 131.29) * g / mole,
-                       cfg.Num("materials/gas_xenon/density_g_cm3", 0.018694) * g / cm3, kStateGas,
-                       cfg.Num("materials/gas_xenon/temperature_k", 177.88) * kelvin,
-                       cfg.Num("materials/gas_xenon/pressure_bar", 2.) * bar);
+  mat = new G4Material("GXe", 54., cfg.Req("materials/gas_xenon/geant4/molar_mass_g_mol") * g / mole,
+                       cfg.Req("materials/gas_xenon/density_g_cm3") * g / cm3, kStateGas,
+                       cfg.Req("materials/gas_xenon/temperature_k") * kelvin,
+                       cfg.Req("materials/gas_xenon/pressure_bar") * bar);
   auto* mpt = new G4MaterialPropertiesTable();
-  mpt->AddProperty("RINDEX", kEnergies, Flat(cfg.Num("optics/gxe/refractive_index", 1.00)));
+  mpt->AddProperty("RINDEX", kEnergies, Flat(cfg.Req("optics/gxe/refractive_index")));
   mpt->AddProperty("ABSLENGTH", kEnergies, Flat(1e9 * cm));
   mat->SetMaterialPropertiesTable(mpt);
   return mat;
@@ -61,12 +61,12 @@ G4Material* DetectorConstruction::GasXenon() {
 G4Material* DetectorConstruction::Silica() {
   static G4Material* mat = nullptr;
   if (mat) return mat;
-  mat = new G4Material("Silica", Config::Get().Num("materials/silica/density_g_cm3", 2.2) * g / cm3, 2);
+  mat = new G4Material("Silica", Config::Get().Req("materials/silica/density_g_cm3") * g / cm3, 2);
   auto* nist = G4NistManager::Instance();
   mat->AddElement(nist->FindOrBuildElement("Si"), 1);
   mat->AddElement(nist->FindOrBuildElement("O"), 2);
   auto* mpt = new G4MaterialPropertiesTable();
-  mpt->AddProperty("RINDEX", kEnergies, Flat(Config::Get().Num("optics/pmt_window_refractive_index", 1.60)));
+  mpt->AddProperty("RINDEX", kEnergies, Flat(Config::Get().Req("optics/pmt_window_refractive_index")));
   mpt->AddProperty("ABSLENGTH", kEnergies, Flat(1e9 * cm));  // window transmission is folded into the QE
   mat->SetMaterialPropertiesTable(mpt);
   return mat;
@@ -107,7 +107,7 @@ G4Material* DetectorConstruction::Kovar() {
     comp.clear();
     for (const auto& [el, f] : j["materials"]["kovar"]["geant4"]["composition_by_mass"].items()) comp.emplace_back(el, f.get<double>());
   }
-  mat = new G4Material("Kovar", c.Num("materials/kovar/density_g_cm3", 8.36) * g / cm3, static_cast<int>(comp.size()));
+  mat = new G4Material("Kovar", c.Req("materials/kovar/density_g_cm3") * g / cm3, static_cast<int>(comp.size()));
   for (const auto& [el, f] : comp) mat->AddElement(nist->FindOrBuildElement(el), f);
   return mat;
 }
@@ -159,17 +159,17 @@ void DetectorConstruction::ApplySurfaces() {
     G4cout << "optical surfaces off: PTFE and steel absorb" << G4endl;
     return;
   }
-  const double rPtfe = c.Num("optics/ptfe_in_liquid/reflectivity", 0.95);
-  const double fPtfe = c.Num("optics/ptfe_in_liquid/specular_fraction", 0.1);
-  const double rSteel = c.Num("optics/stainless_steel_reflectivity", 0.35);
+  const double rPtfe = c.Req("optics/ptfe_in_liquid/reflectivity");
+  const double fPtfe = c.Req("optics/ptfe_in_liquid/specular_fraction");
+  const double rSteel = c.Req("optics/stainless_steel_reflectivity");
   int nBar = 0;
   for (auto* lv : *G4LogicalVolumeStore::GetInstance()) {
     const auto& n = lv->GetName();
     if (n == "PTFE") MakeReflector(lv, rPtfe, fPtfe);
     else if (n == "PTFE_gas")
-      MakeReflector(lv, c.Num("optics/ptfe_in_gas/reflectivity", 0.75), c.Num("optics/ptfe_in_gas/specular_fraction", 0.15));
+      MakeReflector(lv, c.Req("optics/ptfe_in_gas/reflectivity"), c.Req("optics/ptfe_in_gas/specular_fraction"));
     else if (n == "CopperRing")
-      MakeReflector(lv, c.Num("optics/copper_reflectivity", 0.3), 0.);  // copper: Lambertian
+      MakeReflector(lv, c.Req("optics/copper_reflectivity"), 0.);  // copper: Lambertian
     else if (n == "Vessel" || n == "VesselFlange")   // inner vessel tube and flanges (the gas sees the blind flanges)
       MakeReflector(lv, rSteel, 0.);
     else if (n == "MeshFoil" || n == "MeshRing") {
@@ -182,8 +182,8 @@ void DetectorConstruction::ApplySurfaces() {
   auto* pvs = G4PhysicalVolumeStore::GetInstance();
   if (auto* bucket = pvs->GetVolume("Bucket", false)) {
     MakeBorderReflector(pvs->GetVolume("Liquid"), bucket, rPtfe, fPtfe);
-    MakeBorderReflector(pvs->GetVolume("Gas"), bucket, c.Num("optics/ptfe_in_gas/reflectivity", 0.75),
-                        c.Num("optics/ptfe_in_gas/specular_fraction", 0.15));
+    MakeBorderReflector(pvs->GetVolume("Gas"), bucket, c.Req("optics/ptfe_in_gas/reflectivity"),
+                        c.Req("optics/ptfe_in_gas/specular_fraction"));
     G4cout << "optical surfaces: PTFE bucket (liquid / gas values), steel vessel" << G4endl;
   }
   G4cout << "optical surfaces: PTFE R = " << rPtfe << " (specular " << fPtfe << "), steel R = " << rSteel
@@ -199,9 +199,9 @@ G4VPhysicalVolume* DetectorConstruction::BuildTestSurface() {
   auto* slabL = new G4LogicalVolume(new G4Box("Slab", 150. * mm, 150. * mm, 5. * mm), m == "steel" ? StainlessSteel() : Ptfe(),
                                     "Slab");
   new G4PVPlacement(nullptr, G4ThreeVector(0, 0, -5. * mm), slabL, "Slab", worldL, false, 0, true);
-  if (m == "steel") MakeReflector(slabL, cfg.Num("optics/stainless_steel_reflectivity", 0.35), 0.);
-  else MakeReflector(slabL, cfg.Num("optics/ptfe_in_liquid/reflectivity", 0.95),
-                     cfg.Num("optics/ptfe_in_liquid/specular_fraction", 0.1));
+  if (m == "steel") MakeReflector(slabL, cfg.Req("optics/stainless_steel_reflectivity"), 0.);
+  else MakeReflector(slabL, cfg.Req("optics/ptfe_in_liquid/reflectivity"),
+                     cfg.Req("optics/ptfe_in_liquid/specular_fraction"));
   return worldP;
 }
 
@@ -209,7 +209,7 @@ G4VPhysicalVolume* DetectorConstruction::BuildTestBox() {
   const auto& cfg = Config::Get();
   const double half = 200. * mm;
   const double d = cfg.Num("test_distance_mm", 30.) * mm;
-  const double side = cfg.Num("pmt_common/photocathode_square_mm", 48.5) * mm;
+  const double side = cfg.Req("pmt_common/photocathode_square_mm") * mm;
   const double thick = 0.1 * mm;
 
   auto* worldS = new G4Box("World", half, half, half);

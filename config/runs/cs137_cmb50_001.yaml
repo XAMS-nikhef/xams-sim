@@ -6,4 +6,3 @@ seed: 1
 stop_after: raw_records      # or an intermediate product (quanta, drifted_electrons, photoelectrons, ...)
 physics:
   clustering: lineage        # S0 decision
-  nest_model: default

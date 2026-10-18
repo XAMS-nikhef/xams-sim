@@ -5,7 +5,7 @@ extraction and electroluminescence, light collection, sensor response, waveforms
 **unchanged** amstrax processing, so simulation and data are compared with the same code and cuts. Every part can also
 be run on its own, and **one configuration file** drives a complete simulation.
 
-Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18); **S0, S1 and S2 done 2026-10-18**.
+Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18); **S0–S3 done 2026-10-18**.
 
 ## Principles
 
@@ -202,7 +202,21 @@ Original task list:
 **Check:** Cs-137 deposit spectrum (photopeak fraction, Compton edge) and the depth profile for the raised source;
 compare the photopeak depth profile with data (orphan-S1 / source-position analyses).
 
-### S3. Input, clustering, yields (2 days)
+### S3. Input, clustering, yields (2 days) — **done 2026-10-18**
+
+Result: `xamssim chain <run>` (`xamssim/chain.py`): strax context with `XamsG4Input` (our binary → fuse's
+`geant4_interactions`; process name `RadioactiveDecay` → `RadioactiveDecayBase`), fuse lineage clustering (DBSCAN as
+option), `XamsVolumeProperties` / `XamsVolumeSelection` (fuse's drift region, below cathode, gas + the liquid between
+gate and surface; all four kept), fuse ElectricField and NestYields; all settings from the run, state, geometry and
+materials (`physics` block for clustering and timeline). Field map: `xamssim maps --state <s> --export field`
+(first an (r, z) half plane; replaced the same day by the 3D field read from the solved COMSOL model with `mph`,
+`XamsElectricField` in (x, y, z); geometry v5 in the data frame, SiPMs from geometry.yaml). Check:
+`validation/s3_microphysics_check.py` (results in `results/s3_microphysics/`): yields equal standalone nestpy; the
+photopeak SS fraction after merging in z is independent of the clustering settings. Open: NEST beta vs gamma model
+for Cs-137 (25 % in charge), from data; the S3 check numbers were made with the (r, z) map and geometry v4 (rerun
+with the 3D map once the cmb50 state is solved).
+
+Original task list:
 - Input plugin: our binary format → exactly the table fuse's clustering expects (`geant4_interactions`: positions in
   cm, codes translated back to particle / process names), reading file by file in chunks (not the whole run at once),
   placing events on a timeline at the source rate.
@@ -215,8 +229,8 @@ raised source); sensitivity of the photopeak single-scatter fraction to cluster 
 standalone nestpy at fixed fields (100, 145, 500 V/cm); S1/S2 anticorrelation at 662 keV.
 
 ### S4. Field maps and drift (2–3 days)
-- efield: export of the 3D field map and a drift map per state (end point, drift time, loss flag on a grid), from the
-  COMSOL model (needs "File system access: All files", or the printed-map route).
+- efield: the 3D field map exists (S3, `xamssim maps --export field`, via `mph`); add the drift map per state (end
+  point, drift time, loss flag on a grid) and the mesh-cell fields near gate, cathode and anode.
 - Drift plugin: drift time from v(E), longitudinal / transverse diffusion, lifetime, losses (wall, SiPM, through the
   cathode holes), position at the gate; delayed-electron model as an option (paper).
 

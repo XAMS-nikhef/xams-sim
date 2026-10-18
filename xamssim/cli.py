@@ -5,8 +5,10 @@
     xamssim particle config/runs/vis_cs137.yaml --vis      particle viewer: look at a few events
     xamssim optical  optical/scans/<scan>.yaml [--jobs 8]  optical simulation (scan) -> run/scans/<scan>/
     xamssim optical  optical/scans/<scan>.yaml --vis       optical viewer for that scan (--point N; --list)
+    xamssim chain    config/runs/<run>.yaml [--target quanta]  fuse micro-physics on run/g4/<run> -> run/strax/ (S3)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
+    xamssim maps     --state cmb50 --export field          3D COMSOL field of the state -> maps/ (registered)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
 """
 from __future__ import annotations
@@ -46,7 +48,7 @@ def cmd_status(a) -> int:
     print(f"source     {res.source_name}: {src.get('isotope')} at {src.get('position_mm')} mm, collimator {src.get('collimator')}")
     print(f"geometry   config/geometry.yaml (version {res.geometry.get('meta', {}).get('version')}), config/materials.yaml")
     print(f"chain      Geant4 particle mode -> {' -> '.join(('clustered_interactions', 'quanta', 'drifted_electrons', 'extracted_electrons', 's2_photons', 'photoelectrons', 'raw_records'))}")
-    print("           (Geant4 particle mode: S2; event chain: S3-S8 — not yet available)")
+    print("           (Geant4 particle mode: xamssim particle; up to quanta: xamssim chain; S4-S8 not yet available)")
     missing = _print_maps(res, needed(stop))
     print(f"{missing} of {len(needed(stop))} maps needed for '{stop}' missing")
     return 0
@@ -54,6 +56,10 @@ def cmd_status(a) -> int:
 
 def cmd_maps(a) -> int:
     res = resolve_state(a.state)
+    if a.export:
+        from . import fieldmap
+        e = {"field": fieldmap.export}[a.export](res)
+        print(f"registered {e['kind']} {e['key']}: maps/{e['files'][0]}  ({e['producer_version']})")
     print(f"state {a.state} (hv_case {res.state['hv_case']}, level {res.state['liquid_level_mm']} mm)")
     _print_maps(res, list(KINDS))
     return 0
@@ -64,6 +70,8 @@ def cmd_validate(a) -> int:
     for p in a.runs:
         try:
             res = resolve(p)
+            from .chain import physics
+            physics(res)
             print(f"ok       {p}  (state {res.state_name}, source {res.source_name}, run key {res.run_key()})")
         except ConfigError as e:
             bad += 1
@@ -78,6 +86,11 @@ def cmd_particle(a) -> int:
     else:
         run(a.run, n_events=a.events, seed=a.seed, out_dir=a.out, dry_run=a.dry_run)
     return 0
+
+
+def cmd_chain(a) -> int:
+    from .chain import run
+    return run(a.run, target=a.target, g4_out=a.g4)
 
 
 def cmd_optical(a) -> int:
@@ -100,6 +113,7 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_status)
     p = sub.add_parser("maps", help="map status for one detector state")
     p.add_argument("--state", required=True)
+    p.add_argument("--export", choices=["field"], help="export to the registry (field: 3D field of the state from the solved COMSOL model; needs the COMSOL licence)")
     p.set_defaults(func=cmd_maps)
     p = sub.add_parser("validate", help="check run configuration files")
     p.add_argument("runs", nargs="+")
@@ -112,6 +126,12 @@ def main(argv=None) -> int:
     p.add_argument("--dry-run", action="store_true", help="write config.json and run.mac, do not run Geant4")
     p.add_argument("--vis", action="store_true", help="interactive Qt viewer (then /run/beamOn N in the window)")
     p.set_defaults(func=cmd_particle)
+    p = sub.add_parser("chain", help="simulation chain (strax / fuse) on the Geant4 output of a run")
+    p.add_argument("run")
+    p.add_argument("--target", choices=["geant4_interactions", "clustered_interactions", "quanta"],
+                   help="last product (default: the run's stop_after, at most the last implemented one)")
+    p.add_argument("--g4", help="Geant4 output folder (default run/g4/<run name>)")
+    p.set_defaults(func=cmd_chain)
     p = sub.add_parser("optical", help="optical simulation from a scan file: production, or --vis viewer")
     p.add_argument("scan", help="scan file, e.g. optical/scans/fit_s2.yaml")
     p.add_argument("--jobs", type=int, default=8)

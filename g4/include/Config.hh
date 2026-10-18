@@ -12,6 +12,8 @@ class Config {
   bool Loaded() const { return fLoaded; }
   // convenience: value at a '/'-separated path, e.g. "optics/lxe/refractive_index"; default if absent
   double Num(const std::string& path, double def) const;
+  // required value (detector description: geometry, materials, optics, liquid level): fatal error if absent
+  double Req(const std::string& path) const;
   std::string Str(const std::string& path, const std::string& def) const;
   // run mode: "optical" (default) or "particle" (set from the command line, -m)
   void SetMode(const std::string& m) { fMode = m; }

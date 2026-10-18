@@ -1,7 +1,7 @@
 # Output formats
 
 All binary files are fixed-size little-endian records, readable with `numpy.fromfile`; no ROOT. Coordinates in mm in
-the geometry frame (z = 0 at the gate foil, z up; the data frame is mirrored in x: x_data = −x_sim).
+the geometry frame = the data frame (z = 0 at the gate foil, z up; +x towards top-PMT sectors I / III, +y towards I / II).
 
 ## Particle mode — `run/g4/<run>/`
 
