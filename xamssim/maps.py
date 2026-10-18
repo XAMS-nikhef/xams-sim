@@ -30,6 +30,10 @@ KINDS = {
                   needed_for="quanta"),
     "drift": dict(producer="xamssim driftmap (field map + NEST v(E))", make="xamssim maps --state {state} --export drift",
                   export_step="S4", needed_for="quanta"),
+    "mesh_cells": dict(producer="efield mesh cells (COMSOL, gate and cathode)",
+                       make="efield/comsol/run_cell.sh gate --states {state} && efield/comsol/run_cell.sh cathode --states "
+                            "{state} && xamssim maps --state {state} --export cells",
+                       export_step="S4", needed_for="quanta"),
     "extraction_el": dict(producer="efield mesh cell (COMSOL)", make="efield/comsol/run_cell.sh stack --states {state}",
                           export_step="S5", needed_for="extracted_electrons"),
     "s1_light": dict(producer="optical (Geant4 optical scan)", make="(S6: light-map scan, xamssim optical)",

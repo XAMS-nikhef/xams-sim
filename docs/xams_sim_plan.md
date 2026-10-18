@@ -228,17 +228,20 @@ Original task list:
 raised source); sensitivity of the photopeak single-scatter fraction to cluster size and time window; yields against
 standalone nestpy at fixed fields (100, 145, 500 V/cm); S1/S2 anticorrelation at 662 keV.
 
-### S4. Field maps and drift (2–3 days) — **first part done 2026-10-18**
+### S4. Field maps and drift (2–3 days) — **done 2026-10-18** (options open)
 
 Result: drift map per state (`xamssim maps --state <s> --export drift`, `xamssim/driftmap.py`): one test electron per
 grid point (1 × 1 × 0.5 mm inside the field cage) tracked against the 3D field with the NEST drift velocity until the
 liquid surface, the bottom screen, the PTFE wall or a SiPM (~15 s per state); `XamsElectronDrift` looks up end point,
 drift time and gate crossing per cluster, survival exp(−t/τ) (lifetime of the state) or 0, longitudinal / transverse
 diffusion (materials.yaml); `XamsVolumeProperties` takes the regions from the drift map (only the liquid surface and
-the field-cage radius remain as settings). Check (`../simulations/2026-10-18_s4_drift/`): drift time scale within 3 %,
+the field-cage radius remain as settings). Composite field (same day): the full-TPC map plus the gate and cathode
+mesh-cell fields tiled near each mesh (`xamssim maps --export cells`): focusing into ~0.4 mm channels at the gate
+holes, a ~1 mm layer above the cathode lost through its holes, bar losses only on the solid foil rim. Check (`../simulations/2026-10-18_s4_drift/`): drift time scale within 3 %,
 SiPM catchment and wall losses growing with depth as in the data; not reproduced: the gradual S2 loss vs drift time at
-large radius and the pile-up near the cathode. Open: cathode transparency from the mesh-cell model, partial losses at
-catchment edges, time-dependent fields (option), delayed-electron model (option), cmb50 solve. The Geant4 medium per
+large radius and the pile-up near the cathode (nothing leaks up through the cathode in sept; likely the low source
+position). Open: partial losses at catchment edges, time-dependent fields (option), delayed-electron model (option),
+cmb50 solve, source at cathode height. The Geant4 medium per
 deposit was not needed: inside the field cage liquid / gas is exactly z vs the surface.
 
 Original task list:

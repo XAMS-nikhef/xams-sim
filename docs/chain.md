@@ -61,20 +61,26 @@ cage is in no volume: those clusters are dropped.
 ## Drift map and drift
 
 ```bash
-xamssim maps --state sept --export drift                          # once per state, ~15 s, from the field map
+xamssim maps --state sept --export cells                          # once per state: gate and cathode cell fields (licence)
+xamssim maps --state sept --export drift                          # once per state, ~30 s, composite field
 xamssim chain <run> --target drifted_electrons
 ```
 
-The drift map is a look-up table made once per state (`xamssim/driftmap.py`): from every point of a
-1 × 1 × 0.5 mm grid inside the field cage one test electron is moved against the field (0.1 mm steps, drift velocity
-v(\|E\|) of the liquid from NEST) until it reaches the liquid surface (`surface`), the bottom screen (`bottom`), the
-PTFE wall (`wall`) or a SiPM opening (`sipm`); points in the gas are `gas`. Stored per point: end code, drift time to
+The drift map is a look-up table made once per state (`xamssim/driftmap.py`, ~30 s): from every point of a
+1 × 1 × 0.5 mm grid inside the field cage one test electron is moved against the **composite field** (0.1 mm steps,
+0.02 mm within 1 mm of a mesh; drift velocity v(\|E\|) of the liquid from NEST) until it reaches the liquid surface
+(`surface`), the bottom screen (`bottom`), the PTFE wall (`wall`), a SiPM opening (`sipm`) or a mesh bar (`mesh`);
+points in the gas are `gas`. The composite field is the full-TPC 3D map (meshes as solid discs) with, near the gate
+and the cathode, the field of the real etched mesh from the mesh-cell models (`xamssim maps --export cells`), tiled
+over the mesh with its rotation and hole pattern: E = E_cell + (E_full − cell average), the bracket taken just outside
+the foil. So the hole structure sits on top of the large-scale field, and focusing through the gate holes, the layer
+above the cathode pulled down through its holes and losses on the bars follow from the field. Stored per point: end code, drift time to
 the surface, where it crosses the gate, path length. In the chain each cluster takes the values of its grid point
 (drift time and gate position shifted to the exact position): all electrons of a cluster follow the same field line;
 lifetime (binomial with exp(−t/τ)) and diffusion (σ_t from D_L, σ_xy from D_T) act statistically. `drifted_electrons`:
 `n_electron_interface`, `drift_time_mean`, `drift_time_spread` [ns], `x_obs`, `y_obs` (at the gate) [cm],
-`xy_spread`, `drift_end`, `survival`. Not yet in the map: electrons passing through the cathode holes (the meshes are
-solid discs in the full field model), partial losses at the edges of a catchment area.
+`xy_spread`, `drift_end`, `survival`. Not in the map: partial losses at the edges of a catchment area (a cluster's
+electrons all end at the same place), time-dependent fields.
 
 ## Physics options (run file)
 

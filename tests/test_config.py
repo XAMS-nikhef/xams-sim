@@ -52,7 +52,7 @@ def test_bad_run_rejected(tmp_path: Path):
 
 def test_needed_maps_follow_stop_after():
     assert maps.needed("geant4_interactions") == []
-    assert maps.needed("quanta") == ["field", "drift"]
+    assert maps.needed("quanta") == ["field", "drift", "mesh_cells"]
     assert set(maps.needed("raw_records")) == set(maps.KINDS)
 
 

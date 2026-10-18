@@ -60,8 +60,8 @@ def cmd_maps(a) -> int:
     res = resolve_state(a.state)
     if a.export:
         from . import fieldmap
-        from . import driftmap
-        e = {"field": fieldmap.export, "drift": driftmap.export}[a.export](res)
+        from . import cellmap, driftmap
+        e = {"field": fieldmap.export, "cells": cellmap.export, "drift": driftmap.export}[a.export](res)
         print(f"registered {e['kind']} {e['key']}: maps/{e['files'][0]}  ({e['producer_version']})")
     print(f"state {a.state} (hv_case {res.state['hv_case']}, level {res.state['liquid_level_mm']} mm)")
     _print_maps(res, list(KINDS))
@@ -116,9 +116,10 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_status)
     p = sub.add_parser("maps", help="map status for one detector state")
     p.add_argument("--state", required=True)
-    p.add_argument("--export", choices=["field", "drift"],
+    p.add_argument("--export", choices=["field", "cells", "drift"],
                    help="make a map and register it (field: 3D field from the solved COMSOL model, needs the licence; "
-                        "drift: electron end points and drift times from the field map)")
+                        "cells: mesh-cell fields of gate and cathode from the solved cell models, needs the licence; "
+                        "drift: electron end points and drift times in the composite field)")
     p.set_defaults(func=cmd_maps)
     p = sub.add_parser("validate", help="check run configuration files")
     p.add_argument("runs", nargs="+")

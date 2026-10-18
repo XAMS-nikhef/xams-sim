@@ -69,11 +69,46 @@ def flat_map(path, ez=-145.0, ex=0.0, reverse_below=None):
     return path
 
 
+def uniform_cells(path, geo, ez_gate=-145.0, ez_cathode=-145.0):
+    """Synthetic mesh-cell fields without hole structure (uniform Ez): the composite field must equal the full field."""
+    data = {}
+    u = np.linspace(0, geo["pitch"] / 2, 14)
+    for name, ez, (z0, z1) in (("gate", ez_gate, (-3.2, 3.98)), ("cathode", ez_cathode, (-3.6, 3.6))):
+        z = np.linspace(z0, z1, 37)
+        shape = (len(u), len(u), len(z))
+        data.update({f"{name}_u": u, f"{name}_z": z, f"{name}_Ex": np.zeros(shape, np.float32),
+                     f"{name}_Ey": np.zeros(shape, np.float32), f"{name}_Ez": np.full(shape, ez, np.float32),
+                     f"{name}_mean": np.stack([np.zeros(len(z)), np.zeros(len(z)), np.full(len(z), ez)]).astype(np.float32)})
+    np.savez(path, **data)
+    return path
+
+
+def test_composite_field(tmp_path):
+    from xamssim import driftmap
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    geo = driftmap.geometry_numbers(res)
+    full = flat_map(tmp_path / "f.npz", ex=50.0)
+    comp = driftmap._Composite(full, uniform_cells(tmp_path / "c.npz", geo), geo)
+    plain = driftmap._Field(full)
+    p = np.array([[1.0, 2.0, -0.4], [5.0, -3.0, -51.5], [10.0, 4.0, 1.5], [0.0, 0.0, -25.0]])
+    assert np.allclose(comp(p), plain(p), atol=1e-3)                       # no hole structure -> the full field
+    cell = comp.cells[0]                                                    # gate
+    a, pt = geo["meshes"]["gate"]["angle"], geo["pitch"]
+    def world(u, v, zl):                                                     # cell coordinates of hole (0, 0) -> world
+        xm, ym = u + 0.5 * pt, v + 0.5 * pt
+        return np.array([[np.cos(a) * xm - np.sin(a) * ym, np.sin(a) * xm + np.cos(a) * ym, geo["meshes"]["gate"]["z"] + zl]])
+    assert not comp.on_bar(world(0.0, 0.0, 0.0))[0]                         # hole centre: free
+    assert comp.on_bar(world(1.29, 0.0, 0.0))[0]                            # on the bar between two holes
+    assert not comp.on_bar(world(1.29, 0.0, 0.5))[0]                        # above the foil
+    u, v, zl, etched = cell.local(world(0.3, -0.2, 0.1))
+    assert u[0] == pytest.approx(0.3) and v[0] == pytest.approx(-0.2) and etched[0]
+
+
 def drift_map(tmp_path, res):
     """Coarse drift map of the synthetic field (drift region field 145 V/cm, reversed below the cathode)."""
     from xamssim import driftmap
-    d = driftmap.compute(res, field_file=flat_map(tmp_path / "fd.npz", reverse_below=-51.8), dxy=2.0, dz=1.0,
-                         log=lambda *a: None)
+    d = driftmap.compute(res, field_file=flat_map(tmp_path / "fd.npz", reverse_below=-51.8), cells_file=None,
+                         dxy=2.0, dz=1.0, log=lambda *a: None)
     p = tmp_path / "drift.npz"
     np.savez(p, **d)
     return p, d
@@ -92,7 +127,8 @@ def test_drift_map(tmp_path):
     assert m(0.0, 0.0, -56.0, "end") == driftmap.BOTTOM                    # below the cathode: down
     assert m(0.0, 0.0, 6.0, "end") == driftmap.GAS
     # a radial field pushes electrons from large radius into the wall
-    pw = driftmap.compute(res, field_file=flat_map(tmp_path / "fw.npz", ex=-300.0), dxy=2.0, dz=1.0, log=lambda *a: None)
+    pw = driftmap.compute(res, field_file=flat_map(tmp_path / "fw.npz", ex=-300.0), cells_file=None, dxy=2.0, dz=1.0,
+                          log=lambda *a: None)
     xs, zs = pw["x"], pw["z"]
     assert pw["end"][np.argmin(abs(xs - 28)), np.argmin(abs(xs)), np.argmin(abs(zs + 40))] in (driftmap.WALL, driftmap.SIPM)
 

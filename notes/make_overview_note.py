@@ -172,11 +172,13 @@ def fig_architecture(kinds, products):
     for t, y in prods:
         node(ax, 0.40, y, 0.21, 0.09, t, prodc)
     # map kinds from the registry
-    ky = {"field": 0.50, "drift": 0.40, "extraction_el": 0.30, "s1_light": 0.72, "s2_pattern": 0.62}
+    ky = {"s1_light": 0.80, "s2_pattern": 0.71, "field": 0.60, "mesh_cells": 0.50, "drift": 0.40, "extraction_el": 0.30}
     for k, v in kinds.items():
         node(ax, 0.66, ky.get(k, 0.2), 0.17, 0.07, f"{k}\nneeded for {v['needed_for']}", mapc, fs=6.6)
-    arrow(ax, (0.505, 0.62), (0.575, 0.72)); arrow(ax, (0.505, 0.62), (0.575, 0.62))
-    arrow(ax, (0.505, 0.44), (0.575, 0.50)); arrow(ax, (0.505, 0.44), (0.575, 0.40)); arrow(ax, (0.505, 0.44), (0.575, 0.30))
+    arrow(ax, (0.505, 0.62), (0.575, 0.80)); arrow(ax, (0.505, 0.62), (0.575, 0.71))
+    for y in (0.60, 0.50, 0.30):
+        arrow(ax, (0.505, 0.44), (0.575, y))
+    arrow(ax, (0.66, 0.565), (0.66, 0.435), color="#4A5A6A"); arrow(ax, (0.66, 0.465), (0.66, 0.435), color="#4A5A6A")
     for y in ys[:4]:
         arrow(ax, (0.185, y), (0.295, 0.62 if y in (0.86, 0.75) else 0.44), color="#8A9AAA")
     arrow(ax, (0.185, 0.86), (0.295, 0.80), color="#8A9AAA"); arrow(ax, (0.185, 0.42), (0.295, 0.80), color="#8A9AAA")
@@ -379,8 +381,12 @@ def main():
                 ["COMSOL mesh cells", "efield/comsol/make_cell.py",
                  "field through one cell of an etched mesh (gate, cathode, gate + anode stack); extraction and EL (S5)",
                  "efield/comsol/run_cell.sh"],
+                ["mesh-cell export", "xamssim/cellmap.py (mph)",
+                 "gate and cathode quarter-cell fields of the real etched meshes → maps/mesh_cells/&lt;key&gt;/cells.npz",
+                 "xamssim maps --state … --export cells"],
                 ["drift map", "xamssim/driftmap.py",
-                 "electron end points, drift times, gate crossings on a 1 × 1 × 0.5 mm grid, tracked through the 3D field",
+                 "electron end points, drift times, gate crossings on a 1 × 1 × 0.5 mm grid, tracked through the "
+                 "composite field (full TPC + mesh cells)",
                  "xamssim maps --state … --export drift"],
                 ["field export", "xamssim/fieldmap.py (mph: COMSOL's API)",
                  "the state's 3D field on a 0.5 mm grid → &lt;data&gt;/maps/field/&lt;key&gt;/efield_xyz.npz",

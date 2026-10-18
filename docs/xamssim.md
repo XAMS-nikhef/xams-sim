@@ -14,7 +14,8 @@ The Python package (`xamssim/`, installed editable in the `xamssim` env) and its
 | `xamssim status <run>` | resolved run: state, voltages, level, pressure, lifetime, source, geometry version, map keys and status |
 | `xamssim maps --state <state>` | map keys and status of a state |
 | `xamssim maps --state <state> --export field` | COMSOL field of the state's HV case → `<data>/maps/field/<key>/` (registered) |
-| `xamssim maps --state <state> --export drift` | drift map of the state from its field map → `<data>/maps/drift/<key>/` |
+| `xamssim maps --state <state> --export cells` | gate and cathode mesh-cell fields from the solved cell models → `<data>/maps/mesh_cells/<key>/` |
+| `xamssim maps --state <state> --export drift` | drift map of the state in its composite field → `<data>/maps/drift/<key>/` |
 | `xamssim validate <run> [...]` | check run files and everything they refer to |
 | `xamssim --version` | version |
 
@@ -32,7 +33,8 @@ Exit code 2 and a one-line message for configuration errors.
 | `chain.py` | `context(run, **overrides)` → (strax context, run id); `settings(res, g4_dir)`, `volumes(res)`, `physics(res)` (`PHYSICS_DEFAULTS`), `plugins(clustering)`, `run(run, target)`; `TARGETS` |
 | `fieldmap.py` | `read_comsol(case, geometry)`: 3D field from the solved COMSOL model via `mph`; `export(res)` → registry; `path(res)`; `FieldMap` (interpolation in x, y, z); `grid_axes` |
 | `plugins/field.py` | `XamsElectricField`: \|E\| at the cluster position from the 3D map (replaces fuse's (r, z) `ElectricField`) |
-| `driftmap.py` | drift map: `compute(res)` / `export(res)` (tracking against the field, NEST v(E)), `track`, `CODES`, `DriftMap` (look-up, `.at` with sub-grid shifts), `path(res)` |
+| `cellmap.py` | mesh-cell fields (gate, cathode quarter cells) from the solved cell models via `mph`: `read_cell`, `export(res)`, `path(res)` |
+| `driftmap.py` | drift map: `compute(res)` / `export(res)` (tracking against the composite field: full TPC + mesh cells, NEST v(E)), `track`, `CODES`, `DriftMap` (look-up, `.at` with sub-grid shifts), `path(res)` |
 | `plugins/drift.py` | `XamsElectronDrift`: electrons at the surface, drift time and spread, gate position |
 | `plugins/volumes.py` | `XamsVolumeProperties` (regions from the drift map; surface and field-cage radius), `XamsVolumeSelection` (keeps volumes 1–4), `XAMS_VOLUME_IDS`, `VOLUME_NAMES` |
 | `plugins/input.py` | `XamsG4Input` (fuse ChunkInput with our reader), `XamsG4Loader`, `deposits_frame(path)`; `plugins/__init__.py`: `np.in1d` shim for fuse |
