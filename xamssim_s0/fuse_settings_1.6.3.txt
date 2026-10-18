@@ -1,0 +1,334 @@
+2026-10-18 11:33:11,266 - utilix - WARNING - Could not load a configuration file. You can create one at /Users/acolijn/.xenon_config, or set a custom path using
+
+export XENON_CONFIG=path/to/your/config
+
+
+### microphysics (dbscan)
+  ChunkInput: provides geant4_interactions
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+        path = '<OMITTED>'
+        file_name = '<OMITTED>'
+        separation_scale = 100000000.0
+        source_rate = 1
+        fixed_event_spacing = False
+        subtract_first_interaction_time = True
+        cut_delayed = 1e+18
+        n_interactions_per_chunk = 100000.0
+        entry_start = 0
+        entry_stop = None
+        cut_by_eventid = False
+        nr_only = False
+        maximal_er_energy = 10
+        first_chunk_left = 1000000.0
+        last_chunk_length = 100000000.0
+  FindCluster: provides cluster_index
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+        micro_separation_time = 10
+        micro_separation = 0.005
+  MergeCluster: provides clustered_interactions
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN tag_cluster_by = 'take://resource://SIMULATION_CONFIG_FILE.json?fmt=json&take=tag_cluster_by'
+  VolumeSelection: provides volume_selection
+  DefaultSimulation: provides interactions_in_roi
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+  ElectricField: provides electric_field_values
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN efield_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=efield_map&fmt=json.gz&method=Regul
+  NestYields: provides quanta
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+        return_yields_only = False
+    XEN nest_width_parameters = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=nest_width_parameters'
+    XEN nest_er_yields_parameters = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=nest_er_yields_parameters'
+    XEN nest_nr_yields_parameters = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=nest_nr_yields_parameters'
+        fix_gamma_yield_field = -1.0
+  MicroPhysicsSummary: provides microphysics_summary
+  VolumeProperties: provides volume_properties
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+        xenonnt_z_cathode = -148.6515
+        xenonnt_z_gate_mesh = 0.0
+        xenonnt_sensitive_volume_radius = 66.4
+    XEN xenon_density_tpc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=xenon_density_tpc'
+        create_S2_xenonnt_TPC = True
+        xenonnt_z_bottom_pmts = -154.6555
+    XEN xenon_density_below_cathode = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=xenon_density_tpc'
+        create_S2_xenonnt_below_cathode = False
+        xenonnt_z_top_pmts = 7.3936
+    XEN xenonnt_z_lxe = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=xenonnt_z_lxe'
+        xenon_density_gas_phase = 0.0177
+        create_S2_xenonnt_gas_phase = False
+
+### microphysics (lineage)
+  LineageClustering: provides interaction_lineage
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+        gamma_distance_threshold = 0.0
+        brem_distance_threshold = 0
+        time_threshold = 10
+        classify_ic_as_gamma = True
+        classify_phot_as_beta = True
+  MergeLineage: provides clustered_interactions
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+
+### s1_simulation_plugins
+  S1PhotonHits: provides s1_photon_hits
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN pmt_circuit_load_resistor = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_circuit_load_resistor'
+    XEN digitizer_bits = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_bits'
+    XEN digitizer_voltage_range = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_voltage_range'
+    XEN gain_model_mc = 'list-to-array://xedocs://pmt_area_to_pes?as_list=True&sort=pmt&detector=tpc&run_id=plugin.run_id&version=ONLI
+    XEN s1_pattern_map = 'pattern_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s1_pattern_map&fmt=pkl&pmt_mask
+    XEN p_double_pe_emision = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=p_double_pe_emision'
+    XEN s1_detection_efficiency = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s1_detection_efficiency'
+  S1PhotonPropagation: provides propagated_s1_photons
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN p_double_pe_emision = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=p_double_pe_emision'
+    XEN pmt_transit_time_spread = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_transit_time_spread'
+    XEN pmt_transit_time_mean = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_transit_time_mean'
+    XEN pmt_circuit_load_resistor = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_circuit_load_resistor'
+    XEN digitizer_bits = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_bits'
+    XEN digitizer_voltage_range = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_voltage_range'
+        n_top_pmts = '<OMITTED>'
+        n_tpc_pmts = '<OMITTED>'
+    XEN gain_model_mc = 'list-to-array://xedocs://pmt_area_to_pes?as_list=True&sort=pmt&detector=tpc&run_id=plugin.run_id&version=ONLI
+    XEN photon_area_distribution = 'simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=photon_area_distribution&fmt=cs
+    XEN s1_pattern_map = 'pattern_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s1_pattern_map&fmt=pkl&pmt_mask
+    XEN maximum_recombination_time = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=maximum_recombination_time'
+    XEN s1_optical_propagation_spline = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s1_time_spline&fmt=json.gz&method=R
+        nest_time_sampling_max_loops = 10
+    XEN override_s1_nr_scint_time = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=override_s1_nr_scint_time'
+    XEN s1_nr_scint_time_ed_override = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s1_nr_scint_time_ed_override'
+    XEN s1_nr_scint_time_nesttype_override = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s1_nr_scint_time_nesttype_override'
+    XEN s1_nr_scint_time_excitonfrac_override = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s1_nr_scint_time_excitonfrac_override'
+
+### s2_simulation_plugins
+  ElectronDrift: provides drifted_electrons
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN drift_velocity_liquid = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=drift_velocity_liquid'
+    XEN drift_time_gate = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=drift_time_gate'
+    XEN diffusion_constant_longitudinal = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=diffusion_constant_longitudinal'
+    XEN electron_lifetime_liquid = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=electron_lifetime_liquid'
+    XEN enable_survival_probability_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_survival_probability_map'
+    XEN enable_drift_velocity_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_drift_velocity_map'
+    XEN norm_drift_velocity = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=norm_drift_velocity'
+    XEN enable_diffusion_longitudinal_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_diffusion_longitudinal_map'
+    XEN tpc_length = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=tpc_length'
+    XEN field_distortion_model = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=field_distortion_model'
+    XEN field_dependencies_map_tmp = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=field_dependencies_map&fmt=json.gz&
+    XEN diffusion_longitudinal_map_tmp = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=diffusion_longitudinal_map&fmt=json
+    XEN fdc_map_fuse = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=field_distortion_comsol_map&fmt=jso
+    XEN gate_to_anode_distance = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=gate_to_anode_distance'
+    XEN elr_gas_gap_length = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=elr_gas_gap_length'
+  ElectronPropagation: provides electrons_at_interface
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN diffusion_constant_transverse = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=diffusion_constant_transverse'
+    XEN enable_diffusion_transverse_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_diffusion_transverse_map'
+    XEN field_dependencies_map_tmp = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=field_dependencies_map&fmt=json.gz&
+  ElectronExtraction: provides extracted_electrons
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN s2_secondary_sc_gain_mc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_secondary_sc_gain'
+    XEN g2_mean = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=g2_mean'
+    XEN electron_extraction_yield = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=electron_extraction_yield'
+    XEN ext_eff_from_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=ext_eff_from_map'
+    XEN se_gain_from_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=se_gain_from_map'
+    XEN s2_correction_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s2_correction_map&fmt=json'
+    XEN se_gain_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=se_gain_map&fmt=json'
+    XEN electron_trapping_time = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=electron_trapping_time'
+  SecondaryScintillation: provides ('s2_photons', 's2_photons_sum')
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN s2_secondary_sc_gain_mc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_secondary_sc_gain'
+    XEN pmt_circuit_load_resistor = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_circuit_load_resistor'
+    XEN digitizer_bits = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_bits'
+    XEN digitizer_voltage_range = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_voltage_range'
+    XEN se_gain_from_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=se_gain_from_map'
+    XEN p_double_pe_emision = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=p_double_pe_emision'
+    XEN se_gain_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=se_gain_map&fmt=json'
+    XEN s2_correction_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s2_correction_map&fmt=json'
+    XEN gain_model_mc = 'list-to-array://xedocs://pmt_area_to_pes?as_list=True&sort=pmt&detector=tpc&run_id=plugin.run_id&version=ONLI
+  S2PhotonPropagation: provides propagated_s2_photons
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN p_double_pe_emision = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=p_double_pe_emision'
+    XEN pmt_transit_time_spread = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_transit_time_spread'
+    XEN pmt_transit_time_mean = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_transit_time_mean'
+    XEN pmt_circuit_load_resistor = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_circuit_load_resistor'
+    XEN digitizer_bits = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_bits'
+    XEN digitizer_voltage_range = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_voltage_range'
+        n_top_pmts = '<OMITTED>'
+        n_tpc_pmts = '<OMITTED>'
+    XEN gain_model_mc = 'list-to-array://xedocs://pmt_area_to_pes?as_list=True&sort=pmt&detector=tpc&run_id=plugin.run_id&version=ONLI
+    XEN photon_area_distribution = 'simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=photon_area_distribution&fmt=cs
+        phase_s2 = 'gas'
+    XEN tpc_length = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=tpc_length'
+    XEN tpc_radius = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=tpc_radius'
+    XEN s2_aft_skewness = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_aft_skewness'
+    XEN s2_aft_sigma = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_aft_sigma'
+    XEN field_dependencies_map_tmp = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=field_dependencies_map&fmt=json.gz&
+    XEN s2_mean_area_fraction_top = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_mean_area_fraction_top'
+    XEN s2_pattern_map = 's2_aft_scaling://pattern_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s2_pattern_map
+        s2_pattern_map_interpolation_method = 'WeightedNearestNeighbors'
+    XEN singlet_fraction_gas = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=singlet_fraction_gas'
+    XEN triplet_lifetime_gas = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=triplet_lifetime_gas'
+    XEN singlet_lifetime_gas = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=singlet_lifetime_gas'
+    XEN triplet_lifetime_liquid = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=triplet_lifetime_liquid'
+    XEN singlet_lifetime_liquid = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=singlet_lifetime_liquid'
+    XEN s2_secondary_sc_gain_mc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_secondary_sc_gain'
+        propagated_s2_photons_file_size_target = 300
+        min_electron_gap_length_for_splitting = 2000000.0
+    XEN s2_luminescence_map = 'simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s2_luminescence_gg&fmt=npy'
+    XEN garfield_gas_gap_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=garfield_gas_gap_map&fmt=json'
+    XEN s2_optical_propagation_spline = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s2_time_spline&fmt=json.gz&method=R
+
+### delayed_electron_simulation_plugins
+  PhotoIonizationElectrons: provides photo_ionization_electrons
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN enable_delayed_electrons = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_delayed_electrons'
+    XEN photoionization_time_cutoff_modeling = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=photoionization_time_cutoff'
+    XEN photoionization_time_cutoff_mc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=photoionization_time_cutoff'
+    XEN photoionization_time_constant = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=photoionization_time_constant'
+    XEN photoionization_modifier = 'xedocs://photoionization_strengths?version=ONLINE&run_id=plugin.run_id&attr=value'
+    XEN diffusion_constant_longitudinal = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=diffusion_constant_longitudinal'
+    XEN drift_velocity_liquid = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=drift_velocity_liquid'
+    XEN drift_time_gate = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=drift_time_gate'
+    XEN tpc_radius = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=tpc_radius'
+    XEN s2_secondary_sc_gain_mc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_secondary_sc_gain'
+    XEN p_double_pe_emision = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=p_double_pe_emision'
+    XEN electron_extraction_yield = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=electron_extraction_yield'
+  DelayedElectronsDrift: provides drifted_delayed_electrons
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN drift_velocity_liquid = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=drift_velocity_liquid'
+    XEN drift_time_gate = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=drift_time_gate'
+    XEN diffusion_constant_longitudinal = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=diffusion_constant_longitudinal'
+    XEN electron_lifetime_liquid = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=electron_lifetime_liquid'
+    XEN enable_survival_probability_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_survival_probability_map'
+    XEN enable_drift_velocity_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_drift_velocity_map'
+    XEN norm_drift_velocity = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=norm_drift_velocity'
+    XEN enable_diffusion_longitudinal_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_diffusion_longitudinal_map'
+    XEN tpc_length = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=tpc_length'
+    XEN field_distortion_model = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=field_distortion_model'
+    XEN field_dependencies_map_tmp = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=field_dependencies_map&fmt=json.gz&
+    XEN diffusion_longitudinal_map_tmp = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=diffusion_longitudinal_map&fmt=json
+    XEN fdc_map_fuse = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=field_distortion_comsol_map&fmt=jso
+    XEN gate_to_anode_distance = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=gate_to_anode_distance'
+    XEN elr_gas_gap_length = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=elr_gas_gap_length'
+        electron_lifetime_liquid_delayed_electrons = 0
+  DelayedElectronPropagation: provides delayed_electrons_at_interface
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN diffusion_constant_transverse = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=diffusion_constant_transverse'
+    XEN enable_diffusion_transverse_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_diffusion_transverse_map'
+    XEN field_dependencies_map_tmp = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=field_dependencies_map&fmt=json.gz&
+  DelayedElectronsExtraction: provides extracted_delayed_electrons
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN s2_secondary_sc_gain_mc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_secondary_sc_gain'
+    XEN g2_mean = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=g2_mean'
+    XEN electron_extraction_yield = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=electron_extraction_yield'
+    XEN ext_eff_from_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=ext_eff_from_map'
+    XEN se_gain_from_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=se_gain_from_map'
+    XEN s2_correction_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s2_correction_map&fmt=json'
+    XEN se_gain_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=se_gain_map&fmt=json'
+    XEN electron_trapping_time = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=electron_trapping_time'
+  DelayedElectronsSecondaryScintillation: provides ('delayed_electrons_s2_photons', 'delayed_electrons_s2_photons_sum')
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN s2_secondary_sc_gain_mc = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=s2_secondary_sc_gain'
+    XEN pmt_circuit_load_resistor = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_circuit_load_resistor'
+    XEN digitizer_bits = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_bits'
+    XEN digitizer_voltage_range = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_voltage_range'
+    XEN se_gain_from_map = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=se_gain_from_map'
+    XEN p_double_pe_emision = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=p_double_pe_emision'
+    XEN se_gain_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=se_gain_map&fmt=json'
+    XEN s2_correction_map = 'itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=s2_correction_map&fmt=json'
+    XEN gain_model_mc = 'list-to-array://xedocs://pmt_area_to_pes?as_list=True&sort=pmt&detector=tpc&run_id=plugin.run_id&version=ONLI
+  S1PhotonHitsEmpty: provides delayed_s1_photon_hits
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+
+### pmt_and_daq_plugins
+  PMTAfterPulses: provides pmt_afterpulses
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN enable_pmt_afterpulses = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_pmt_afterpulses'
+    XEN pmt_ap_t_modifier = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_ap_t_modifier'
+    XEN pmt_ap_modifier = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_ap_modifier'
+    XEN pmt_circuit_load_resistor = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_circuit_load_resistor'
+    XEN digitizer_bits = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_bits'
+    XEN digitizer_voltage_range = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_voltage_range'
+    XEN gain_model_mc = 'list-to-array://xedocs://pmt_area_to_pes?as_list=True&sort=pmt&detector=tpc&run_id=plugin.run_id&version=ONLI
+    XEN photon_ap_cdfs = 'simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=photon_ap_cdfs&fmt=json.gz'
+  PhotonSummary: provides photon_summary
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+  PulseWindow: provides ('pulse_windows', 'pulse_ids')
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN dt = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=sample_duration'
+    XEN samples_after_pulse_center = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=samples_after_pulse_center'
+    XEN samples_to_store_after = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=samples_to_store_after'
+    XEN samples_before_pulse_center = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=samples_before_pulse_center'
+    XEN samples_to_store_before = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=samples_to_store_before'
+        n_tpc_pmts = '<OMITTED>'
+  PMTResponseAndDAQ: provides raw_records
+        debug = False
+        deterministic_seed = True
+        user_defined_random_seed = None
+    XEN dt = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=sample_duration'
+    XEN pmt_circuit_load_resistor = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_circuit_load_resistor'
+    XEN external_amplification = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=external_amplification'
+    XEN digitizer_bits = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_bits'
+    XEN digitizer_voltage_range = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_voltage_range'
+    XEN noise_data = 'simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?&key=noise_file&fmt=npy'
+    XEN enable_noise = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_noise'
+    XEN pe_pulse_ts = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pe_pulse_ts'
+    XEN pe_pulse_ys = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pe_pulse_ys'
+    XEN pmt_pulse_time_rounding = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pmt_pulse_time_rounding'
+    XEN samples_after_pulse_center = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=samples_after_pulse_center'
+    XEN samples_before_pulse_center = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=samples_before_pulse_center'
+    XEN digitizer_reference_baseline = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=digitizer_reference_baseline'
+    XEN zle_threshold = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=zle_threshold'
+    XEN trigger_window = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=trigger_window'
+    XEN special_thresholds = 'take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=special_thresholds'
+        n_tpc_pmts = '<OMITTED>'
+        raw_records_file_size_target = 200
+        min_records_gap_length_for_splitting = 100000.0

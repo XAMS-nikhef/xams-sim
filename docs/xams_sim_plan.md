@@ -5,7 +5,7 @@ extraction and electroluminescence, light collection, sensor response, waveforms
 **unchanged** amstrax processing, so simulation and data are compared with the same code and cuts. Every part can also
 be run on its own, and **one configuration file** drives a complete simulation.
 
-Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18), no code yet.
+Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18); **S0 done 2026-10-18**.
 
 ## Principles
 
@@ -129,7 +129,15 @@ and not separate repositories per producer:
 
 ## Steps
 
-### S0. Decisions and fuse read-through (1 day)
+### S0. Decisions and fuse read-through (1 day) — **done 2026-10-18**
+
+Result: `xamssim_s0/README.md` (scripts `list_configs.py`, `micro_test.py`, settings list `fuse_settings_1.6.3.txt`).
+One environment works: Python 3.12, strax 2.2.3, straxen 4.1.1, xenon-fuse 1.6.3, **nestpy 2.0.6** (fuse fails with
+2.1.x), amstrax master. fuse's micro-physics runs offline with XAMS settings (volumes, COMSOL field map, default
+NEST); **lineage clustering** chosen (DBSCAN defaults split tracks into µm clusters → ~50 % too much light at 662 keV);
+input = own plugin providing fuse's `geant4_interactions` table.
+
+Original task list:
 - Clone fuse (read only), list its plugins and all settings (`st.show_config`) in a throwaway environment.
 - Per plugin: usable via config / needs a XAMS subclass / tied to XENON infrastructure (database, URL configs,
   hard-coded PMT counts, 10 ns sampling).
