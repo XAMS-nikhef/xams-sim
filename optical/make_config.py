@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""geometry.yaml -> config.json for the Geant4 application (which reads JSON only).
+"""geometry.yaml + materials.yaml -> config.json for the Geant4 application (which reads JSON only).
 
 Picks one liquid-level scenario and one value for every free optical parameter (a range [lo, hi] in the YAML means
 "free": the midpoint is used unless overridden with --set), checks that every value the simulation needs is present,
@@ -59,12 +59,15 @@ def pick_free(x):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--geometry", default=str(ROOT / "config" / "geometry.yaml"))
+    ap.add_argument("--materials", default=str(ROOT / "config" / "materials.yaml"))
     ap.add_argument("--level", type=float, required=True, help="liquid level above the gate (mm)")
     ap.add_argument("--set", action="append", default=[], help="override, e.g. optics.lxe.rayleigh_length_cm=40")
     ap.add_argument("--out", default=str(ROOT / "run" / "config.json"))
     args = ap.parse_args()
 
     g = yaml.safe_load(open(args.geometry))
+    mat = yaml.safe_load(open(args.materials))
+    g["optics"] = mat["optics"]          # materials.yaml is the single source of the optical properties
     missing = []
     for p in REQUIRED:
         try:
@@ -92,6 +95,14 @@ def main():
     if hp:
         cfg["mesh_common"]["holes"] = json.load(open(Path(args.geometry).parent / hp))["holes"]
     cfg["optics"] = pick_free(g["optics"])
+    # material properties for Geant4: density, NIST name or composition, state / temperature / pressure
+    cfg["materials"] = {k: {kk: vv for kk, vv in v.items() if kk != "electrical"} for k, v in mat["materials"].items()}
+    used = {g[k]["material"] for k in g if isinstance(g[k], dict) and "material" in g[k]}
+    used |= {g["pmt_common"].get("window_material"), g["pmt_common"].get("body_material")} - {None}
+    unknown = sorted(used - set(mat["materials"]))
+    if unknown:
+        print("geometry.yaml uses materials not defined in materials.yaml:", unknown)
+        return 1
     cfg["liquid"] = {"level_above_gate_mm": args.level, "surface_z_mm": args.level}
     cfg["meshes"] = sorted(cfg["meshes"], key=lambda m: -m["z_mm"])
     for s in args.set:
@@ -106,6 +117,7 @@ def main():
         print(f"liquid level {args.level} mm must lie between the gate (0) and the anode ({anode})")
         return 1
     cfg["meta"] = {"geometry": str(Path(args.geometry).resolve()), "geometry_version": g["meta"]["version"],
+                   "materials": str(Path(args.materials).resolve()),
                    "overrides": args.set}
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     json.dump(cfg, open(args.out, "w"), indent=1)

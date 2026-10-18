@@ -1,10 +1,74 @@
-# Material properties for the simulation chain that are not optical (the optical properties and their fitted ranges
-# stay in geometry.yaml `optics` for now). Units: g/cm³, relative permittivity.
-liquid_xenon:
-  density_g_cm3: 2.86        # used in S0 (fuse VolumeProperties); LXe at ~ -98 °C, ~2 bar
-  relative_permittivity: 1.96
-gas_xenon:
-  density_g_cm3: 0.018       # ~2 bar, ~175 K (ideal gas estimate)
-  relative_permittivity: 1.00
-ptfe:
-  relative_permittivity: 2.1
+# XAMS materials — the single source for every material property used anywhere in xams-sim:
+#   Geant4 (via optical/make_config.py -> config.json), the COMSOL field models (efield/comsol), the simulation chain
+#   (xamssim, fuse settings). geometry.yaml only says which part is made of which material (`material: <key>`).
+# Units: g/cm³, K, bar; relative permittivity; optics as listed.
+
+reference_conditions:          # decision 2026-10-18 (user): 2 bar, 175 K
+  pressure_bar: 2.0
+  temperature_k: 175.0
+  source: >-
+    NIST Chemistry WebBook, xenon fluid properties (2026-10-18): liquid at 2 bar / 175 K 2.8748 g/cm³ (boiling point at
+    2 bar 177.88 K, so 2.9 K sub-cooled); the gas above the liquid is saturated vapour: at 2 bar 0.018694 g/cm³
+    (177.88 K). For comparison: saturated liquid / vapour at 175 K ≈ 2.876 / 0.0167 g/cm³ at ≈ 1.75 bar.
+
+materials:
+  liquid_xenon:
+    density_g_cm3: 2.8748
+    state: liquid
+    temperature_k: 175.0
+    pressure_bar: 2.0
+    geant4: {composition: {Xe: 1}, molar_mass_g_mol: 131.29}
+    electrical: {kind: dielectric, relative_permittivity: 1.96}
+  gas_xenon:
+    density_g_cm3: 0.018694      # saturated vapour at 2 bar
+    state: gas
+    temperature_k: 177.88
+    pressure_bar: 2.0
+    geant4: {composition: {Xe: 1}, molar_mass_g_mol: 131.29}
+    electrical: {kind: dielectric, relative_permittivity: 1.00}
+  ptfe:                          # inner cylinder, PMT holders, bucket
+    density_g_cm3: 2.2
+    geant4: {nist: G4_TEFLON}
+    electrical: {kind: dielectric, relative_permittivity: 2.1}
+  stainless_steel:               # meshes and their rings, cryostat vessel
+    density_g_cm3: 8.0
+    geant4: {nist: G4_STAINLESS-STEEL}
+    electrical: {kind: conductor}
+  copper:                        # field-shaping rings
+    density_g_cm3: 8.96
+    geant4: {nist: G4_Cu}
+    electrical: {kind: conductor}
+  silica:                        # PMT windows (fused silica)
+    density_g_cm3: 2.2
+    geant4: {composition: {Si: 1, O: 2}}
+    electrical: {kind: dielectric, relative_permittivity: 3.8}
+  aluminium:                     # photocathode stand-in in the optical model
+    density_g_cm3: 2.699
+    geant4: {nist: G4_Al}
+    electrical: {kind: conductor}
+  kovar:                         # PMT bodies (R12699 metal package) — for the particle mode (S2); the optical model
+    density_g_cm3: 8.36          #   treats bodies and frames as perfect absorbers
+    geant4: {composition_by_mass: {Fe: 0.54, Ni: 0.29, Co: 0.17}}
+    electrical: {kind: conductor}
+
+# ------------------------------------------------------------------------------------------------ optical properties
+# (moved here from geometry.yaml on 2026-10-18, unchanged.) Values with a range are free parameters, fitted to the data
+# (targets in geometry.yaml). Read by optical/make_config.py into config.json `optics` (same keys as before, so scans and
+# fits that set e.g. optics.ptfe_in_liquid.reflectivity are unaffected).
+optics:
+  wavelength_nm: 178
+  lxe:
+    refractive_index: 1.69
+    rayleigh_length_cm: [30, 60]   # literature range; free
+    absorption_length_cm: [100, 1000]   # purity-dependent; free (large)
+  gxe:
+    refractive_index: 1.00
+  ptfe_in_liquid:
+    reflectivity: [0.90, 0.99]  # free
+    specular_fraction: [0.0, 0.2]
+  ptfe_in_gas:
+    reflectivity: [0.60, 0.90]  # free; lower than in liquid
+    specular_fraction: [0.0, 0.3]
+  stainless_steel_reflectivity: [0.2, 0.5]   # meshes, free
+  copper_reflectivity: [0.2, 0.4]            # field-shaping rings at 178 nm, free (Lambertian)
+  pmt_window_refractive_index: 1.60          # fused silica at 178 nm (check with the window material)

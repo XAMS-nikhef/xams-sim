@@ -11,7 +11,7 @@ Model (3D, mm, z = 0 at the gate, frame as geometry.yaml; SiPM azimuths in the d
 - inner PTFE cylinder (r 31-36 mm, top against the gate, 0.875 mm gap above the cathode), copper field-shaping rings
   at the resistor-chain potentials, PTFE PMT holders, PMTs as conducting boxes at their HV;
 - SiPMs: grounded 3 x 3 mm planes at the bottom of 1 mm deep square holes in the PTFE inner wall;
-- dielectric constants: LXe 1.96, GXe 1.00, PTFE 2.1.
+- dielectric constants from config/materials.yaml (LXe 1.96, GXe 1.00, PTFE 2.1).
 Checks (printed as CHECK lines, parsed by run.sh -> results/efield/checks.json): drift field at the centre against
 (V_gate - V_cathode) / 51.8 mm, liquid / gas field ratio in the extraction gap, potential at the SiPM height near the
 wall, field in the SiPM hole.
@@ -58,6 +58,8 @@ def main():
     a = ap.parse_args()
 
     G = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))
+    MAT = yaml.safe_load(open(ROOT / "config" / "materials.yaml"))["materials"]
+    eps = {k: str(v["electrical"]["relative_permittivity"]) for k, v in MAT.items() if v["electrical"]["kind"] == "dielectric"}
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
     cases = C["cases"]
     if a.cases:
@@ -252,9 +254,9 @@ def main():
         else:
             j(f'model.component("comp1").material("{tag}").selection().named("{sel}");')
 
-    material("m_gxe", "gas xenon", "1.00", "all")
-    material("m_lxe", "liquid xenon", "1.96", "geom1_lxe_dom")
-    material("m_ptfe", "PTFE", "2.1", "sel_ptfe")
+    material("m_gxe", "gas xenon", eps["gas_xenon"], "all")
+    material("m_lxe", "liquid xenon", eps["liquid_xenon"], "geom1_lxe_dom")
+    material("m_ptfe", "PTFE", eps["ptfe"], "sel_ptfe")
     material("m_metal", "metal (conductors)", "1", "sel_metal")
 
     # ---------------------------------------------------------------- physics

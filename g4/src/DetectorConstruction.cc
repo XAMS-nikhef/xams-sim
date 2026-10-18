@@ -29,7 +29,11 @@ G4Material* DetectorConstruction::LiquidXenon() {
   static G4Material* mat = nullptr;
   if (mat) return mat;
   const auto& cfg = Config::Get();
-  mat = new G4Material("LXe", 54., 131.29 * g / mole, 2.953 * g / cm3, kStateLiquid, 165. * kelvin);
+  // density / temperature / pressure from config/materials.yaml (via make_config.py); defaults = 2 bar, 175 K (NIST)
+  mat = new G4Material("LXe", 54., cfg.Num("materials/liquid_xenon/geant4/molar_mass_g_mol", 131.29) * g / mole,
+                       cfg.Num("materials/liquid_xenon/density_g_cm3", 2.8748) * g / cm3, kStateLiquid,
+                       cfg.Num("materials/liquid_xenon/temperature_k", 175.) * kelvin,
+                       cfg.Num("materials/liquid_xenon/pressure_bar", 2.) * bar);
   auto* mpt = new G4MaterialPropertiesTable();
   mpt->AddProperty("RINDEX", kEnergies, Flat(cfg.Num("optics/lxe/refractive_index", 1.69)));
   mpt->AddProperty("ABSLENGTH", kEnergies, Flat(cfg.Num("optics/lxe/absorption_length_cm", 1e6) * cm));
@@ -42,8 +46,11 @@ G4Material* DetectorConstruction::GasXenon() {
   static G4Material* mat = nullptr;
   if (mat) return mat;
   const auto& cfg = Config::Get();
-  // ~1.7 bar at 175 K; the density does not matter optically (n = 1.00)
-  mat = new G4Material("GXe", 54., 131.29 * g / mole, 0.0155 * g / cm3, kStateGas, 175. * kelvin);
+  // saturated vapour above the liquid (config/materials.yaml); the density does not matter optically (n = 1.00)
+  mat = new G4Material("GXe", 54., cfg.Num("materials/gas_xenon/geant4/molar_mass_g_mol", 131.29) * g / mole,
+                       cfg.Num("materials/gas_xenon/density_g_cm3", 0.018694) * g / cm3, kStateGas,
+                       cfg.Num("materials/gas_xenon/temperature_k", 177.88) * kelvin,
+                       cfg.Num("materials/gas_xenon/pressure_bar", 2.) * bar);
   auto* mpt = new G4MaterialPropertiesTable();
   mpt->AddProperty("RINDEX", kEnergies, Flat(cfg.Num("optics/gxe/refractive_index", 1.00)));
   mpt->AddProperty("ABSLENGTH", kEnergies, Flat(1e9 * cm));
@@ -54,7 +61,7 @@ G4Material* DetectorConstruction::GasXenon() {
 G4Material* DetectorConstruction::Silica() {
   static G4Material* mat = nullptr;
   if (mat) return mat;
-  mat = new G4Material("Silica", 2.2 * g / cm3, 2);
+  mat = new G4Material("Silica", Config::Get().Num("materials/silica/density_g_cm3", 2.2) * g / cm3, 2);
   auto* nist = G4NistManager::Instance();
   mat->AddElement(nist->FindOrBuildElement("Si"), 1);
   mat->AddElement(nist->FindOrBuildElement("O"), 2);
@@ -68,14 +75,16 @@ G4Material* DetectorConstruction::Silica() {
 G4Material* DetectorConstruction::StainlessSteel() {
   // opaque: optical behaviour is set by the surface (reflectivity from the config)
   static G4Material* mat = nullptr;
-  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+  if (!mat)
+    mat = G4NistManager::Instance()->FindOrBuildMaterial(
+        Config::Get().Str("materials/stainless_steel/geant4/nist", "G4_STAINLESS-STEEL"));
   return mat;
 }
 
 G4Material* DetectorConstruction::Ptfe() {
   // opaque (no RINDEX): optical behaviour via its surface (step 4); without a surface photons are absorbed
   static G4Material* mat = nullptr;
-  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial("G4_TEFLON");
+  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial(Config::Get().Str("materials/ptfe/geant4/nist", "G4_TEFLON"));
   return mat;
 }
 
@@ -89,7 +98,7 @@ G4Material* DetectorConstruction::Absorber() {
 G4Material* DetectorConstruction::Photocathode() {
   // the bulk is irrelevant: photons stop at its surface (detected with probability QE, else absorbed)
   static G4Material* mat = nullptr;
-  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial("G4_Al");
+  if (!mat) mat = G4NistManager::Instance()->FindOrBuildMaterial(Config::Get().Str("materials/aluminium/geant4/nist", "G4_Al"));
   return mat;
 }
 

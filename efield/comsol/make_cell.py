@@ -37,6 +37,9 @@ def main():
     ap.add_argument("--map3d", action="store_true", help="also print the 3D field near the foil (M3 lines) for plot_cell3d.py")
     a = ap.parse_args()
     G = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))
+    MAT = yaml.safe_load(open(ROOT / "config" / "materials.yaml"))["materials"]
+    eps_l = MAT["liquid_xenon"]["electrical"]["relative_permittivity"]
+    eps_g = MAT["gas_xenon"]["electrical"]["relative_permittivity"]
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
     mc = G["mesh_common"]
     p, w, t = mc["pitch_mm"], mc["bar_width_mm"], mc["foil_thickness_mm"]
@@ -111,13 +114,13 @@ def main():
         j(f'{sel}.create("a_bar", "Difference"); {selt('a_bar')}.set("entitydim", 2);')
         j(f'{selt('a_bar')}.set("add", new String[]{{"a_slab"}}); {selt('a_bar')}.set("subtract", new String[]{{"a_walls"}});')
     j(f'model.component("comp1").material().create("lxe", "Common");')
-    j('model.component("comp1").material("lxe").propertyGroup("def").set("relpermittivity", new String[]{"1.96"});')
+    j('model.component("comp1").material("lxe").propertyGroup("def").set("relpermittivity", new String[]{"' + str(eps_l) + '"});')
     if a.electrode == "gate" or stack:
         box("s_liq", 3, -e, h + e, -e, h + e, z0 - e, level + e, "allvertices")
         j('model.component("comp1").material("lxe").selection().named("s_liq");')
         box("s_gas", 3, -e, h + e, -e, h + e, level - e, z1 + e, "allvertices")
         j('model.component("comp1").material().create("gxe", "Common");')
-        j('model.component("comp1").material("gxe").propertyGroup("def").set("relpermittivity", new String[]{"1.0"});')
+        j('model.component("comp1").material("gxe").propertyGroup("def").set("relpermittivity", new String[]{"' + str(eps_g) + '"});')
         j('model.component("comp1").material("gxe").selection().named("s_gas");')
     else:
         j('model.component("comp1").material("lxe").selection().all();')
@@ -132,7 +135,7 @@ def main():
         j(f'{es}.create("{tag}", "ElectricPotential", 2); {es}.feature("{tag}").selection().named("{s_}"); {es}.feature("{tag}").set("V0", "{v}");')
     s_d, sign = ("s_bot", "") if a.electrode == "gate" or stack else ("s_top", "-")
     j(f'{es}.create("dfield", "SurfaceChargeDensity", 2); {es}.feature("dfield").selection().named("{s_d}");')
-    j(f'{es}.feature("dfield").set("rhoqs", "{sign}epsilon0_const*1.96*Ezd");')
+    j(f'{es}.feature("dfield").set("rhoqs", "{sign}epsilon0_const*{eps_l}*Ezd");')
     j('MeshSequence m = model.component("comp1").mesh().create("mesh1");')
     j(f'm.feature("size").set("custom", "on"); m.feature("size").set("hmax", {a.hmax}); m.feature("size").set("hmin", 0.002); m.feature("size").set("hgrad", 1.25);')
     j(f'm.create("szb", "Size"); m.feature("szb").selection().geom("geom1", 2); m.feature("szb").selection().named("s_bar");')

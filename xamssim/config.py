@@ -5,8 +5,8 @@ referenced:
 
     run  ─┬─ state  (config/states/<name>.yaml) ── hv_case ── efield/cases.yaml (electrode voltages, field cage, SiPMs)
           ├─ source (config/sources/<name>.yaml)
-          ├─ geometry (config/geometry.yaml)
-          └─ materials (config/materials.yaml)
+          ├─ geometry (config/geometry.yaml: shapes, positions, which part is which material)
+          └─ materials (config/materials.yaml: the single source of material properties incl. optics)
 
 `resolve(run_path)` loads and checks all of it and returns a `Resolved` object; `Resolved.map_keys()` gives, per kind of
 map, a short hash of exactly the inputs that map depends on (the map registry uses it to find or request maps).
@@ -70,6 +70,31 @@ def check(d: dict, kind: str, where: str) -> None:
             raise ConfigError(f"{where}: '{k}' has type {type(v).__name__}, expected {keys[k]}")
 
 
+def load_materials_and_geometry() -> tuple:
+    """geometry.yaml + materials.yaml, with the check that every material the geometry names is defined."""
+    geo = load_yaml(CONFIG / "geometry.yaml")
+    mat = load_yaml(CONFIG / "materials.yaml")
+    for k in ("materials", "optics"):
+        if k not in mat:
+            raise ConfigError(f"materials.yaml: missing section '{k}'")
+    for name, m in mat["materials"].items():
+        if "density_g_cm3" not in m or "geant4" not in m or "electrical" not in m:
+            raise ConfigError(f"materials.yaml: '{name}' needs density_g_cm3, geant4 and electrical")
+        if m["electrical"].get("kind") not in ("conductor", "dielectric"):
+            raise ConfigError(f"materials.yaml: '{name}' electrical.kind must be conductor or dielectric")
+        if m["electrical"]["kind"] == "dielectric" and m["electrical"].get("relative_permittivity") is None:
+            raise ConfigError(f"materials.yaml: dielectric '{name}' needs relative_permittivity")
+    if "optics" in geo:
+        raise ConfigError("geometry.yaml: optical properties belong in materials.yaml (single source)")
+    used = {v["material"] for v in geo.values() if isinstance(v, dict) and "material" in v}
+    pc = geo.get("pmt_common", {})
+    used |= {pc.get("window_material"), pc.get("body_material")} - {None}
+    unknown = sorted(used - set(mat["materials"]))
+    if unknown:
+        raise ConfigError(f"geometry.yaml uses materials not defined in materials.yaml: {unknown}")
+    return geo, mat
+
+
 def short_hash(obj) -> str:
     """Stable 12-character hash of a JSON-serialisable object (key order does not matter)."""
     s = json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str)
@@ -94,15 +119,16 @@ class Resolved:
     hv_global: dict          # efield/cases.yaml sections that apply to every case (field cage, SiPM model)
 
     # --- the inputs each kind of map depends on (only these enter its key) ---
-    def _geometry_physical(self, optics: bool) -> dict:
-        drop = {"meta", "targets", "sources", "liquid"} | (set() if optics else {"optics"})
-        return {k: v for k, v in self.geometry.items() if k not in drop}
+    def _geometry_physical(self) -> dict:
+        return {k: v for k, v in self.geometry.items() if k not in {"meta", "targets", "sources", "liquid"}}
 
     def map_inputs(self) -> dict:
         level = self.state["liquid_level_mm"]
-        eps = {k: v.get("relative_permittivity") for k, v in self.materials.items()}
+        mats = self.materials["materials"]
+        eps = {k: v["electrical"].get("relative_permittivity") for k, v in mats.items()}
+        light = {"geometry": self._geometry_physical(), "optics": self.materials["optics"], "liquid_level_mm": level}
         hv = {k: self.hv_case[k] for k in HV_KEYS}
-        field = {"geometry": self._geometry_physical(optics=False), "permittivity": eps, "hv": hv,
+        field = {"geometry": self._geometry_physical(), "permittivity": eps, "hv": hv,
                  "hv_global": self.hv_global, "liquid_level_mm": level}
         return {
             "field": field,
@@ -110,8 +136,8 @@ class Resolved:
             "extraction_el": {"mesh_common": self.geometry.get("mesh_common"), "meshes": self.geometry.get("meshes"),
                               "hv": {k: hv[k] for k in ("A", "G", "C", "TS")}, "liquid_level_mm": level,
                               "pressure_bar": self.state.get("pressure_bar"), "permittivity": eps},
-            "s1_light": {"geometry": self._geometry_physical(optics=True), "liquid_level_mm": level},
-            "s2_pattern": {"geometry": self._geometry_physical(optics=True), "liquid_level_mm": level},
+            "s1_light": light,
+            "s2_pattern": light,
         }
 
     def map_keys(self) -> dict:
@@ -154,8 +180,9 @@ def resolve(run_path) -> Resolved:
         raise ConfigError(f"liquid level differs: state {sp.name} {state['liquid_level_mm']} mm, "
                           f"{HV_CASES.name} {cases['liquid_level_mm']} mm (the field maps use the latter)")
 
+    geo, mat = load_materials_and_geometry()
     return Resolved(run_path=run_path, run=run, state_name=run["state"], state=state, source_name=run["source"],
-                    source=source, geometry=load_yaml(CONFIG / "geometry.yaml"), materials=load_yaml(CONFIG / "materials.yaml"),
+                    source=source, geometry=geo, materials=mat,
                     hv_case=hv_case, hv_global={k: cases[k] for k in ("field_cage", "sipm") if k in cases})
 
 
@@ -168,6 +195,7 @@ def resolve_state(state_name: str) -> Resolved:
     cases = load_yaml(HV_CASES)
     if state["hv_case"] not in cases.get("cases", {}):
         raise ConfigError(f"{sp}: hv_case '{state['hv_case']}' not in {HV_CASES}")
+    geo, mat = load_materials_and_geometry()
     return Resolved(run_path=sp, run=tmp, state_name=state_name, state=state, source_name="-", source={},
-                    geometry=load_yaml(CONFIG / "geometry.yaml"), materials=load_yaml(CONFIG / "materials.yaml"),
+                    geometry=geo, materials=mat,
                     hv_case=cases["cases"][state["hv_case"]], hv_global={k: cases[k] for k in ("field_cage", "sipm") if k in cases})

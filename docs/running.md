@@ -90,7 +90,7 @@ away. Existing scan files: `optical/scans/s2_optics.yaml`, `s1_optics.yaml`, `s2
 ## Changing parameters or the design
 
 - One value for one run: `python optical/make_config.py --level 3.0 --set optics.stainless_steel_reflectivity=0.5 --out run/my.json`.
-- Permanent geometry / optics changes: edit `geometry.yaml` (every value has its source written next to it).
+- Permanent geometry changes: edit `config/geometry.yaml`; material and optics changes: `config/materials.yaml` (every value has its source written next to it).
 - Design options without changing the code: `extra_ptfe` (extra PTFE cylinders, see `optical/scans/make_design_ptfe.py`).
 - New kinds of parts need C++ in `g4/src/XamsGeometry.cc`.
 

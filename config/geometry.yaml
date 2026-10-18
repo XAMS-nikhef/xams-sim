@@ -73,6 +73,7 @@ meshes:                      # z = foil mid-plane
 
 # ------------------------------------------------------------------------------------------------ PTFE cylinder
 ptfe_cylinder:                 # drawing "PTFE_cylinder.pdf" (2026-10-05)
+  material: ptfe
   inner_diameter_mm: 62.0    # drawing
   wall_thickness_mm: 5.0     # drawing: outer Ø72, fits in the bores of the gate and cathode rings
   length_mm: 50.85           # drawing
@@ -94,6 +95,7 @@ field_shaping_rings:         # drawing "XAMS_field_shaper.pdf" (2026-10-05): cop
 
 pmt_ptfe:                    # PTFE holders of the PMTs (user, 2026-10-06; drawings "PTFE_between_TS_PMT.pdf",
                              # "PTFE_between_BS_PMT.pdf"; CAD picture: the PMT falls into the slot of the PTFE structure)
+  material: ptfe
   outer_diameter_mm: 92.6    # user: exactly the mesh-ring outer diameter (plate drawing: Ø93)
   aperture_square_mm: 50.0   # drawing: square opening in front of the photocathode (48.5)
   slot_square_mm:            # the PMT sits in the slot
@@ -107,6 +109,7 @@ pmt_ptfe:                    # PTFE holders of the PMTs (user, 2026-10-06; drawi
 
 # ------------------------------------------------------------------------------------------------ surroundings
 ptfe_bucket:                 # drawing "PTFE_bucket.pdf" (2026-10-06): the TPC hangs in this PTFE bucket
+  material: ptfe
   inner_diameter_mm: 112.0   # drawing
   outer_diameter_mm: 132.0   # drawing (wall 10 mm)
   height_mm: 129.0           # drawing (outer)
@@ -134,7 +137,8 @@ pmt_common:
   height_mm: 14.8            # T table 5.3, H (excluding pins)
   window_face_square_mm: 54.6  # H (outline 56.0; window front 54.6)
   sector_numbering: "top view: 1 2 / 3 4 (H, start mark at sector 1)"
-  window_material: silica glass   # H
+  window_material: silica   # H: silica glass (materials.yaml `silica`)
+  body_material: kovar      # metal package (particle mode); the optical model treats bodies as absorbers
   window_thickness_mm: 2.5   # H
   qe_178nm: 0.33             # H: typ. 33 % at 175 nm (min 30 %); free parameter in the fit, separately top and bottom
 
@@ -162,24 +166,7 @@ sipms:
   filter: not modelled in v1 (user, 2026-10-05)
 
 # ------------------------------------------------------------------------------------------------ optical properties
-# Values with a range are free parameters, fitted to the data (targets below).
-optics:
-  wavelength_nm: 178
-  lxe:
-    refractive_index: 1.69
-    rayleigh_length_cm: [30, 60]   # literature range; free
-    absorption_length_cm: [100, 1000]   # purity-dependent; free (large)
-  gxe:
-    refractive_index: 1.00
-  ptfe_in_liquid:
-    reflectivity: [0.90, 0.99]  # free
-    specular_fraction: [0.0, 0.2]
-  ptfe_in_gas:
-    reflectivity: [0.60, 0.90]  # free; lower than in liquid
-    specular_fraction: [0.0, 0.3]
-  stainless_steel_reflectivity: [0.2, 0.5]   # meshes, free
-  copper_reflectivity: [0.2, 0.4]            # field-shaping rings at 178 nm, free (Lambertian)
-  pmt_window_refractive_index: 1.60          # fused silica at 178 nm (check with the window material)
+# Moved to materials.yaml (`optics`) on 2026-10-18: materials.yaml is the single source for material properties.
 
 # ------------------------------------------------------------------------------------------------ light sources
 sources:

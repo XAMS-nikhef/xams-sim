@@ -1,6 +1,6 @@
 # Optics and parameters
 
-All optical properties are flat over 6–8 eV (178 nm). Free parameters have a range in `geometry.yaml`; unless set,
+All optical properties are flat over 6–8 eV (178 nm). Free parameters have a range in `config/materials.yaml` (`optics`; the single source of material properties since 2026-10-18); unless set,
 `make_config.py` takes the middle of the range.
 
 | quantity | value / range | config path |

@@ -2,7 +2,8 @@
 
 | Path | What it is | You edit it? |
 |---|---|---|
-| `config/geometry.yaml` | **all numbers**: meshes (z, angle, foil side), rings, PTFE, copper rings, PMTs, SiPMs, optics ranges, data targets — each with its source | yes |
+| `config/geometry.yaml` | **all dimensions**: meshes (z, angle, foil side), rings, PTFE, copper rings, PMTs, SiPMs, which part is which material, data targets — each with its source | yes |
+| `config/materials.yaml` | **all material properties** (single source): densities and Geant4 definitions, conductor / dielectric (ε), and the optics (refractive indices, Rayleigh / absorption lengths, reflectivities with their fit ranges); reference 2 bar, 175 K | yes |
 | `config/mesh_holes.json` | the 456 etched holes of the mesh foils (from the gate drawing) | no |
 | `optical/make_config.py` | `geometry.yaml` → one `config.json` (liquid level, free parameters at mid-range unless `--set`) | no |
 | `xamsopt.cc` | main program (options `-c -o -s -d -v`) | no |

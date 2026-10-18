@@ -1,6 +1,6 @@
 # Geometry (v4, from the drawings)
 
-All numbers live in `geometry.yaml`, each with its source (drawings in `reference/XAMS design/`: grid assembly,
+All dimensions live in `config/geometry.yaml` (material properties and optics in `config/materials.yaml`), each with its source (drawings in `reference/XAMS design/`: grid assembly,
 PTFE cylinder, field shaping, PTFE bucket, inner cryostat vessel; thesis; position reconstruction v2; the user).
 Built by `g4/src/XamsGeometry.cc`.
 

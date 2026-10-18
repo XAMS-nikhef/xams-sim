@@ -39,6 +39,8 @@ steps(3, 2, 1, "gamma", "phot", 0.0, 5.0, 6.0, 662.0)                         # 
 pd.DataFrame(rows).to_csv(os.path.join(OUT, "synthetic_cs137.csv"), index=False)
 
 # 3. context: only fuse micro-physics plugins, every XENON default overridden
+import yaml  # noqa: E402
+MAT = yaml.safe_load(open(Path(__file__).resolve().parents[1] / "config" / "materials.yaml"))["materials"]
 store = os.path.join(OUT, "strax_data")
 shutil.rmtree(store, ignore_errors=True)
 clus = ([fuse.micro_physics.LineageClustering, fuse.micro_physics.MergeLineage] if CLUSTERING == "lineage"
@@ -55,7 +57,8 @@ cfg = dict(
     # XAMS volumes (cm): drift region gate -> cathode, r < 3.1; below the cathode down to the bottom PMT window; gas
     xenonnt_z_gate_mesh=0.0, xenonnt_z_cathode=-5.18, xenonnt_sensitive_volume_radius=3.1,
     xenonnt_z_bottom_pmts=-6.41, xenonnt_z_lxe=0.4, xenonnt_z_top_pmts=2.25,
-    xenon_density_tpc=2.86, xenon_density_below_cathode=2.86, xenon_density_gas_phase=0.018,
+    xenon_density_tpc=MAT["liquid_xenon"]["density_g_cm3"], xenon_density_below_cathode=MAT["liquid_xenon"]["density_g_cm3"],
+    xenon_density_gas_phase=MAT["gas_xenon"]["density_g_cm3"],                  # config/materials.yaml (single source)
 )
 st = strax.Context(storage=[strax.DataDirectory(store)], register=plugins, config=cfg)
 st.set_context_config({"check_available": ()})
@@ -69,6 +72,6 @@ print(f"\n{len(cl)} clusters from {len(rows)} steps in 4 events; in ROI: {len(d)
 nc = nestpy.NESTcalc(nestpy.VDetector())
 for row in d[:3]:
     y = nc.GetYields(interaction=nestpy.INTERACTION_TYPE(int(row["nestid"])), energy=float(row["ed"]),
-                     drift_field=float(row["e_field"]), density=2.86)
+                     drift_field=float(row["e_field"]), density=MAT["liquid_xenon"]["density_g_cm3"])
     print(f"standalone NEST (mean yields) E={row['ed']:.0f} keV F={row['e_field']:.0f} V/cm: photons {y.PhotonYield:.0f}, "
           f"electrons {y.ElectronYield:.0f}  | fuse (with fluctuations): {row['photons']}, {row['electrons']}")

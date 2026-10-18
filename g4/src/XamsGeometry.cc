@@ -326,7 +326,9 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     const double fi = 0.5 * f["inner_diameter_mm"].get<double>() * mm, fo = 0.5 * f["outer_diameter_mm"].get<double>() * mm;
     const double ft = f["thickness_mm"].get<double>() * mm;
     auto* cuL = new G4LogicalVolume(new G4Tubs("CopperRing", fi, fo, 0.5 * ft, 0., 360. * deg),
-                                    G4NistManager::Instance()->FindOrBuildMaterial("G4_Cu"), "CopperRing");
+                                    G4NistManager::Instance()->FindOrBuildMaterial(
+                                        Config::Get().Str("materials/copper/geant4/nist", "G4_Cu")),
+                                    "CopperRing");
     int k = 0;
     for (const auto& zc : f["z_center_mm"]) {
       const double z = zc.get<double>() * mm;
