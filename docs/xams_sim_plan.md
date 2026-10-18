@@ -5,7 +5,7 @@ extraction and electroluminescence, light collection, sensor response, waveforms
 **unchanged** amstrax processing, so simulation and data are compared with the same code and cuts. Every part can also
 be run on its own, and **one configuration file** drives a complete simulation.
 
-Status: plan (2026-10-16; fuse clustering decided 2026-10-18), no code yet.
+Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18), no code yet.
 
 ## Principles
 
@@ -115,8 +115,17 @@ XAMS-nikhef/xams-sim
   docs/
 ```
 
-Decision: one repository with standalone components (shared config, no version skew of the geometry), or separate
-repositories per producer. Recommended: one repository; optical_sim becomes its optical part (history kept).
+**Decision (2026-10-18): one repository — optical_sim is renamed and restructured into xams-sim**, not a new repo
+and not separate repositories per producer:
+
+- *one geometry in one place*: Geant4, COMSOL and the event chain all read `config/geometry.yaml`; no consistency
+  problem between repositories when a dimension changes;
+- *history kept*: optical fits, mesh / field studies, notes and results keep their commits (logbook links stay valid);
+- *least work*: a rename plus a few move commits; the producers (efield, optical) stay standalone through their own
+  command lines inside the repository;
+- *home*: transferred from `acolijn/xams-optical-sim` to the **XAMS-nikhef** organisation as a **private** repository
+  (next to amstrax; access for students managed there); GitHub redirects the old URL;
+- *when*: at the start of S1, after the fuse read-through; until then work continues in optical_sim as now.
 
 ## Steps
 
@@ -137,7 +146,14 @@ decision per other fuse plugin written down; environment and versions fixed (one
 separately with `raw_records` on disk in between).
 
 ### S1. Repository, config and map registry (1–2 days)
-- New repo, config schema (states, sources, runs), loader with validation and hashing; move geometry.yaml.
+- Repository move (decision above), in one go:
+  1. rename `acolijn/xams-optical-sim` → `xams-sim` and transfer it to XAMS-nikhef (private);
+  2. restructure in a few commits: `geometry.yaml` → `config/`, the Geant4 code → `g4/`, scan tools and step 6–8 →
+     `optical/`, `efield/` stays, new `xamssim/`; `results/`, `notes/`, `docs/` stay; check that the existing scripts and
+     the MkDocs build still run after each move;
+  3. update the local folder name, the remote, `AGENTS.md` (systems + repositories tables), links in the logbook and
+     the docs site.
+- Config schema (states, sources, runs), loader with validation and hashing.
 - Map registry: manifest with state hash → files, producer version, date; `xamssim maps --state X` lists what exists
   and what is missing (with the command to make it).
 - Conda environment `xamssim` on the Mac (strax, amstrax, nestpy, fuse if chosen); Geant4 stays in `g4`.
@@ -217,7 +233,7 @@ S8 adds the like-for-like comparison through amstrax.
 ## Open questions
 
 1. fuse beyond clustering: which other plugins (yields, drift, extraction, PMT, waveforms) — per plugin in S0.
-2. One repository (optical_sim grows into xams-sim) or separate repositories per producer.
+2. ~~One repository or separate repositories~~ — decided 2026-10-18: optical_sim → xams-sim (XAMS-nikhef, private).
 3. strax / amstrax versions for the simulation environment (STBC runs strax 1.5.4 on Python 3.8).
 4. Where the field map comes from in production: COMSOL file export (security setting) or the printed-map route.
 5. Delayed-electron model in the drift step: which model (for the paper).
