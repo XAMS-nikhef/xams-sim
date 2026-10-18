@@ -8,8 +8,8 @@ electric-field models, all driven from a common configuration (geometry, materia
 | **`xamsg4`** | Geant4 program with two modes: **optical** (178 nm photons through the TPC → light collection per sensor) and **particle** (radioactive sources / gammas → energy deposits in the xenon) | `g4/` (C++), built to `g4/build/xamsg4` |
 | **`xamssim`** | Python package and command: configuration and validation, running both modes, viewers, map registry, readers; later the strax event chain | `xamssim/` |
 | **efield** | electric field and electron drift: COMSOL models of the full TPC and of single mesh cells, generated from the configuration | `efield/` |
-| **optical tools** | scans of the optical model, fits, readers | `optical/` |
-| **configuration** | `geometry.yaml`, `materials.yaml`, detector states, sources, simulation runs | `config/` |
+| **configuration** | the definition: `geometry.yaml`, `materials.yaml`, detector states, sources; example runs and scan | `config/` |
+| **checks** | slow checks of Geant4's optical physics against analytic results | `checks/` |
 
 ![XAMS geometry in the viewer, cut open](img/geometry_view_cut_v4.png){ width="420" }
 
@@ -29,8 +29,8 @@ source ──xamsg4 particle──► energy deposits ──► clusters ──�
 
 Available now: the optical mode (with fitted optics), the particle mode, the field models, configuration and map
 registry. The event chain from deposits onwards (strax plugins, partly from XENONnT's fuse) is being built — see the
-[roadmap](xams_sim_plan.md). Results of studies made with xams-sim are not in this manual: they are in the PDF notes
-(`notes/`) and the `results/` folders of the repository.
+[roadmap](xams_sim_plan.md). Studies made with xams-sim (run files, analysis, results, PDF notes) are not in this
+repository: they live in `../simulations/` (own repository), their outputs in `../simulations/data/`.
 
 ## Where to start
 

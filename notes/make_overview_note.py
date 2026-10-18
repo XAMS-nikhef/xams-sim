@@ -4,7 +4,7 @@ Plugin names, versions, inputs, outputs, files and line numbers are read from th
 configuration tables from config/ and efield/cases.yaml; map status from maps/manifest.json; plan status from
 docs/xams_sim_plan.md. The layout and the short descriptions are written here. No simulation results.
 Usage (repository root, env xamssim): python notes/make_overview_note.py [out.pdf]
-    (default notes/XAMS_simulation_overview.pdf; figures in results/overview/)"""
+    (default notes/XAMS_simulation_overview.pdf; figures in notes/figures/)"""
 import inspect
 import re
 import subprocess
@@ -47,12 +47,12 @@ sub = ParagraphStyle("sub", parent=base, fontSize=9.5, textColor=colors.HexColor
 h2 = ParagraphStyle("h2", parent=base, fontName="Arial-Bold", fontSize=11.5, leading=14.5, textColor=NAVY, spaceBefore=8, spaceAfter=3)
 hdr = ParagraphStyle("hdr", parent=small, fontName="Arial-Bold", textColor=colors.white)
 W = A4[0] - 30 * mm
-FIG = ROOT / "results" / "overview"
-EXAMPLE_RUN = ROOT / "config" / "runs" / "s2_cs137_raised.yaml"
+FIG = ROOT / "notes" / "figures"
+EXAMPLE_RUN = ROOT / "config" / "runs" / "cs137_cmb50_001.yaml"
 
 # what each chain plugin does (written here; a plugin without an entry stops the script)
 WHAT = {
-    "XamsG4Input": "reads run/g4/&lt;run&gt;/deposits.* (binary + JSON header): mm → cm, codes → particle / process names, "
+    "XamsG4Input": "reads <data>/g4/&lt;run&gt;/deposits.* (binary + JSON header): mm → cm, codes → particle / process names, "
                    "RadioactiveDecay → RadioactiveDecayBase; places events on a timeline at source_rate; dynamic chunks",
     "LineageClustering": "groups the deposits of an event by particle lineage (a gamma's scatters are separate clusters, an "
                          "electron track one cluster); gives each lineage its NEST interaction type",
@@ -76,7 +76,7 @@ CONFIG = [
     ("config/sources/*.yaml", "a source: isotope or gamma, position, direction", "Geant4 particle mode"),
     ("config/runs/*.yaml", "one simulation: state + source + events + seed + last product + physics options", "xamssim"),
     ("efield/cases.yaml", "voltages of the electrodes per HV case (no geometry, no level)", "COMSOL, map keys"),
-    ("optical/scans/*.yaml", "grids of optical parameters and liquid levels for the light maps", "xamssim optical"),
+    ("config/scans/*.yaml", "optical scans: grids of optical parameters and liquid levels", "xamssim optical"),
 ]
 
 
@@ -374,7 +374,7 @@ def main():
                  "field through one cell of an etched mesh (gate, cathode, gate + anode stack); extraction and EL (S5)",
                  "efield/comsol/run_cell.sh"],
                 ["field export", "xamssim/fieldmap.py (mph: COMSOL's API)",
-                 "the state's 3D field on a 0.5 mm grid → maps/field/&lt;key&gt;/efield_xyz.npz",
+                 "the state's 3D field on a 0.5 mm grid → &lt;data&gt;/maps/field/&lt;key&gt;/efield_xyz.npz",
                  "xamssim maps --state … --export field"]],
                [30 * mm, 44 * mm, 70 * mm, W - 144 * mm]),
          P("5. Map registry", h2),
@@ -384,7 +384,7 @@ def main():
          P("6. The simulation chain", h2),
          P("A strax context (xamssim/chain.py: context, settings, plugins) with fuse's micro-physics plugins and the XAMS "
            "plugins in xamssim/plugins/. strax computes only what is missing and stores each product under a hash of the "
-           f"plugin versions and settings (run/strax/). Settings below are those of {esc(EXAMPLE_RUN.name)}."),
+           f"plugin versions and settings (<data>/strax/). Settings below are those of {esc(EXAMPLE_RUN.name)}."),
          img("chain.png", "Figure 2. The chain as implemented (lineage clustering). Purple: XAMS plugins, blue: fuse. Read "
              "from the plugin classes.", width=0.82 * W),
          table(plug_rows, [6 * mm, 26 * mm, 40 * mm, 26 * mm, 42 * mm, W - 140 * mm]),

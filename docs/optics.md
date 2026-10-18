@@ -1,7 +1,7 @@
 # Optics and parameters
 
 All optical properties are flat over 6–8 eV (178 nm). Free parameters have a range in `config/materials.yaml` (`optics`); unless set,
-`make_config.py` takes the middle of the range.
+`xamssim/g4config.py` takes the middle of the range.
 
 | quantity | value / range | config path |
 |---|---|---|

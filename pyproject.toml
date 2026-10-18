@@ -17,7 +17,7 @@ test = ["pytest"]
 xamssim = "xamssim.cli:main"
 
 [tool.setuptools]
-packages = ["xamssim"]
+packages = ["xamssim", "xamssim.plugins"]
 
 [tool.setuptools.dynamic]
 version = {attr = "xamssim.__version__"}

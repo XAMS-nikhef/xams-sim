@@ -8,24 +8,25 @@ conda activate xamssim && cd ~/Documents/XAMS/xams-sim
 
 | command | does | output |
 |---|---|---|
-| `xamssim particle config/runs/s2_cs137_raised.yaml` | Cs-137 decays at the source position → every energy deposit in the xenon | `run/g4/s2_cs137_raised/deposits.*` |
+| `xamssim particle config/runs/cs137_cmb50_001.yaml` | Cs-137 decays at the source position → every energy deposit in the xenon | `<data>/g4/cs137_cmb50_001/deposits.*` |
 | `xamssim particle config/runs/vis_cs137.yaml --vis` | particle viewer; type `/run/beamOn 10` | (window) |
-| `xamssim optical optical/scans/fit_s2.yaml` | optical scan: S2 photons for a grid of optical parameters | `run/scans/fit_s2/` |
-| `xamssim optical optical/scans/fit_s2.yaml --vis` | optical viewer for that scan (point 0; `--point N`, numbers from `--list`); type `/run/beamOn 20` | (window) |
-| `xamssim chain config/runs/s2_cs137_raised.yaml --target quanta` | clusters, local field and NEST quanta for those deposits | `run/strax/` |
+| `xamssim optical config/scans/example_s2.yaml` | example optical scan: S2 photons for two PTFE reflectivities | `<data>/scans/example_s2/` |
+| `xamssim optical config/scans/example_s2.yaml --vis` | optical viewer for that scan (point 0; `--point N`, numbers from `--list`); type `/run/beamOn 20` | (window) |
+| `xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta` | clusters, local field and NEST quanta for those deposits | `<data>/strax/` |
 | `xamssim status config/runs/<run>.yaml` | the resolved run (state, voltages, source), input hashes, which maps exist | (text) |
 | `xamssim maps --state cmb50` | map status of one detector state | (text) |
 | `xamssim validate config/runs/*.yaml` | check run files and everything they refer to | (text) |
-| `efield/comsol/run.sh --cases cmb50` | COMSOL field model of the TPC for one HV case | `efield/comsol/build/`, `results/efield/comsol/` |
-| `xamssim maps --state cmb50 --export field` | field map of a state for the chain | `maps/field/<key>/` |
+| `efield/comsol/run.sh --states cmb50` | COMSOL field model of the TPC for a state (HV case + liquid level) | `efield/comsol/build/`, `<data>/efield/comsol/` |
+| `xamssim maps --state cmb50 --export field` | field map of a state for the chain | `<data>/maps/field/<key>/` |
 
 ## A first particle run
 
 ```bash
-xamssim particle config/runs/s2_cs137_raised.yaml --events 100000
+xamssim particle config/runs/cs137_cmb50_001.yaml --events 100000
 python -c "
 from xamssim import g4io
-h, dep, ev = g4io.read('run/g4/s2_cs137_raised')
+from xamssim.config import DATA
+h, dep, ev = g4io.read(DATA / 'g4' / 'cs137_cmb50_001')
 print(h['counts'], h['codes']['particle'])
 print('events with energy in the liquid:', (ev['edep_lxe'] > 0).sum())"
 ```

@@ -16,12 +16,16 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+import os
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config"
+# where all outputs live (Geant4 runs, strax data, optical scans, maps, COMSOL results, check scratch): next to the
+# code, in the simulations folder (studies), not in this repository; override with $XAMSSIM_DATA
+DATA = Path(os.environ.get("XAMSSIM_DATA", ROOT.parent / "simulations" / "data")).resolve()
 HV_CASES = ROOT / "efield" / "cases.yaml"
 
 # data products of the chain, in order; `stop_after` must be one of them

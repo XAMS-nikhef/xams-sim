@@ -1,14 +1,15 @@
 """xams-sim command line — everything is started from the `xamssim` conda env (the Geant4 program xamsg4 is run in the
-`g4` env automatically; `g4` only has to be activated to compile).
+`g4` env automatically; `g4` only has to be activated to compile). <data> = xamssim.config.DATA
+(default ../simulations/data, or $XAMSSIM_DATA).
 
-    xamssim particle config/runs/<run>.yaml [--events N]   Geant4 particle mode -> run/g4/<run>/deposits.*  (plan S2)
+    xamssim particle config/runs/<run>.yaml [--events N]   Geant4 particle mode -> <data>/g4/<run>/deposits.*  (plan S2)
     xamssim particle config/runs/vis_cs137.yaml --vis      particle viewer: look at a few events
-    xamssim optical  optical/scans/<scan>.yaml [--jobs 8]  optical simulation (scan) -> run/scans/<scan>/
-    xamssim optical  optical/scans/<scan>.yaml --vis       optical viewer for that scan (--point N; --list)
-    xamssim chain    config/runs/<run>.yaml [--target quanta]  fuse micro-physics on run/g4/<run> -> run/strax/ (S3)
+    xamssim optical  <scan>.yaml           [--jobs 8]  optical simulation (scan) -> <data>/scans/<scan>/
+    xamssim optical  <scan>.yaml           --vis       optical viewer for that scan (--point N; --list)
+    xamssim chain    config/runs/<run>.yaml [--target quanta]  fuse micro-physics on <data>/g4/<run> -> <data>/strax/ (S3)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
-    xamssim maps     --state cmb50 --export field          3D COMSOL field of the state -> maps/ (registered)
+    xamssim maps     --state cmb50 --export field          3D COMSOL field of the state -> <data>/maps/ (registered)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
 """
 from __future__ import annotations
@@ -122,7 +123,7 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--events", type=int, help="number of primaries (default: n_events of the run)")
     p.add_argument("--seed", type=int)
-    p.add_argument("--out", help="output folder (default run/g4/<run name>)")
+    p.add_argument("--out", help="output folder (default <data>/g4/<run name>)")
     p.add_argument("--dry-run", action="store_true", help="write config.json and run.mac, do not run Geant4")
     p.add_argument("--vis", action="store_true", help="interactive Qt viewer (then /run/beamOn N in the window)")
     p.set_defaults(func=cmd_particle)
@@ -130,10 +131,10 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--target", choices=["geant4_interactions", "clustered_interactions", "quanta"],
                    help="last product (default: the run's stop_after, at most the last implemented one)")
-    p.add_argument("--g4", help="Geant4 output folder (default run/g4/<run name>)")
+    p.add_argument("--g4", help="Geant4 output folder (default <data>/g4/<run name>)")
     p.set_defaults(func=cmd_chain)
     p = sub.add_parser("optical", help="optical simulation from a scan file: production, or --vis viewer")
-    p.add_argument("scan", help="scan file, e.g. optical/scans/fit_s2.yaml")
+    p.add_argument("scan", help="scan file, e.g. config/scans/example_s2.yaml")
     p.add_argument("--jobs", type=int, default=8)
     p.add_argument("--dry", action="store_true", help="list the scan points, do not run")
     p.add_argument("--vis", action="store_true", help="interactive Qt viewer for one point of the scan")

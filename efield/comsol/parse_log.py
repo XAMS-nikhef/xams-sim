@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Parse the COMSOL batch log of XAMS_efield (CHECK and MAP lines) into
-results/efield/comsol/checks.json (point checks per case + derived numbers) and maps_rz.npz (the (r, z) plane through
+<data>/efield/comsol/checks.json (point checks per case + derived numbers) and maps_rz.npz (the (r, z) plane through
 the first SiPM: r > 0 towards the SiPM, r < 0 the opposite side; V, E_r, E_z per case on a regular grid).
 
     python efield/comsol/parse_log.py efield/comsol/build/run.log
@@ -14,7 +14,8 @@ import numpy as np
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "results" / "efield" / "comsol"
+from xamssim.config import DATA  # noqa: E402  (outputs: ../simulations/data)
+OUT = DATA / "efield" / "comsol"
 
 
 def main():
@@ -48,7 +49,7 @@ def main():
         res["cases"][n] = d
     if not res["cases"]:
         # failed solve (licence, model error): keep the results of the last good run
-        raise SystemExit("no CHECK lines in the log (solve failed?); results/efield/comsol/ left unchanged")
+        raise SystemExit("no CHECK lines in the log (solve failed?); <data>/efield/comsol/ left unchanged")
     json.dump(res, open(OUT / "checks.json", "w"), indent=1)
     if maps:
         out = {}

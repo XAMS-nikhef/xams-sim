@@ -1,6 +1,7 @@
 """Map registry: which maps exist for a detector state, where they are, and how to make the missing ones.
 
-Maps live in `maps/` (not in git) and are listed in `maps/manifest.json`:
+Maps live in `<data>/maps/` (xamssim.config.DATA, default ../simulations/data; not in git) and are listed in
+`<data>/maps/manifest.json`:
 
     {"maps": [{"kind": "field", "key": "<12-char input hash>", "state": "cmb50", "files": ["field/<key>/field.npz"],
                "producer": "efield (COMSOL)", "producer_version": "<git describe>", "created": "<ISO time>",
@@ -17,9 +18,9 @@ import json
 import subprocess
 from pathlib import Path
 
-from .config import PRODUCTS, ROOT, Resolved
+from .config import DATA, PRODUCTS, ROOT, Resolved
 
-MAPS = ROOT / "maps"
+MAPS = DATA / "maps"
 MANIFEST = MAPS / "manifest.json"
 
 # kind -> producer, command template, step of the plan that adds the export to the registry, first product needing it
@@ -31,9 +32,9 @@ KINDS = {
                   needed_for="drifted_electrons"),
     "extraction_el": dict(producer="efield mesh cell (COMSOL)", make="efield/comsol/run_cell.sh stack --states {state}",
                           export_step="S5", needed_for="extracted_electrons"),
-    "s1_light": dict(producer="optical (Geant4 optical scan)", make="python optical/run_scan.py optical/scans/fit_s1.yaml",
+    "s1_light": dict(producer="optical (Geant4 optical scan)", make="(S6: light-map scan, xamssim optical)",
                      export_step="S6", needed_for="photoelectrons"),
-    "s2_pattern": dict(producer="optical (Geant4 optical scan)", make="python optical/run_scan.py optical/scans/fit_s2.yaml",
+    "s2_pattern": dict(producer="optical (Geant4 optical scan)", make="(S6: light-map scan, xamssim optical)",
                        export_step="S6", needed_for="photoelectrons"),
 }
 

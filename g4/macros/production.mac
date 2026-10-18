@@ -1,4 +1,4 @@
-# Production run (optical/run_scan.py fills {shape} {rmax} {n}): S1 or S2 light, uniform in its source volume.
+# Production run (xamssim.run_scan fills {shape} {rmax} {n}): S1 or S2 light, uniform in its source volume.
 /run/verbose 0
 /run/printProgress 0
 /run/initialize

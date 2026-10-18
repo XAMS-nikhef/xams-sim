@@ -78,7 +78,7 @@ def test_fieldmap_3d(tmp_path):
 
 
 def test_volumes_and_physics():
-    res = config.resolve(config.ROOT / "config" / "runs" / "s2_cs137_raised.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
     v = chain.volumes(res)
     assert v["xenonnt_z_gate_mesh"] == 0 and v["xenonnt_z_cathode"] == pytest.approx(-5.18)
     assert v["xenonnt_sensitive_volume_radius"] == pytest.approx(3.1)
@@ -92,7 +92,7 @@ def test_volumes_and_physics():
 def test_chain_end_to_end(tmp_path):
     pytest.importorskip("fuse")
     write_g4(tmp_path / "g4", ROWS, 6)
-    st, rid = chain.context(config.ROOT / "config" / "runs" / "s2_cs137_raised.yaml", g4_out=tmp_path / "g4",
+    st, rid = chain.context(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml", g4_out=tmp_path / "g4",
                             store=tmp_path / "strax", xams_efield_map=str(flat_map(tmp_path / "f.npz")))
     s = st.get_array(rid, "microphysics_summary")
     assert set(s["eventid"]) == {0, 1, 2, 3, 4}                                # event 5: outside the field cage, dropped

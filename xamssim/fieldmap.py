@@ -5,7 +5,7 @@ case it was solved for. `read_comsol` starts a COMSOL client with the `mph` pack
 files, so its "File system access" preference does not matter), finds the solution of an HV case by its electrode
 voltages and evaluates V and E on a regular (x, y, z) grid in the frame of geometry.yaml (the data frame).
 
-Registry file `maps/field/<key>/efield_xyz.npz`:
+Registry file `<data>/maps/field/<key>/efield_xyz.npz`:
     x, y, z          grid axes [mm]
     V [V], Ex, Ey, Ez [V/cm]   shape (nx, ny, nz), float32
     case, voltages, electrodes, mph, mph_mtime   provenance
@@ -97,7 +97,7 @@ def read_comsol(case_name: str, level_mm: float, geometry: dict, mph_file: Path 
 
 
 def export(res: Resolved, mph_file: Path = MPH) -> dict:
-    """3D field of the state's HV case from the COMSOL model -> maps/field/<key>/efield_xyz.npz, registered."""
+    """3D field of the state's HV case from the COMSOL model -> <data>/maps/field/<key>/efield_xyz.npz, registered."""
     case = res.state["hv_case"]
     key = res.map_keys()["field"]
     d = read_comsol(case, res.state["liquid_level_mm"], res.geometry, mph_file)

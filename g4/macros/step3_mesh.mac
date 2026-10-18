@@ -1,5 +1,5 @@
 # Step 3 check: collimated beam (random points in a disc of 25 mm) through one mesh at z = 0 in liquid xenon
-# (geometry_mode test_mesh, bars black). Direction set by optical/check_step3.py through {px} {py} {pz} {dx} {dy} {dz}.
+# (geometry_mode test_mesh, bars black). Direction set by checks/check_step3.py through {px} {py} {pz} {dx} {dy} {dz}.
 /run/verbose 0
 /run/initialize
 /xamsg4/source/shape beam_disc

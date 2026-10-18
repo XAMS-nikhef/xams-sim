@@ -1,11 +1,11 @@
 """The simulation chain as a strax context: one run file -> every setting (plan S3: up to `quanta`).
 
-    xamssim chain config/runs/s2_cs137_raised.yaml                 # -> run/strax/, prints a summary
-    st, run_id = chain.context("config/runs/s2_cs137_raised.yaml")
+    xamssim chain config/runs/cs137_cmb50_001.yaml                 # -> <data>/strax/, prints a summary
+    st, run_id = chain.context("config/runs/cs137_cmb50_001.yaml")
     st.get_array(run_id, "microphysics_summary")
 
 Plugins (fuse 1.6.3 unless noted):
-    geant4_interactions      XamsG4Input (xamssim.plugins)  — run/g4/<run>/deposits.*
+    geant4_interactions      XamsG4Input (xamssim.plugins)  — <data>/g4/<run>/deposits.*
     clustered_interactions   LineageClustering + MergeLineage   (physics.clustering: lineage, default)
                              FindCluster + MergeCluster         (physics.clustering: dbscan)
     volume_properties, interactions_in_roi                      XamsVolumeProperties, XamsVolumeSelection (xamssim.plugins:
@@ -31,7 +31,7 @@ from __future__ import annotations
 import warnings
 from pathlib import Path
 
-from .config import ROOT, ConfigError, Resolved, resolve
+from .config import DATA, ROOT, ConfigError, Resolved, resolve
 
 # physics options of a run file and their defaults
 PHYSICS_DEFAULTS = {
@@ -45,7 +45,7 @@ PHYSICS_DEFAULTS = {
     "production_cut_mm": 0.1,          # Geant4 (particle mode), not used here
 }
 
-STORE = ROOT / "run" / "strax"
+STORE = DATA / "strax"
 
 
 def physics(res: Resolved) -> dict:
@@ -112,7 +112,7 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None) ->
 
 
 def g4_dir(res: Resolved) -> Path:
-    return ROOT / "run" / "g4" / res.run_path.stem
+    return DATA / "g4" / res.run_path.stem
 
 
 def context(run_path, g4_out=None, store=STORE, **overrides):

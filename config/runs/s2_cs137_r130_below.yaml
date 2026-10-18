@@ -1,8 +1,0 @@
-# S2 check run: Cs-137 point source 130 mm from the axis (outside the outer vessel), 30 mm below the cathode (S2 check: candidate September height)
-state: sept
-source: cs137_r130_below
-n_events: 2000000
-seed: 2
-stop_after: geant4_interactions
-physics:
-  clustering: lineage

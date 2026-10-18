@@ -25,14 +25,14 @@ planes, in V. The field-shaping rings follow from the resistor chain. Detector s
 ## Full-TPC model
 
 ```bash
-efield/comsol/run.sh --cases sept,cmb50,refa [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm]
+efield/comsol/run.sh --states sept,cmb50,refa [--cases X --level L] [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm]
 python efield/comsol/plot_rz.py [case ...]           # (r, z) plane through a SiPM with drift lines
 python efield/comsol/plot_compare.py cmb_m100 cmb50 cmb cmb_p100   # half-planes side by side, catchment edge
 ```
 
 `run.sh` writes the Java model (`make_model.py` → `efield/comsol/build/XAMS_efield.java`), compiles it, solves all
 listed cases in one sweep (~1.5 min, ~2.3 M elements), saves `build/XAMS_efield.mph` (open it in the COMSOL GUI) and
-parses the log (`parse_log.py`) into `results/efield/comsol/checks.json` and `maps_rz.npz` (a failed solve, e.g. no
+parses the log (`parse_log.py`) into `<data>/efield/comsol/checks.json` and `maps_rz.npz` (a failed solve, e.g. no
 licence, leaves both unchanged). The 3D field of a solved case goes to the [simulation chain](chain.md#field-map) with
 `xamssim maps --state <state> --export field`, which reads the `.mph` through COMSOL's API (package `mph`). All
 geometry, including the SiPMs, comes from `config/geometry.yaml`; `cases.yaml` holds only voltages.
@@ -48,16 +48,16 @@ in the extraction gap, chain current, wall potential at the SiPM height.
 ## Mesh cell (gate, cathode, gate + anode)
 
 ```bash
-efield/comsol/run_cell.sh gate    --cases sept,refa,cmb50       # drift region below, extraction above
-efield/comsol/run_cell.sh cathode --cases sept,cmb50 --map3d    # drift region above, reverse field below
-efield/comsol/run_cell.sh stack   --cases sept                  # gate + liquid surface + anode + top screen (aligned)
-efield/comsol/run_cell.sh stackx  --cases sept                  # the same, anode shifted half a pitch in x
+efield/comsol/run_cell.sh gate    --states sept,refa,cmb50      # drift region below, extraction above
+efield/comsol/run_cell.sh cathode --states sept,cmb50 --map3d    # drift region above, reverse field below
+efield/comsol/run_cell.sh stack   --states sept                 # gate + liquid surface + anode + top screen (aligned)
+efield/comsol/run_cell.sh stackx  --states sept                 # the same, anode shifted half a pitch in x
 python efield/comsol/plot_cell3d.py cathode sept                # interactive 3D view (HTML; needs --map3d)
 ```
 
 A quarter of one cell of the etched mesh (holes 2.45 mm, bars 0.15 × 0.15 mm, pitch 2.6 mm) with mirror-symmetric
 side walls is exact for the periodic mesh. The drift side has a fixed field (not a fixed potential), so field
-leaking through the holes shows up correctly. Outputs: `results/efield/comsol/cell_<electrode>_<case>.png` (|E|,
+leaking through the holes shows up correctly. Outputs: `<data>/efield/comsol/cell_<electrode>_<case>.png` (|E|,
 equipotentials, drift lines through the hole centres), `cell_<electrode>.json`, and with `--map3d` the 3D views
 `cell3d_*.html` (10–25 MB, not in git).
 

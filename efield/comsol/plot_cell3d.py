@@ -6,7 +6,7 @@ field is taken as uniform). Mesh bars are drawn as grey blocks. Drift lines (ele
   cathode: two layers above the cathode (z = +0.6 and +1.8 mm): lines that go up into the drift region (blue) and lines
            that are pulled down through the holes into the reverse region (red = lost for S2)
 
-    python efield/comsol/plot_cell3d.py gate|cathode [case ...]  ->  results/efield/comsol/cell3d_<electrode>_<case>.html
+    python efield/comsol/plot_cell3d.py gate|cathode [case ...]  ->  <data>/efield/comsol/cell3d_<electrode>_<case>.html
 """
 import sys
 from collections import defaultdict
@@ -18,8 +18,9 @@ import yaml
 from scipy.interpolate import RegularGridInterpolator
 
 ROOT = Path(__file__).resolve().parents[2]
+from xamssim.config import DATA  # noqa: E402  (outputs: ../simulations/data)
 BUILD = ROOT / "efield" / "comsol" / "build"
-OUT = ROOT / "results" / "efield" / "comsol"
+OUT = DATA / "efield" / "comsol"
 
 
 def fold(x, h):

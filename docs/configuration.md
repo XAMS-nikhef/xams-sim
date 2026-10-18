@@ -49,7 +49,7 @@ optics:                   # refractive indices, Rayleigh / absorption lengths, r
   ...
 ```
 
-Used by: Geant4 (through `optical/make_config.py`), the COMSOL generators (permittivities), xamssim (validation,
+Used by: Geant4 (through `xamssim/g4config.py`), the COMSOL generators (permittivities), xamssim (validation,
 map hashes), fuse settings (densities). Every `material:` in `geometry.yaml` must exist here. Optics: [Optics](optics.md).
 
 ## Detector states — `config/states/<name>.yaml`
@@ -85,7 +85,7 @@ chain, the SiPM model and which field maps to export. Shared by the states and t
 | `half_angle_deg`, `z_target_mm` | cone half angle and its target on the axis |
 | `activity_bq`, `collimator`, `description` | bookkeeping (collimator not yet modelled) |
 
-Existing: `cs137_raised`, `cs137_sept` (position unknown), `cs137_r130_cathode`, `cs137_r130_below`,
+Existing: `cs137_raised`, `cs137_r130_cathode`, `cs137_r130_below`,
 `cs137_vis_cone` (viewer).
 
 ## Simulation runs — `config/runs/<name>.yaml`
@@ -111,6 +111,6 @@ Unknown keys are rejected.
 
 ## The map registry — `maps/`
 
-Generated maps (not in git) are listed in `maps/manifest.json` with their key, files, producer and version. The
+Generated maps (not in git) are listed in `<data>/maps/manifest.json` with their key, files, producer and version. The
 registry never starts a slow producer (COMSOL, optical scans); for a missing map it prints the command. The export
 of maps into the registry comes with the chain steps (field and drift S4, extraction S5, light S6).

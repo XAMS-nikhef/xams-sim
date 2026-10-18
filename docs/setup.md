@@ -90,9 +90,9 @@ xamssim --version
 ```bash
 conda activate xamssim && cd ~/Documents/XAMS/xams-sim
 python -m pytest tests                                   # Python package (all pass)
-python optical/check_step1.py                            # optical mode via g4bin: STEP 1 CHECK PASSED
-xamssim particle config/runs/s2_cs137_raised.yaml --events 20000 --out /tmp/xamssim_test   # particle mode
-xamssim optical optical/scans/fit_s2.yaml --vis         # the viewer opens (Qt window)
+python checks/check_step1.py                            # optical mode via g4bin: STEP 1 CHECK PASSED
+xamssim particle config/runs/cs137_cmb50_001.yaml --events 20000 --out /tmp/xamssim_test   # particle mode
+xamssim optical config/scans/example_s2.yaml --vis         # the viewer opens (Qt window)
 mkdocs serve                                             # this manual at http://127.0.0.1:8000
 ```
 
@@ -102,9 +102,10 @@ mkdocs serve                                             # this manual at http:/
   (on the lab Mac via the UvA network licence server, which must be reachable).
 - No COMSOL configuration is needed: the scripts generate the models, `comsol batch` solves them. Only the 3D SiPM
   box exports need *Preferences → Security → File system access: All files* (see [Electric field](efield.md)).
-- Check without solving: `python efield/comsol/make_model.py --cases cmb50` (writes the Java model to
-  `efield/comsol/build/`). A real solve (`efield/comsol/run.sh --cases …`, ~1.5 min) rewrites the files in
-  `results/efield/comsol/`, so pass all the cases you want to keep.
+- Check without solving: `python efield/comsol/make_model.py --states cmb50` (writes the Java model to
+  `efield/comsol/build/`). A real solve (`efield/comsol/run.sh --states …`, ~2 min) rewrites `build/XAMS_efield.mph`
+  and the files in `<data>/efield/comsol/`, so pass all the states you need in one go (same liquid level).
+- The licence is needed only to solve and to export a field map; the chain reads the exported map without COMSOL.
 
 ## Updating
 

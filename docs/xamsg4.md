@@ -10,7 +10,7 @@ xamsg4 [-m optical|particle] -c config.json [-o out.bin] [-s seed] [-d] [-v] [ma
 | option | meaning |
 |---|---|
 | `-m` | mode: `optical` (default) or `particle` |
-| `-c` | config (`config.json` from `optical/make_config.py`; for particle mode written by `xamssim particle`) |
+| `-c` | config (`config.json` from `xamssim/g4config.py`; for particle mode written by `xamssim particle`) |
 | `-o` | output file (optical: `.bin` + `.bin.summary.json` + `.bin.volumes.json`; particle: `.bin`, `.events.bin`, `.json`) |
 | `-s` | random seed |
 | `-d` | optical mode: records only for detected photons |
@@ -41,7 +41,7 @@ Optical mode, source (`/xamsg4/source/...`):
 | `rmax`, `zmin`, `zmax`, `position`, `direction` | parameters (lengths with unit, e.g. `30 mm`) |
 
 Both modes: `/xamsg4/section <file> <xz|yz|xy> <offset> <u_min> <u_max> <v_min> <v_max> <step>` (mm) writes the
-volume at every grid point (exact cross sections; `optical/plot_section.py` draws them). Standard Geant4 commands
+volume at every grid point (exact cross sections; `xamssim/section.py` draws them). Standard Geant4 commands
 (`/run/beamOn`, `/tracking/verbose`, `/vis/...`) work as usual.
 
 ## Config keys read by the program
@@ -49,7 +49,7 @@ volume at every grid point (exact cross sections; `optical/plot_section.py` draw
 | key | meaning |
 |---|---|
 | `geometry_mode` | `xams` (default) or a test geometry: `test_box`, `test_interface`, `test_mesh`, `test_surface` (used by the checks) |
-| geometry sections | as in `geometry.yaml` (copied by `make_config.py`), plus `liquid.surface_z_mm` |
+| geometry sections | as in `geometry.yaml` (copied by `xamssim/g4config.py`), plus `liquid.surface_z_mm` |
 | `materials` | densities, temperatures, pressures, NIST names, compositions (from `materials.yaml`) |
 | `optics` | one value per optical parameter (from `materials.yaml`, free ones at mid-range unless set) |
 | `surfaces` | `0`: PTFE, steel and copper black (a check) |

@@ -4,7 +4,6 @@ docs_dir: docs
 strict: true
 exclude_docs: |
   .DS_Store
-  results/**/*.json
 
 theme:
   name: material

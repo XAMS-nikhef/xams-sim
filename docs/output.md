@@ -3,7 +3,7 @@
 All binary files are fixed-size little-endian records, readable with `numpy.fromfile`; no ROOT. Coordinates in mm in
 the geometry frame = the data frame (z = 0 at the gate foil, z up; +x towards top-PMT sectors I / III, +y towards I / II).
 
-## Particle mode — `run/g4/<run>/`
+## Particle mode — `<data>/g4/<run>/`
 
 ### `deposits.bin` — one record per energy deposit (46 bytes)
 
@@ -67,12 +67,12 @@ Volume index → name: `<mesh>Foil` (steel of a mesh foil), `<mesh>Hole` (an etc
 `*Body`, `SiPM`, `Liquid`, `Gas`, `Vessel`, `Bucket`, `World`; `<mesh>` = top_screen, anode, gate, cathode,
 bottom_screen.
 
-### Scan folders — `run/scans/<name>/`
+### Scan folders — `<data>/scans/<name>/`
 
 `points.json` (index: parameters of every point), per point `point_<i>.json` (its config) and per part
 `point_<i>_<k>.bin` (+ the two JSON files, `.log`, `.mac`), `timing.json`.
 
-## Electric field — `results/efield/comsol/`
+## Electric field — `<data>/efield/comsol/`
 
 `checks.json` (built-in checks per case), `maps_rz.npz` (V, E_r, E_z on the (r, z) plane through the first SiPM per
 case; `r`, `z` axes), `cell_<electrode>.json`, plots. The solved models are `efield/comsol/build/*.mph`.

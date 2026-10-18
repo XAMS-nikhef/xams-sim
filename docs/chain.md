@@ -6,14 +6,14 @@ setting comes from the run file and what it points to. Later steps of the [roadm
 extraction, light, waveforms) add plugins to the same context.
 
 ```bash
-xamssim particle config/runs/s2_cs137_raised.yaml             # Geant4 first -> run/g4/s2_cs137_raised/
+xamssim particle config/runs/cs137_cmb50_001.yaml             # Geant4 first -> <data>/g4/cs137_cmb50_001/
 xamssim maps --state cmb50 --export field                      # once per state: the field map (below)
-xamssim chain config/runs/s2_cs137_raised.yaml --target quanta # -> run/strax/
+xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax/
 ```
 
 `--target` is the last product: `geant4_interactions`, `clustered_interactions` or `quanta`. Without it the chain
 stops at the run's `stop_after`, or at the last product implemented so far. `--g4 DIR` reads Geant4 output from
-somewhere other than `run/g4/<run name>/`.
+somewhere other than `<data>/g4/<run name>/`.
 
 ## Plugins
 
@@ -38,7 +38,7 @@ Geant4 11 process name `RadioactiveDecay` → `RadioactiveDecayBase` (the name f
 | `xenonnt_z_bottom_pmts`, `xenonnt_z_top_pmts` | PMT window z | `geometry.yaml` (`pmts`) |
 | `xenonnt_z_lxe` | gate z + liquid level | state (`liquid_level_mm`) |
 | `xenon_density_tpc`, `_below_cathode`, `_gas_phase` | liquid / gas xenon density | `materials.yaml` |
-| `xams_efield_map` | `maps/field/<key>/efield_xyz.npz` | map registry, state's field key |
+| `xams_efield_map` | `<data>/maps/field/<key>/efield_xyz.npz` | map registry, state's field key |
 | `nest_er_yields_parameters`, `nest_nr_yields_parameters`, `nest_width_parameters` | `-1`, `-1`, `{}` (NEST defaults) | fixed |
 | clustering, `source_rate` | run file `physics` block | below |
 
@@ -75,8 +75,8 @@ Unknown keys are rejected. The values above are the defaults (`xamssim.chain.PHY
 ## Field map
 
 ```bash
-efield/comsol/run.sh --cases sept                 # solve the COMSOL model for the state's HV case (~2 min)
-xamssim maps --state sept --export field          # 3D field from the solved model -> maps/field/<key>/ (~30 s)
+efield/comsol/run.sh --states sept                # solve the COMSOL model for the state's HV case (~2 min)
+xamssim maps --state sept --export field          # 3D field from the solved model -> <data>/maps/field/<key>/ (~30 s)
 ```
 
 The export opens the solved model (`efield/comsol/build/XAMS_efield.mph`) through COMSOL's own API (Python package
@@ -91,15 +91,15 @@ permittivities), so states with the same inputs share it and any change of an in
 
 ## Output and reading it
 
-strax data in `run/strax/`, run id = the run key (`xamssim status <run>`). The stored data depend on the plugin
+strax data in `<data>/strax/`, run id = the run key (`xamssim status <run>`). The stored data depend on the plugin
 settings (strax lineage), so changing an option and rerunning gives new data next to the old.
 
 ```python
 from xamssim import chain
-st, run_id = chain.context("config/runs/s2_cs137_raised.yaml")
+st, run_id = chain.context("config/runs/cs137_cmb50_001.yaml")
 s = st.get_array(run_id, "microphysics_summary")     # x, y, z [cm], ed [keV], nestid, vol_id, e_field, photons, electrons
 c = st.get_array(run_id, ("clustered_interactions", "volume_properties"))   # all clusters, also outside the volumes
-st2, _ = chain.context("config/runs/s2_cs137_raised.yaml", time_threshold=100, entry_stop=100000)  # option overrides
+st2, _ = chain.context("config/runs/cs137_cmb50_001.yaml", time_threshold=100, entry_stop=100000)  # option overrides
 ```
 
 ## Notes

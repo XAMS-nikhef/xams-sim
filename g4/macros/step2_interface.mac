@@ -1,4 +1,4 @@
-# Step 2 check: beam from inside the liquid onto the liquid-gas surface at z = 0 (angle set by optical/check_step2.py
+# Step 2 check: beam from inside the liquid onto the liquid-gas surface at z = 0 (angle set by checks/check_step2.py
 # through the aliases {px}, {pz}, {dx}, {dz}). Reflected photons end at the bottom, transmitted ones at the top.
 /run/verbose 0
 /run/initialize

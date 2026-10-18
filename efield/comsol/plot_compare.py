@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Side-by-side (r, z) half-planes towards the SiPM for several cases (results/efield/comsol/maps_rz.npz): |E| and
+"""Side-by-side (r, z) half-planes towards the SiPM for several cases (<data>/efield/comsol/maps_rz.npz): |E| and
 electron drift lines (white: reach the gate, red: end on the wall / SiPM). Also the catchment: per start depth the
 smallest start radius whose drift line ends on the wall / SiPM (fine radial scan).
 
-    python efield/comsol/plot_compare.py cmb_m300 cmb_m100 cmb cmb_p100 cmb_p300 sept  ->  results/efield/comsol/compare_<first>_<last>.png
+    python efield/comsol/plot_compare.py cmb_m300 cmb_m100 cmb cmb_p100 cmb_p300 sept  ->  <data>/efield/comsol/compare_<first>_<last>.png
 """
 import json
 import sys
@@ -21,7 +21,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from plot_rz import drift  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "results" / "efield" / "comsol"
+from xamssim.config import DATA  # noqa: E402  (outputs: ../simulations/data)
+OUT = DATA / "efield" / "comsol"
 
 
 def main():

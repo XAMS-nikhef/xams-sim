@@ -11,11 +11,11 @@ xamssim particle config/runs/<run>.yaml [--events N] [--seed S] [--out DIR] [--d
 |---|---|
 | `--events N` | number of primaries (default: `n_events` of the run) |
 | `--seed S` | random seed (default: `seed` of the run) |
-| `--out DIR` | output folder (default `run/g4/<run name>/`) |
+| `--out DIR` | output folder (default `<data>/g4/<run name>/`) |
 | `--dry-run` | write `config.json` and `run.mac`, print the command, do not run Geant4 |
 | `--vis` | interactive viewer instead of a production run ([viewers](viewers.md)) |
 
-What happens: the run is resolved (state, source, geometry, materials); `optical/make_config.py` writes the
+What happens: the run is resolved (state, source, geometry, materials); `xamssim/g4config.py` writes the
 geometry / materials part of `config.json` for the liquid level of the state; the source, `mode: particle`, the world
 size and run metadata are added; `run.mac` initialises and starts N events; `xamsg4 -m particle` runs in the `g4`
 env; its log goes to `g4.log`. Speed on the Mac: 2·10⁶ Cs-137 decays in ~35 s.

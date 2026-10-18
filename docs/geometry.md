@@ -44,7 +44,7 @@ the anode ring sits in the anode–top-screen gap; the copper rings are hidden b
 ![The cryostat: inner vessel (gas) in the outer vessel (vacuum), flanges simplified](img/geometry_cryostat_xz.png){ width="48%" }
 ![Viewer start view (cut open)](img/geometry_view_cut_v4.png){ width="48%" }
 
-Pictures made with `/xamsg4/section` + `optical/plot_section.py` and the viewer (geometry version 4).
+Pictures made with `/xamsg4/section` + `xamssim/section.py` and the viewer (geometry version 4).
 
 ## Not (yet) in the model
 

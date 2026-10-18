@@ -5,14 +5,9 @@ optical/examples/*.png
 site/
 build_dev/
 .DS_Store
-# simulation caches (rebuilt from run/scans)
-results/**/*.npz
-# generated notes (notes/make_note.py); kept locally, not in git
+# generated explainer note (notes/make_overview_note.py)
 notes/*.pdf
-# interactive 3D views (efield/comsol/plot_cell3d.py), 10-25 MB each: regenerate
-results/efield/comsol/cell3d_*.html
-
-# xams-sim generated maps (only the README is tracked)
-maps/*
-!maps/README.md
+# outputs belong in ../simulations/data (xamssim.config.DATA); old local outputs
+maps/
+results/
 *.egg-info/

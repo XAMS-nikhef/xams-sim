@@ -1,5 +1,5 @@
 # Step 4 check: beam in liquid xenon onto a reflecting slab (top face at z = 0, geometry_mode test_surface).
-# Direction set by optical/check_step4.py through {px} {pz} {dx} {dz}; the beam hits the origin.
+# Direction set by checks/check_step4.py through {px} {pz} {dx} {dz}; the beam hits the origin.
 /run/verbose 0
 /run/initialize
 /xamsg4/source/shape beam

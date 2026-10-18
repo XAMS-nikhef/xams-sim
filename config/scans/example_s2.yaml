@@ -1,0 +1,13 @@
+# Example optical scan (manual): S2 light from the gas gap for two PTFE reflectivities, nominal liquid level.
+# xamssim optical config/scans/example_s2.yaml [--jobs 8]   ->  <data>/scans/example_s2/
+# Light-map scans of the chain come with step S6 of the roadmap.
+name: example_s2
+source: s2
+rmax_mm: 30
+photons: 1000000
+chunks: 4
+seed: 1
+base:
+  level: 4.0
+grid:
+  optics.ptfe_in_liquid.reflectivity: [0.90, 0.99]

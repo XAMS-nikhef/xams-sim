@@ -1,11 +1,11 @@
 """Geant4 particle mode for a simulation run (plan S2).
 
-    xamssim particle config/runs/s2_cs137_raised.yaml [--events N] [--seed S] [--out run/g4/<name>] [--dry-run]
+    xamssim particle config/runs/cs137_cmb50_001.yaml [--events N] [--seed S] [--out <data>/g4/<name>] [--dry-run]
     xamssim particle config/runs/vis_cs137.yaml --vis      interactive viewer (Qt): /run/beamOn N in the window
 
-Steps: resolve the run (config.py) -> config.json from geometry.yaml + materials.yaml (optical/make_config.py, liquid
+Steps: resolve the run (config.py) -> config.json from geometry.yaml + materials.yaml (xamssim.g4config, liquid
 level of the state) + mode "particle" + the source -> run.mac -> `xamsg4 -m particle` (started in the Geant4 env by
-g4bin) -> run/g4/<name>/deposits.{bin,events.bin,json} + g4.log. Read the output with `xamssim.g4io.read(<dir>)`.
+g4bin) -> <data>/g4/<name>/deposits.{bin,events.bin,json} + g4.log. Read the output with `xamssim.g4io.read(<dir>)`.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 
 from . import g4bin
-from .config import ROOT, ConfigError, Resolved, resolve
+from .config import DATA, ROOT, ConfigError, Resolved, resolve
 
 # Z of the elements of common calibration sources (fallback: periodictable)
 Z = {"H": 1, "Na": 11, "K": 19, "Co": 27, "Kr": 36, "Rb": 37, "Y": 39, "Cs": 55, "Ba": 56, "Eu": 63, "Pb": 82, "Bi": 83,
@@ -64,7 +64,7 @@ def source_config(res: Resolved) -> dict:
 def build(res: Resolved, out_dir: Path, n_events: int, seed: int) -> tuple[Path, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     cfg_path = out_dir / "config.json"
-    subprocess.run([sys.executable, str(ROOT / "optical" / "make_config.py"), "--level", str(res.state["liquid_level_mm"]),
+    subprocess.run([sys.executable, "-m", "xamssim.g4config", "--level", str(res.state["liquid_level_mm"]),
                     "--out", str(cfg_path)], check=True, capture_output=True, text=True)
     cfg = json.loads(cfg_path.read_text())
     src = source_config(res)
@@ -90,7 +90,7 @@ def build(res: Resolved, out_dir: Path, n_events: int, seed: int) -> tuple[Path,
 def vis(run_path, out_dir=None) -> None:
     """Interactive Qt session in particle mode (viewer macro g4/macros/vis_particle.mac); /run/beamOn N in the window."""
     res = resolve(run_path)
-    out = (Path(out_dir) if out_dir else ROOT / "run" / "g4" / (Path(run_path).stem + "_vis")).resolve()
+    out = (Path(out_dir) if out_dir else DATA / "g4" / (Path(run_path).stem + "_vis")).resolve()
     cfg, _ = build(res, out, int(res.run["n_events"]), int(res.run["seed"]))
     args = ["-m", "particle", "-c", cfg, "-o", out / "deposits.bin", "-s", res.run["seed"]]
     print("viewer:", " ".join(g4bin.command(args)), f"\n  in the window: /run/beamOn 10   (deposits of the shown events -> {out})")
@@ -101,7 +101,7 @@ def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=
     res = resolve(run_path)
     n = int(n_events or res.run["n_events"])
     sd = int(res.run["seed"] if seed is None else seed)
-    out = (Path(out_dir) if out_dir else ROOT / "run" / "g4" / Path(run_path).stem).resolve()
+    out = (Path(out_dir) if out_dir else DATA / "g4" / Path(run_path).stem).resolve()
     cfg, mac = build(res, out, n, sd)
     cmd = g4bin.command(["-m", "particle", "-c", cfg, "-o", out / "deposits.bin", "-s", sd, mac])
     print("run:", " ".join(cmd))

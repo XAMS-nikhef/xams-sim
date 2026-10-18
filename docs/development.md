@@ -9,16 +9,17 @@
 | `config/states/`, `config/sources/`, `config/runs/` | detector states, sources, simulation runs | yes, add your own |
 | `efield/cases.yaml` | HV cases | yes |
 | `g4/` | `xamsg4` (C++): `xamsg4.cc`, `src/`, `include/`, `macros/`, `CMakeLists.txt`; build in `g4/build/` (not in git) | new physics / parts |
-| `optical/` | optical tools: `make_config.py`, `run_scan.py`, readers, checks, study scripts, `scans/`, `targets/`, `examples/` | scans: yes |
+| `checks/` | slow Geant4 code checks (`check_step1–5.py`, reference scans in `checks/scans/`) | after C++ / geometry changes |
 | `efield/comsol/` | COMSOL generators, run scripts, parsers, plots; build in `efield/comsol/build/` | yes |
 | `xamssim/` | Python package (config, registry, launcher, particle, optical, reader, CLI) | yes |
 | `tests/` | pytest | with every change |
-| `validation/` | checks of the simulation against expectations / data | yes |
-| `maps/` | generated maps + manifest (only the README in git) | — |
-| `run/` | simulation output (not in git) | — |
-| `results/`, `notes/` | results and PDF notes of studies (not part of this manual) | — |
+| `notes/` | explainer note of the program (`make_overview_note.py`, generated from the code; figures in `notes/figures/`) | with the code |
 | `docs/`, `mkdocs.yml` | this manual | yes |
-| `xamssim_s0/` | the fuse read-through (S0 of the roadmap) | — |
+
+Not in this repository: **`../simulations/`** (own repository) holds the studies made with xams-sim — one dated folder
+per study with its run / scan files, analysis scripts, results and PDF notes — and **`../simulations/data/`** (not in
+git) all outputs: `g4/`, `strax/`, `scans/`, `maps/` (the registry), `efield/comsol/`, `checks/`. The code finds it
+through `xamssim.config.DATA` (`$XAMSSIM_DATA` to put it elsewhere).
 
 ## Adding things
 
@@ -39,14 +40,14 @@
 - One source per kind of information (geometry, materials, HV cases); no numbers copied between files.
 - No ROOT; binary records + JSON headers; maps `.npz` / HDF5 with a manifest.
 - Every run and map carries its provenance (config, seed, code version, run key).
-- When a roadmap step is done, update this manual in the same commit; results go into notes / `results/`, not here.
+- When a roadmap step is done, update this manual in the same commit; results go into a study folder of `../simulations/`, not here.
 
 ## Pitfalls
 
 - `xamsg4` needs the `g4` env: run it through `xamssim` / `g4bin`, or directly only inside `conda activate g4`.
 - After adding a `.cc` file or editing a macro: rerun `cmake -S g4 -B g4/build` (configure-time copies).
 - After moving the repository: rebuild `g4/build/` from scratch (absolute paths in the CMake cache).
-- Scans skip finished parts: after a geometry or code change move the old `run/scans/<name>/` away first.
+- Scans skip finished parts: after a geometry or code change move the old `<data>/scans/<name>/` away first.
 - Optical `-d` output holds only detected photons; use `n_photons` / the tally for fractions of all photons.
 - Particle-mode code tables are built per run: decode with the header of the same run.
 - One frame: `geometry.yaml` (v5) is in the data frame; Geant4, COMSOL and the chain use it as is. Optical scans made

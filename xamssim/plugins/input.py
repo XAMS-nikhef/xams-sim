@@ -13,7 +13,7 @@ Translation:
     track ids  kept int32 here (fuse's reshape only takes int32/64), stored as int16 by fuse; beyond int16: error
     time       ns (each event starts at the decay: xamsg4 resets the clock of decay products)
 
-Options as in ChunkInput: `path` is the run directory (`run/g4/<run>`), `file_name` the stem (`deposits`);
+Options as in ChunkInput: `path` is the run directory (`<data>/g4/<run>`), `file_name` the stem (`deposits`);
 `entry_start` / `entry_stop` select events by their index in the run.
 """
 from __future__ import annotations
@@ -74,7 +74,7 @@ class XamsG4Loader(file_loader):
 
 @export
 class XamsG4Input(ChunkInput):
-    """`geant4_interactions` from xamsg4 particle-mode output (run/g4/<run>/deposits.*)."""
+    """`geant4_interactions` from xamsg4 particle-mode output (<data>/g4/<run>/deposits.*)."""
 
     __version__ = "0.1.0"
 

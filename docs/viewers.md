@@ -5,8 +5,8 @@ bottom). The viewer takes the same file as the production run — a run file for
 — with `--vis` added.
 
 ```bash
-xamssim optical  optical/scans/fit_s2.yaml --list    # the scan points: number + parameter values
-xamssim optical  optical/scans/fit_s2.yaml --vis --point 40   # photons of point 40: its level, parameters, source
+xamssim optical  config/scans/example_s2.yaml --list    # the scan points: number + parameter values
+xamssim optical  config/scans/example_s2.yaml --vis --point 1    # photons of point 1: its level, parameters, source
 xamssim particle config/runs/vis_cs137.yaml --vis      # particles; source from the run
 ```
 
@@ -40,8 +40,8 @@ The viewer is a rendering; for the exact geometry ask Geant4's navigator which v
 `g4` env, from `g4/build/`):
 
 ```bash
-cd g4/build && ./xamsg4 -c ../../run/config_level4.json -o /tmp/s.bin section.mac && cd ../..
-python optical/plot_section.py g4/build/section_xz.bin --zoom 25 50 -14 22     # -> g4/build/section_xz.png
+cd g4/build && ./xamsg4 -c <data>/config_level4.json -o /tmp/s.bin section.mac && cd ../..
+python -m xamssim.section g4/build/section_xz.bin --zoom 25 50 -14 22     # -> g4/build/section_xz.png
 ```
 
 `section.mac` makes an x–z plane at y = 0 and an x–y plane through the gate. Command:

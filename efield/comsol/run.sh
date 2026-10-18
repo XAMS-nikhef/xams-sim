@@ -3,7 +3,7 @@
 #   efield/comsol/run.sh [make_model.py options]      e.g.  run.sh --states sept,cmb50   (HV cases + level from the states)
 #                                                           run.sh --cases cmb_p100 --level 4   (study case without a state)
 # Output: efield/comsol/build/XAMS_efield.mph (open in the COMSOL GUI), build/run.log,
-#         results/efield/comsol/checks.json and maps_rz.npz (via parse_log.py).
+#         <data>/efield/comsol/checks.json and maps_rz.npz (via parse_log.py; <data> = ../simulations/data).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"

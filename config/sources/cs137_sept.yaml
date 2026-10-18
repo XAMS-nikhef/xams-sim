@@ -1,6 +1,0 @@
-# Cs-137 point source as in SR-2026.2 (Sept 2026). Height was not recorded; results/source_position: probably at or
-# below the lower half of the TPC, near / below cathode level.
-isotope: Cs-137
-activity_bq: null
-position_mm: null            # unknown
-collimator: null

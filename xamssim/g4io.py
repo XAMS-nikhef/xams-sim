@@ -1,7 +1,7 @@
 """Read the output of the Geant4 particle mode (g4/include/ParticleMode.hh).
 
     from xamssim import g4io
-    h, dep, ev = g4io.read("run/g4/cs137_cmb50_001/deposits")   # header dict, deposits, events (numpy structured arrays)
+    h, dep, ev = g4io.read(DATA / "g4/cs137_cmb50_001")   # header dict, deposits, events (numpy structured arrays)
     g4io.names(h, "particle", dep["particle"])                  # codes -> names
 """
 from __future__ import annotations

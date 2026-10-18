@@ -16,7 +16,7 @@ def test_isotope_za():
 
 
 def test_source_config():
-    res = config.resolve(config.CONFIG / "runs" / "s2_cs137_raised.yaml")
+    res = config.resolve(config.CONFIG / "runs" / "cs137_cmb50_001.yaml")
     s = particle.source_config(res)
     assert s["type"] == "isotope" and (s["Z"], s["A"]) == (55, 137) and len(s["position_mm"]) == 3
     res.source = {**res.source, "position_mm": None}

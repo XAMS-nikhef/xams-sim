@@ -4,7 +4,7 @@ bar, mirrored over three cells. |E| (log colour scale), equipotentials, and elec
 on a fine row of points far from the foil; a line ends on a bar (red) or passes the foil (white). For the cathode, lines
 are started both above (drift region) and below (reverse region).
 
-    python efield/comsol/plot_cell.py gate|cathode  ->  results/efield/comsol/cell_<electrode>_<case>.png, cell_<electrode>.json
+    python efield/comsol/plot_cell.py gate|cathode  ->  <data>/efield/comsol/cell_<electrode>_<case>.png, cell_<electrode>.json
 """
 import json
 import sys
@@ -21,8 +21,9 @@ from matplotlib.colors import LogNorm  # noqa: E402
 from scipy.interpolate import RegularGridInterpolator  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
+from xamssim.config import DATA  # noqa: E402  (outputs: ../simulations/data)
 BUILD = ROOT / "efield" / "comsol" / "build"
-OUT = ROOT / "results" / "efield" / "comsol"
+OUT = DATA / "efield" / "comsol"
 
 
 def unfold(x, h):

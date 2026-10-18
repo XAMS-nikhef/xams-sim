@@ -1,7 +1,7 @@
 """XamsElectricField: the field at each cluster from the state's 3D field map (x, y, z).
 
 Replaces fuse's ElectricField, which looks up (r, z) only: XAMS is not cylindrically symmetric (SiPMs in the wall).
-Map: `maps/field/<key>/efield_xyz.npz` (xamssim.fieldmap); trilinear interpolation of |E|, positions outside the grid
+Map: `<data>/maps/field/<key>/efield_xyz.npz` (xamssim.fieldmap); trilinear interpolation of |E|, positions outside the grid
 moved to its edge.
 """
 from __future__ import annotations

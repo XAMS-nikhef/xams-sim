@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot the (r, z) plane through the first SiPM from the COMSOL model (results/efield/comsol/maps_rz.npz):
+"""Plot the (r, z) plane through the first SiPM from the COMSOL model (<data>/efield/comsol/maps_rz.npz):
 |E| map with equipotentials and electron drift lines, full TPC and a zoom on the SiPM. r > 0 runs from the axis to the
 SiPM (azimuth phi1 in cases.yaml), r < 0 to the opposite wall (no SiPM there). By the mirror symmetry of the SiPM hole
 about this plane the field has no component out of the plane, so drift lines that start in it stay in it.
@@ -8,7 +8,7 @@ Drift lines: electrons move along -E (steps of 0.05 mm, bilinear interpolation),
 a line ends at the liquid surface region above the gate (z > 0: good), in the PTFE / SiPM hole (|r| > 31 mm: lost to
 the wall or the SiPM) or at the cathode.
 
-    python efield/comsol/plot_rz.py [case ...]   ->  results/efield/comsol/rz_<case>.png, drift_<case>.json
+    python efield/comsol/plot_rz.py [case ...]   ->  <data>/efield/comsol/rz_<case>.png, drift_<case>.json
 """
 import json
 import sys
@@ -23,7 +23,8 @@ import yaml  # noqa: E402
 from scipy.interpolate import RegularGridInterpolator  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "results" / "efield" / "comsol"
+from xamssim.config import DATA  # noqa: E402  (outputs: ../simulations/data)
+OUT = DATA / "efield" / "comsol"
 R_IN, Z_C = 31.0, -51.8
 
 

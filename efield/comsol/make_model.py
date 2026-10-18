@@ -12,7 +12,7 @@ Model (3D, mm, z = 0 at the gate; all geometry from geometry.yaml, data frame):
   at the resistor-chain potentials, PTFE PMT holders, PMTs as conducting boxes at their HV;
 - SiPMs: grounded 3 x 3 mm planes at the bottom of 1 mm deep square holes in the PTFE inner wall;
 - dielectric constants from config/materials.yaml (LXe 1.96, GXe 1.00, PTFE 2.1).
-Checks (printed as CHECK lines, parsed by run.sh -> results/efield/checks.json): drift field at the centre against
+Checks (printed as CHECK lines, parsed by run.sh -> <data>/efield/comsol/checks.json): drift field at the centre against
 (V_gate - V_cathode) / 51.8 mm, liquid / gas field ratio in the extraction gap, potential at the SiPM height near the
 wall, field in the SiPM hole.
 
@@ -25,8 +25,9 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+from xamssim.config import DATA  # noqa: E402  (outputs: ../simulations/data)
 BUILD = ROOT / "efield" / "comsol" / "build"
-OUTDIR = ROOT / "results" / "efield" / "comsol"
+OUTDIR = DATA / "efield" / "comsol"
 CLASS = "XAMS_efield"
 
 

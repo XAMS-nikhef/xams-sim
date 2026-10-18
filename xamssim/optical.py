@@ -1,12 +1,12 @@
 """Optical simulation: a scan file describes it; the same file drives the production run and the viewer.
 
-    xamssim optical optical/scans/fit_s2.yaml [--jobs 8] [--dry]   scan -> run/scans/<name>/ (optical/run_scan.py)
-    xamssim optical optical/scans/fit_s2.yaml --vis [--point N]    viewer (Qt) for point N of the scan (default 0):
+    xamssim optical config/scans/example_s2.yaml [--jobs 8] [--dry]   scan -> <data>/scans/<name>/ (xamssim.run_scan)
+    xamssim optical config/scans/example_s2.yaml --vis [--point N]    viewer (Qt) for point N of the scan (default 0):
                                                                    its liquid level, parameters and photon source
-    xamssim optical optical/scans/fit_s2.yaml --list               the scan points (number + parameter values)
+    xamssim optical config/scans/example_s2.yaml --list               the scan points (number + parameter values)
 
 A scan file defines the photon source (s1 / s2, rmax), photons per point, the base config (liquid level, fixed
-overrides) and a grid of parameter points (see optical/run_scan.py).
+overrides) and a grid of parameter points (see xamssim.run_scan).
 """
 from __future__ import annotations
 
@@ -18,26 +18,25 @@ from pathlib import Path
 import yaml
 
 from . import g4bin
-from .config import ROOT, ConfigError
+from .config import DATA, ROOT, ConfigError
 
 
 def _spec(scan_file) -> dict:
     scan_file = Path(scan_file)
     if not scan_file.exists():
-        raise ConfigError(f"scan file not found: {scan_file} (scans are in optical/scans/)")
+        raise ConfigError(f"scan file not found: {scan_file} (example: config/scans/example_s2.yaml)")
     with open(scan_file) as f:
         return yaml.safe_load(f)
 
 
 def scan(scan_file, jobs: int = 8, dry: bool = False) -> int:
     _spec(scan_file)
-    cmd = [sys.executable, str(ROOT / "optical" / "run_scan.py"), str(scan_file), "--jobs", str(jobs)] + (["--dry"] if dry else [])
+    cmd = [sys.executable, "-m", "xamssim.run_scan", str(scan_file), "--jobs", str(jobs)] + (["--dry"] if dry else [])
     return subprocess.run(cmd).returncode
 
 
 def _points(spec) -> list:
-    sys.path.insert(0, str(ROOT / "optical"))
-    from run_scan import make_points  # the same points as the production run
+    from .run_scan import make_points  # the same points as the production run
     return make_points(spec)
 
 
@@ -63,10 +62,10 @@ def vis(scan_file, point: int = 0) -> None:
     if not 0 <= point < len(points):
         raise ConfigError(f"--point {point}: the scan has points 0 .. {len(points) - 1} (see --list)")
     p = points[point]
-    out = (ROOT / "run" / "vis_optical" / f"{spec['name']}_point{point}").resolve()
+    out = (DATA / "vis_optical" / f"{spec['name']}_point{point}").resolve()
     out.mkdir(parents=True, exist_ok=True)
     cfg = out / "config.json"
-    args = [sys.executable, str(ROOT / "optical" / "make_config.py"), "--level", str(p["level"]), "--out", str(cfg)]
+    args = [sys.executable, "-m", "xamssim.g4config", "--level", str(p["level"]), "--out", str(cfg)]
     for k, v in p["set"].items():
         args += ["--set", f"{k}={json.dumps(v)}"]
     subprocess.run(args, check=True, capture_output=True)
