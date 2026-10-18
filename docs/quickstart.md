@@ -11,7 +11,7 @@ conda activate xamssim && cd ~/Documents/XAMS/xams-sim
 | `xamssim particle config/runs/s2_cs137_raised.yaml` | Cs-137 decays at the source position → every energy deposit in the xenon | `run/g4/s2_cs137_raised/deposits.*` |
 | `xamssim particle config/runs/vis_cs137.yaml --vis` | particle viewer; type `/run/beamOn 10` | (window) |
 | `xamssim optical optical/scans/fit_s2.yaml` | optical scan: S2 photons for a grid of optical parameters | `run/scans/fit_s2/` |
-| `xamssim optical --vis --state cmb50` | optical viewer; type `/run/beamOn 20` | (window) |
+| `xamssim optical optical/scans/fit_s2.yaml --vis` | optical viewer for that scan (point 0; `--point N`, numbers from `--list`); type `/run/beamOn 20` | (window) |
 | `xamssim status config/runs/<run>.yaml` | the resolved run (state, voltages, source), input hashes, which maps exist | (text) |
 | `xamssim maps --state cmb50` | map status of one detector state | (text) |
 | `xamssim validate config/runs/*.yaml` | check run files and everything they refer to | (text) |

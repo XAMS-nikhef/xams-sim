@@ -6,7 +6,7 @@ Per event the energy deposited in the drift region (liquid xenon, r < 31 mm, cat
   - depth profile of photopeak events (energy-weighted mean z of the event's drift-region deposits), r < 22 mm;
   - comparison with the September data (SR-2026.2 Cs-137, Δ750 V): photopeak events with the clean cuts of
     optical/spread_map.py, z from the drift time (gate 1.15 µs, cathode 38.2 µs), r < 22 mm. The September source height
-    was not recorded; simulated heights at 100 mm from the axis are compared by shape.
+    was not recorded; simulated heights at 130 mm from the axis (just outside the outer cryostat vessel) are compared by shape.
 Uses runs made with `xamssim particle config/runs/s2_*.yaml`.
 
     python validation/s2_particle_check.py   ->  results/s2_particle/ (s2_particle.png, summary.json)
@@ -27,8 +27,8 @@ sys.path.insert(0, str(ROOT / "optical"))
 from xamssim import g4io  # noqa: E402
 
 OUT = ROOT / "results" / "s2_particle"
-RUNS = [("s2_cs137_raised", "raised: z −26 mm (short-fill plan)"), ("s2_cs137_r100_cathode", "cathode level: z −52 mm"),
-        ("s2_cs137_r100_below", "30 mm below cathode: z −82 mm")]
+RUNS = [("s2_cs137_raised", "raised: z −26 mm (short-fill plan)"), ("s2_cs137_r130_cathode", "cathode level: z −52 mm"),
+        ("s2_cs137_r130_below", "30 mm below cathode: z −82 mm")]
 DATA = ROOT.parent / "measurements" / "analysis_SR2026.2" / "outputs" / "s2_channels.npz"
 R_TPC, Z_GATE, Z_CATH = 31.0, 0.0, -51.8
 ZB = np.arange(-52, 0.1, 2.0)
@@ -114,7 +114,7 @@ def main():
     xs = [res[r]["photopeak_per_1e6_decays"] for r, _ in RUNS]
     ax[2].bar(range(len(RUNS)), xs, color=[f"C{k}" for k in range(len(RUNS))])
     ax[2].set_xticks(range(len(RUNS)), [lab.split(":")[0] for _, lab in RUNS], fontsize=8)
-    ax[2].set(ylabel="photopeak events in the drift region per 10⁶ decays", title="source height vs photopeak rate (r = 100 mm)")
+    ax[2].set(ylabel="photopeak events in the drift region per 10⁶ decays", title="source height vs photopeak rate (r = 130 mm)")
     fig.tight_layout()
     fig.savefig(OUT / "s2_particle.png", dpi=120)
     json.dump(res, open(OUT / "summary.json", "w"), indent=1)

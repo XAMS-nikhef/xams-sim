@@ -4,7 +4,7 @@ description: "662 keV gammas from the raised position, 20° cone towards the TPC
 isotope: Cs-137
 type: gamma
 energy_keV: 661.657
-position_mm: [0.0, 100.0, -26.0]
+position_mm: [0.0, 130.0, -26.0]
 direction: cone
 half_angle_deg: 20.0
 z_target_mm: -26.0

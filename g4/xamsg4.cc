@@ -83,6 +83,12 @@ int main(int argc, char** argv) {
     vis->Initialize();
     ui->ApplyCommand("/run/initialize");
     ui->ApplyCommand(mode == "particle" ? "/control/execute vis_particle.mac" : "/control/execute vis_interactive.mac");
+    // optical viewer: the photon source of the scan it was started for (config vis_source, written by xamssim)
+    const auto& cfg = Config::Get();
+    if (mode == "optical" && cfg.Str("vis_source/shape", "") != "") {
+      ui->ApplyCommand("/xamsg4/source/shape " + cfg.Str("vis_source/shape", "s2"));
+      ui->ApplyCommand("/xamsg4/source/rmax " + std::to_string(cfg.Num("vis_source/rmax_mm", 30.)) + " mm");
+    }
     session->SessionStart();
     delete session;
     delete vis;

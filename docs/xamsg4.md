@@ -25,7 +25,7 @@ xamsg4 [-m optical|particle] -c config.json [-o out.bin] [-s seed] [-d] [-v] [ma
 | primaries | one 178 nm photon per event from the source shape (macro commands below) | config `source`: ion at rest in a capsule (radioactive decay) or a gamma |
 | output | one record per photon | one record per energy deposit in xenon + one per event |
 | PMT bodies, frames, dead crosses | perfect absorbers | Kovar / steel (from `materials.yaml`) |
-| world | ±100 × ±100 × ±200 mm, absorbing | ±300 mm or larger (config `world_half_mm`), vacuum |
+| world | ±160 × ±160 × ±260 mm (both vessels), absorbing | ±300 mm or larger (config `world_half_mm`), vacuum |
 
 ## Macro commands
 
@@ -63,7 +63,7 @@ volume at every grid point (exact cross sections; `optical/plot_section.py` draw
 | file | content |
 |---|---|
 | `xamsg4.cc` | main program: options, mode selection, run manager |
-| `src/XamsGeometry.cc` | the XAMS geometry from the config (meshes with holes, rings, PTFE, PMTs, SiPMs, bucket, vessel, source capsule) |
+| `src/XamsGeometry.cc` | the XAMS geometry from the config (meshes with holes, rings, PTFE, PMTs, SiPMs, bucket, both cryostat vessels with flanges, source capsule) |
 | `src/DetectorConstruction.cc` | materials (from the config), optical surfaces, test geometries |
 | `src/PrimaryGeneratorAction.cc`, `src/PhotonActions.cc`, `src/Output.cc`, `src/PhysicsList.cc` | optical mode: photon sources, per-photon bookkeeping and output, optical physics |
 | `src/ParticleMode.cc` | particle mode: physics list, source, stacking / tracking / stepping / event actions, deposit output |

@@ -3,7 +3,8 @@
 #   /run/beamOn 10                 simulate 10 events (source from the run's config: isotope or gamma)
 #   /vis/viewer/rebuild            redraw;  /vis/scene/endOfEventAction refresh   show only the last event
 #   /tracking/verbose 1            print every step of the next events (particle, volume, energy, process)
-#   /vis/geometry/set/visibility Vessel 0 false    hide the vessel (also Bucket, PTFE, CopperRing)
+#   /vis/geometry/set/visibility Vessel 0 false    hide the inner vessel (also VesselFlange, OuterVessel, OuterFlange,
+#                                                  Bucket, PTFE, CopperRing)
 /vis/open TSG
 /vis/drawVolume
 /vis/viewer/set/background white
@@ -15,6 +16,11 @@
 /vis/geometry/set/colour MeshRing 0 0.45 0.45 0.55 1
 /vis/geometry/set/colour Bucket 0 0.85 0.72 0.42 1
 /vis/geometry/set/colour Vessel 0 0.55 0.58 0.62 1
+/vis/geometry/set/colour VesselFlange 0 0.55 0.58 0.62 1
+# outer cryostat vessel (vacuum inside, hidden: an opaque vacuum would hide everything inside)
+/vis/geometry/set/visibility Vacuum 0 false
+/vis/geometry/set/colour OuterVessel 0 0.70 0.72 0.76 1
+/vis/geometry/set/colour OuterFlange 0 0.70 0.72 0.76 1
 # mesh foils: steel pieces (bars + solid unetched cells) in a thin xenon layer; hide the layer, show the steel
 /vis/geometry/set/visibility top_screenLayer 0 false
 /vis/geometry/set/visibility anodeLayer 0 false

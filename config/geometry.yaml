@@ -120,13 +120,31 @@ ptfe_bucket:                 # drawing "PTFE_bucket.pdf" (2026-10-06): the TPC h
   # inside below the weir: liquid xenon; above it and all around the bucket: gas xenon (user, 2026-10-06).
   # Surfaces: PTFE liquid values towards the liquid, PTFE gas values towards the gas.
 
-cryostat_vessel:             # drawing "Inner_cryostat_vessel.pdf" (2026-10-06): stainless-steel vessel, gas xenon
+cryostat_vessel:             # inner vessel, gas xenon; drawings "Inner_cryostat_vessel.pdf" (2026-10-06) and
+                             # "XAMS_cryostat.pdf" (2026-10-18, section A-A)
   inner_diameter_mm: 146.86  # drawing
   outer_diameter_mm: 152.4   # drawing (6" tube, wall 2.77 mm)
-  height_mm: 305.0           # drawing
+  height_mm: 305.0           # drawing: tube length; in the model the gas cavity between the two blind flanges
   material: stainless_steel  # surface: optics.stainless_steel_reflectivity (Lambertian)
-  end_thickness_mm: null     # bottom / top end not on the drawing -> default 2.77 (= wall), closed at both ends
-  bottom_gap_mm: null        # vessel inner bottom to bucket bottom, not known -> default 10
+  flange:                    # XAMS_cryostat.pdf: at each end a welded flange (21) + blind flange (24) = 45 mm, OD 202.5.
+    outer_diameter_mm: 202.5 #   Model (simplified, user 2026-10-18): a ring OD 202.5 / ID = tube OD around the last
+    ring_thickness_mm: 21.0  #   21 mm of each tube end, and a solid disc OD 202.5 of 24 mm closing the tube
+    blind_thickness_mm: 24.0 #   (bolt holes, gasket, recesses and ports not modelled)
+  center_z_mm: -25.9         # user 2026-10-18: XAMS in the middle of the inner vessel -> cavity centre at the middle of
+                             #   the drift region (gate 0 / cathode -51.8); bucket bottom then ~55 mm above the cavity bottom
+
+cryostat_outer:              # outer (vacuum) vessel, drawing "XAMS_cryostat.pdf" (2026-10-18, section A-A); vacuum
+  inner_diameter_mm: 248.46  #   between the two vessels (user)
+  outer_diameter_mm: 254.0   # 10" tube, wall 2.77 mm
+  height_mm: 456.0           # tube length; in the model the vacuum cavity between the two blind flanges
+  material: stainless_steel
+  flange:                    # at each end a welded flange (12) + blind flange (12), OD 290; the top blind flange has
+    outer_diameter_mm: 290.0 #   ports (not modelled). Model: ring OD 290 / ID = tube OD around the last 12 mm of
+    ring_thickness_mm: 12.0  #   each tube end + a solid disc OD 290 of 12 mm
+    blind_thickness_mm: 12.0
+  inner_vessel_offset_mm: -24.0   # centre of the inner vessel relative to the centre of the outer one, read off the
+                             #   drawing (inner top flange ~62 mm below the outer tube top, inner bottom ~14 mm above
+                             #   the outer tube bottom); the outer vessel is placed around the inner one with this offset
 
 # ------------------------------------------------------------------------------------------------ PMTs
 pmt_common:

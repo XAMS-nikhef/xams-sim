@@ -4,7 +4,7 @@
     xamssim particle config/runs/<run>.yaml [--events N]   Geant4 particle mode -> run/g4/<run>/deposits.*  (plan S2)
     xamssim particle config/runs/vis_cs137.yaml --vis      particle viewer: look at a few events
     xamssim optical  optical/scans/<scan>.yaml [--jobs 8]  optical simulation (scan) -> run/scans/<scan>/
-    xamssim optical  --vis --state cmb50                   optical viewer (S1 / S2 photons)
+    xamssim optical  optical/scans/<scan>.yaml --vis       optical viewer for that scan (--point N; --list)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
@@ -81,12 +81,13 @@ def cmd_particle(a) -> int:
 
 
 def cmd_optical(a) -> int:
-    from .optical import scan, vis
-    if a.vis:
-        vis(state=a.state, level=a.level)
+    from .optical import list_points, scan, vis
+    if a.list:
+        list_points(a.scan)
         return 0
-    if not a.scan:
-        raise ConfigError("give a scan file (optical/scans/<name>.yaml) or --vis")
+    if a.vis:
+        vis(a.scan, point=a.point)
+        return 0
     return scan(a.scan, jobs=a.jobs, dry=a.dry)
 
 
@@ -111,13 +112,13 @@ def main(argv=None) -> int:
     p.add_argument("--dry-run", action="store_true", help="write config.json and run.mac, do not run Geant4")
     p.add_argument("--vis", action="store_true", help="interactive Qt viewer (then /run/beamOn N in the window)")
     p.set_defaults(func=cmd_particle)
-    p = sub.add_parser("optical", help="optical simulation: a scan (production) or --vis viewer")
-    p.add_argument("scan", nargs="?", help="scan file, e.g. optical/scans/fit_s2.yaml")
+    p = sub.add_parser("optical", help="optical simulation from a scan file: production, or --vis viewer")
+    p.add_argument("scan", help="scan file, e.g. optical/scans/fit_s2.yaml")
     p.add_argument("--jobs", type=int, default=8)
     p.add_argument("--dry", action="store_true", help="list the scan points, do not run")
-    p.add_argument("--vis", action="store_true", help="interactive Qt viewer (S1 / S2 photons)")
-    p.add_argument("--state", help="detector state for the viewer's liquid level")
-    p.add_argument("--level", type=float, help="liquid level above the gate [mm] for the viewer (instead of --state)")
+    p.add_argument("--vis", action="store_true", help="interactive Qt viewer for one point of the scan")
+    p.add_argument("--point", type=int, default=0, help="scan point for the viewer (default 0)")
+    p.add_argument("--list", action="store_true", help="list the scan points (number and parameter values)")
     p.set_defaults(func=cmd_optical)
     a = ap.parse_args(argv)
     try:

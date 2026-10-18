@@ -27,9 +27,10 @@ def read(path, mmap: bool = False):
     edt = np.dtype([tuple(x) for x in h["event_dtype"]])
     if ddt.itemsize != h["deposit_record_bytes"] or edt.itemsize != h["event_record_bytes"]:
         raise ValueError("record layout in the header does not match its byte size")
-    dpath = Path(h["files"]["deposits"])
-    if not dpath.is_absolute() or not dpath.exists():
-        dpath = stem.with_suffix(".bin")
+    # the .bin next to the header (folders may be moved / renamed); the path stored in the header only as a fallback
+    dpath = stem.with_suffix(".bin")
+    if not dpath.exists():
+        dpath = Path(h["files"]["deposits"])
     dep = np.memmap(dpath, dtype=ddt, mode="r") if mmap else np.fromfile(dpath, dtype=ddt)
     ev = np.fromfile(stem.parent / (stem.name + ".events.bin"), dtype=edt)
     if len(dep) != h["counts"]["deposits"] or len(ev) != h["counts"]["events"]:

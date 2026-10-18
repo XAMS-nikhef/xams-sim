@@ -1,6 +1,0 @@
-# Cs-137 point source 100 mm from the axis, 30 mm below the cathode (S2 check: candidate September height)
-description: "Cs-137 point source 100 mm from the axis, 30 mm below the cathode (S2 check: candidate September height)"
-isotope: Cs-137
-activity_bq: null
-position_mm: [0.0, 100.0, -82.0]
-collimator: null

@@ -8,7 +8,8 @@ The Python package (`xamssim/`, installed editable in the `xamssim` env) and its
 |---|---|
 | `xamssim particle <run> [--events N] [--seed S] [--out DIR] [--dry-run] [--vis]` | [particle mode](particle.md) |
 | `xamssim optical <scan.yaml> [--jobs N] [--dry]` | [optical scan](optical.md) |
-| `xamssim optical --vis [--state S \| --level L]` | optical [viewer](viewers.md) |
+| `xamssim optical <scan.yaml> --vis [--point N]` | optical [viewer](viewers.md) for point N of the scan |
+| `xamssim optical <scan.yaml> --list` | the scan points: number and parameter values |
 | `xamssim status <run>` | resolved run: state, voltages, level, pressure, lifetime, source, geometry version, map keys and status |
 | `xamssim maps --state <state>` | map keys and status of a state |
 | `xamssim validate <run> [...]` | check run files and everything they refer to |
@@ -24,7 +25,7 @@ Exit code 2 and a one-line message for configuration errors.
 | `maps.py` | map registry: `KINDS` (producer, command, plan step, first product that needs it), `status(res)`, `needed(stop_after)`, `register(res, kind, files)`, `find(kind, key)`; `maps/manifest.json` |
 | `g4bin.py` | `command(args)` / `run(args)`: start `xamsg4` from any env (directly in `g4`, else `conda run -n g4`); `XAMSG4`, `BUILD`, `G4_ENV` |
 | `particle.py` | `run(run, ...)` production, `vis(run)` viewer, `build(...)` config.json + run.mac, `source_config(res)`, `isotope_za(name)` |
-| `optical.py` | `scan(file, jobs, dry)`, `vis(state, level)` |
+| `optical.py` | `scan(file, jobs, dry)`, `vis(file, point)` (same points as `optical/run_scan.py`: `make_points`) |
 | `g4io.py` | `read(path, mmap=False)` → header, deposits, events; `names(h, table, codes)`; `code(h, table, name)` |
 | `cli.py` | the command line |
 

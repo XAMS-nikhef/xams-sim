@@ -39,7 +39,9 @@ From `config/sources/<name>.yaml` ([configuration](configuration.md#sources-conf
   decay with the full chain (Cs-137 → e⁻ + Ba-137m → 662 keV γ or conversion electrons + X-rays). All decay products
   get time 0 (the 30-year Cs-137 and 2.55-min Ba-137m decay times would otherwise ruin the ns precision). The ion sits
   in a **source capsule**: a steel sphere of 1 mm radius (config `source/capsule/{material,radius_mm}`), which stops
-  the decay recoil and most betas, as the real holder does. The capsule is only placed outside the vessel.
+  the decay recoil and most betas, as the real holder does. The capsule can sit outside the cryostat or in the vacuum
+  between the two vessels (not in a wall, a flange or the inner vessel). A real source is outside the outer vessel
+  (r ≥ 127 mm at the tube, ≥ 145 mm at the flanges); only then do its gammas cross the outer vessel.
 - **`type: gamma`** — one gamma of `energy_keV`, isotropic or in a cone towards a point on the axis (useful for the
   viewer and for fast checks: isotropic decays at 10 cm mostly miss the TPC).
 
@@ -51,7 +53,8 @@ From `config/sources/<name>.yaml` ([configuration](configuration.md#sources-conf
 - Neutrinos and optical photons are not tracked.
 - Materials from `materials.yaml`; in particle mode the PMT bodies and frames are Kovar and the mesh dead crosses are
   steel (in optical mode both are perfect absorbers).
-- The world is ±300 mm (or larger to contain the source) and **vacuum** outside the vessel: no outer cryostat, no lab.
+- Both cryostat vessels are in the geometry (inner: gas; outer: vacuum inside, see [Geometry](geometry.md)). The world
+  is ±300 mm (or larger to contain the source) and **vacuum** outside the outer vessel: no lab, no support structure.
 
 ## Positions and frames
 

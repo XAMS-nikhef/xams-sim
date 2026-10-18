@@ -27,7 +27,7 @@ conda activate xamssim
 xamssim particle config/runs/s2_cs137_raised.yaml [--events N]   # particle production -> run/g4/<run>/deposits.*
 xamssim particle config/runs/vis_cs137.yaml --vis                 # particle viewer (Cs events): /run/beamOn 10
 xamssim optical  optical/scans/fit_s2.yaml [--jobs 8]             # optical simulation (scan) -> run/scans/<scan>/
-xamssim optical  --vis --state cmb50                              # optical viewer (S1/S2 photons): /run/beamOn 20
+xamssim optical  optical/scans/fit_s2.yaml --vis                 # optical viewer for that scan: /run/beamOn 20
 xamssim status   config/runs/<run>.yaml                           # resolved run, input hashes, map status
 python -m pytest tests                                            # tests
 ```

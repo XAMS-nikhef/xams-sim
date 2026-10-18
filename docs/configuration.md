@@ -23,7 +23,8 @@ top-PMT anode sectors. Sections:
 | `liquid` | liquid-level scenarios above the gate |
 | `mesh_common`, `meshes` | the five etched meshes (foil, holes `mesh_holes.json`, pitch, rings; z, angle, foil side per mesh), `material` |
 | `ptfe_cylinder`, `field_shaping_rings` | inner PTFE cylinder, copper rings (z of each ring), `material` |
-| `pmt_ptfe`, `ptfe_bucket`, `cryostat_vessel` | PMT holders, bucket (its weir sets the liquid level), steel vessel, `material` |
+| `pmt_ptfe`, `ptfe_bucket` | PMT holders, bucket (its weir sets the liquid level), `material` |
+| `cryostat_vessel`, `cryostat_outer` | inner vessel (gas; tube, flanges, `center_z_mm`) and outer vessel (vacuum; tube, flanges, `inner_vessel_offset_mm`), `material` |
 | `pmt_common`, `pmts`, `sipms` | PMTs (window, photocathode, sectors, QE, window / body material), SiPMs |
 | `sources`, `targets` | source shapes of the optical mode; measured data targets for the optical fits |
 
@@ -84,7 +85,7 @@ chain, the SiPM model and which field maps to export. Shared by the states and t
 | `half_angle_deg`, `z_target_mm` | cone half angle and its target on the axis |
 | `activity_bq`, `collimator`, `description` | bookkeeping (collimator not yet modelled) |
 
-Existing: `cs137_raised`, `cs137_sept` (position unknown), `cs137_r100_cathode`, `cs137_r100_below`,
+Existing: `cs137_raised`, `cs137_sept` (position unknown), `cs137_r130_cathode`, `cs137_r130_below`,
 `cs137_vis_cone` (viewer).
 
 ## Simulation runs — `config/runs/<name>.yaml`

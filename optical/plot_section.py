@@ -25,7 +25,10 @@ STYLE = [
     (r"Frame$|Body$", "#5a4a6a", "PMT frame / body (absorber)"),
     (r"^SiPM$", "#1fae4a", "SiPM"),
     (r"^Bucket$", "#d9b86c", "PTFE bucket"),
-    (r"^Vessel$", "#4a5568", "cryostat vessel (steel)"),
+    (r"^Vessel$|^VesselFlange$", "#4a5568", "inner cryostat vessel + flanges (steel)"),
+    (r"^OuterVessel$|^OuterFlange$", "#8a94a6", "outer cryostat vessel + flanges (steel)"),
+    (r"^Vacuum$", "#fbfbf0", "vacuum between the vessels"),
+    (r"^SourceCapsule$", "#d62728", "source capsule"),
 ]
 
 

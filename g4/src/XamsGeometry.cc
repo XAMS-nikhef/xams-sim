@@ -215,9 +215,16 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
   const double ringHalf = 0.5 * c.Num("mesh_common/ring/thickness_mm", 1.8) * mm;
 
   // world (absorbing) and the two xenon regions
-  // optical mode: 100 x 100 x 200 mm half sizes (as before); particle mode: room for external sources (config world_half_mm)
-  const double wx = c.Num("world_half_mm/0", 100.) * mm, wy = c.Num("world_half_mm/1", 100.) * mm,
-               wz = c.Num("world_half_mm/2", 200.) * mm;
+  // world half sizes: config world_half_mm (default 160 x 160 x 260 mm: both cryostat vessels; particle mode: larger
+  // if the source needs it)
+  const double wx = c.Num("world_half_mm/0", 160.) * mm, wy = c.Num("world_half_mm/1", 160.) * mm,
+               wz = c.Num("world_half_mm/2", 260.) * mm;
+  // envelopes of the vessels (for the source capsule): inner vessel, outer vessel and its vacuum
+  double vesselTop = 0., vesselBot = 0., vesselR = 0., outerTop = 0., outerBot = 0., outerR = 0.;
+  double tubeR = 0., tubeTop = 0., tubeBot = 0., ringT = 0.;  // inner vessel: tube outer radius / ends, flange ring
+  double oTubeR = 0., oTubeTop = 0., oTubeBot = 0., oRingT = 0.;  // the same for the outer vessel
+  double vacuumR = -1., vacuumC = 0., vacuumHalf = 0.;
+  G4LogicalVolume* vacuumL = nullptr;
   auto* worldS = new G4Box("World", wx, wy, wz);
   auto* worldL = new G4LogicalVolume(worldS, Absorber(), "World");
   auto* worldP = new G4PVPlacement(nullptr, {}, worldL, "World", nullptr, false, 0, kCheck);
@@ -234,20 +241,78 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     const double bIn = 0.5 * b["inner_diameter_mm"].get<double>() * mm, bOut = 0.5 * b["outer_diameter_mm"].get<double>() * mm;
     const double bH = b["height_mm"].get<double>() * mm, bBot = b["bottom_thickness_mm"].get<double>() * mm;
     const double zRim = zl + b["weir_below_rim_mm"].get<double>() * mm, zBucket = zRim - bH;
+    // inner vessel (gas): tube + at each end a flange ring around the tube and a blind flange closing it
+    // (XAMS_cryostat.pdf, simplified); centred on cryostat_vessel/center_z_mm (XAMS in the middle of the vessel)
     const double vIn = 0.5 * v["inner_diameter_mm"].get<double>() * mm, vOut = 0.5 * v["outer_diameter_mm"].get<double>() * mm;
-    const double vH = v["height_mm"].get<double>() * mm, vEnd = v["end_thickness_mm"].get<double>() * mm;
-    const double zvIn = zBucket - v["bottom_gap_mm"].get<double>() * mm;  // inner bottom face of the vessel
-    const double vC = zvIn - vEnd + 0.5 * vH;                             // centre of the vessel (outer)
-    if (vC + 0.5 * vH > wz || vC - 0.5 * vH < -wz)
-      G4Exception("BuildXams", "GEOM030", FatalException, "cryostat vessel does not fit in the world");
+    const double vH = v["height_mm"].get<double>() * mm;  // gas cavity between the blind flanges
+    const double vF = 0.5 * c.Num("cryostat_vessel/flange/outer_diameter_mm", 202.5) * mm;
+    const double vR = c.Num("cryostat_vessel/flange/ring_thickness_mm", 21.) * mm;
+    const double vB = c.Num("cryostat_vessel/flange/blind_thickness_mm", 24.) * mm;
+    const double vC = c.Num("cryostat_vessel/center_z_mm", -25.9) * mm;
+    if (zBucket < vC - 0.5 * vH || zRim > vC + 0.5 * vH)
+      G4Exception("BuildXams", "GEOM031", FatalException, "the PTFE bucket does not fit in the inner vessel");
+    vesselTop = vC + 0.5 * vH + vB;
+    vesselBot = vC - 0.5 * vH - vB;
+    vesselR = vF;
+    tubeR = vOut;
+    tubeTop = vC + 0.5 * vH;
+    tubeBot = vC - 0.5 * vH;
+    ringT = vR;
 
-    auto* vesselS = new G4SubtractionSolid("Vessel", new G4Tubs("VesselO", 0., vOut, 0.5 * vH, 0., 360. * deg),
-                                           new G4Tubs("VesselI", 0., vIn, 0.5 * vH - vEnd, 0., 360. * deg));
-    auto* vesselL = new G4LogicalVolume(vesselS, StainlessSteel(), "Vessel");
-    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, vC), vesselL, "Vessel", worldL, false, 0, kCheck);
+    // outer vessel (vacuum inside), placed around the inner one with cryostat_outer/inner_vessel_offset_mm; the inner
+    // vessel is then a daughter of the vacuum, otherwise of the world
+    G4LogicalVolume* vesMother = worldL;
+    double mz = 0.;
+    if (j.contains("cryostat_outer")) {
+      const auto& o = j["cryostat_outer"];
+      const double oIn = 0.5 * o["inner_diameter_mm"].get<double>() * mm, oOut = 0.5 * o["outer_diameter_mm"].get<double>() * mm;
+      const double oH = o["height_mm"].get<double>() * mm;
+      const double oF = 0.5 * c.Num("cryostat_outer/flange/outer_diameter_mm", 290.) * mm;
+      const double oR = c.Num("cryostat_outer/flange/ring_thickness_mm", 12.) * mm;
+      const double oB = c.Num("cryostat_outer/flange/blind_thickness_mm", 12.) * mm;
+      const double oC = vC - c.Num("cryostat_outer/inner_vessel_offset_mm", -24.) * mm;
+      if (oF > wx || oF > wy || oC + 0.5 * oH + oB > wz || oC - 0.5 * oH - oB < -wz)
+        G4Exception("BuildXams", "GEOM032", FatalException, "the outer vessel does not fit in the world (world_half_mm)");
+      if (vF > oIn || vesselTop > oC + 0.5 * oH || vesselBot < oC - 0.5 * oH)
+        G4Exception("BuildXams", "GEOM033", FatalException, "the inner vessel does not fit in the outer vessel");
+      auto* oTubeL = new G4LogicalVolume(new G4Tubs("OuterVessel", oIn, oOut, 0.5 * oH, 0., 360. * deg), StainlessSteel(), "OuterVessel");
+      new G4PVPlacement(nullptr, G4ThreeVector(0, 0, oC), oTubeL, "OuterVessel", worldL, false, 0, kCheck);
+      auto* oRingL = new G4LogicalVolume(new G4Tubs("OuterFlangeRing", oOut, oF, 0.5 * oR, 0., 360. * deg), StainlessSteel(), "OuterFlange");
+      auto* oBlindL = new G4LogicalVolume(new G4Tubs("OuterFlangeBlind", 0., oF, 0.5 * oB, 0., 360. * deg), StainlessSteel(), "OuterFlange");
+      for (int k = 0; k < 2; ++k) {
+        const double sgn = k ? -1. : 1.;
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, oC + sgn * (0.5 * oH - 0.5 * oR)), oRingL, "OuterFlange", worldL, false, k, kCheck);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, oC + sgn * (0.5 * oH + 0.5 * oB)), oBlindL, "OuterFlange", worldL, false, 2 + k, kCheck);
+      }
+      vacuumL = new G4LogicalVolume(new G4Tubs("Vacuum", 0., oIn, 0.5 * oH, 0., 360. * deg), Absorber(), "Vacuum");
+      new G4PVPlacement(nullptr, G4ThreeVector(0, 0, oC), vacuumL, "Vacuum", worldL, false, 0, kCheck);
+      vacuumR = oIn;
+      vacuumC = oC;
+      vacuumHalf = 0.5 * oH;
+      outerR = oF;
+      outerTop = oC + 0.5 * oH + oB;
+      outerBot = oC - 0.5 * oH - oB;
+      oTubeR = oOut;
+      oTubeTop = oC + 0.5 * oH;
+      oTubeBot = oC - 0.5 * oH;
+      oRingT = oR;
+      vesMother = vacuumL;
+      mz = oC;
+      G4cout << "outer vessel r " << oIn / mm << "-" << oOut / mm << " mm (flanges r " << oF / mm << "), z " << outerBot / mm
+             << " to " << outerTop / mm << " mm, vacuum inside" << G4endl;
+    }
+    auto* vesselL = new G4LogicalVolume(new G4Tubs("Vessel", vIn, vOut, 0.5 * vH, 0., 360. * deg), StainlessSteel(), "Vessel");
+    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, vC - mz), vesselL, "Vessel", vesMother, false, 0, kCheck);
+    auto* vRingL = new G4LogicalVolume(new G4Tubs("VesselFlangeRing", vOut, vF, 0.5 * vR, 0., 360. * deg), StainlessSteel(), "VesselFlange");
+    auto* vBlindL = new G4LogicalVolume(new G4Tubs("VesselFlangeBlind", 0., vF, 0.5 * vB, 0., 360. * deg), StainlessSteel(), "VesselFlange");
+    for (int k = 0; k < 2; ++k) {
+      const double sgn = k ? -1. : 1.;
+      new G4PVPlacement(nullptr, G4ThreeVector(0, 0, vC - mz + sgn * (0.5 * vH - 0.5 * vR)), vRingL, "VesselFlange", vesMother, false, k, kCheck);
+      new G4PVPlacement(nullptr, G4ThreeVector(0, 0, vC - mz + sgn * (0.5 * vH + 0.5 * vB)), vBlindL, "VesselFlange", vesMother, false, 2 + k, kCheck);
+    }
     gasC = vC;
-    gasL = new G4LogicalVolume(new G4Tubs("Gas", 0., vIn, 0.5 * vH - vEnd, 0., 360. * deg), GasXenon(), "Gas");
-    gasP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, gasC), gasL, "Gas", worldL, false, 0, kCheck);
+    gasL = new G4LogicalVolume(new G4Tubs("Gas", 0., vIn, 0.5 * vH, 0., 360. * deg), GasXenon(), "Gas");
+    gasP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, gasC - mz), gasL, "Gas", vesMother, false, 0, kCheck);
 
     const double bC = zBucket + 0.5 * bH;
     auto* bucketS = new G4SubtractionSolid("Bucket", new G4Tubs("BucketO", 0., bOut, 0.5 * bH, 0., 360. * deg),
@@ -262,8 +327,8 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     liqP = new G4PVPlacement(nullptr, G4ThreeVector(0, 0, liqC - gasC), liqL, "Liquid", gasL, false, 0, kCheck);
     G4cout << "PTFE bucket r " << bIn / mm << "-" << bOut / mm << " mm, z " << zBucket / mm << " to " << zRim / mm
            << " mm (rim " << (zRim - zl) / mm << " mm above the liquid), liquid from z " << zLo / mm
-           << " mm; steel vessel r " << vIn / mm << "-" << vOut / mm << " mm, z " << (vC - 0.5 * vH) / mm << " to "
-           << (vC + 0.5 * vH) / mm << " mm" << G4endl;
+           << " mm; inner vessel r " << vIn / mm << "-" << vOut / mm << " mm (flanges r " << vF / mm << "), z "
+           << vesselBot / mm << " to " << vesselTop / mm << " mm, gas cavity centre z " << vC / mm << " mm" << G4endl;
   } else {
     // geometry v1-v3: liquid and gas boxes in the absorbing world
     const double halfXY = 60. * mm, zLo = -90. * mm, zHi = 45. * mm;
@@ -428,19 +493,43 @@ G4VPhysicalVolume* DetectorConstruction::BuildXams() {
     }
   }
   // particle mode: a small capsule around an external source (stops the decay recoil and the betas, as the real source
-  // holder does); config source/capsule {material, radius_mm}, default stainless steel, 1 mm. Only outside the vessel.
+  // holder does); config source/capsule {material, radius_mm}, default stainless steel, 1 mm. Outside the cryostat or in
+  // the vacuum between the vessels.
   if (c.Particle() && j.contains("source") && j["source"].contains("position_mm")) {
     const auto& sp = j["source"]["position_mm"];
     const G4ThreeVector pos(sp[0].get<double>() * mm, sp[1].get<double>() * mm, sp[2].get<double>() * mm);
     const double rc = c.Num("source/capsule/radius_mm", 1.0) * mm;
     const std::string m = c.Str("source/capsule/material", "stainless_steel");
     G4Material* mat = m == "ptfe" ? Ptfe() : m == "copper" ? G4NistManager::Instance()->FindOrBuildMaterial("G4_Cu") : StainlessSteel();
-    const double vOutR = j.contains("cryostat_vessel") ? 0.5 * j["cryostat_vessel"]["outer_diameter_mm"].get<double>() * mm : 0.;
-    if (rc > 0. && pos.perp() - rc > vOutR && std::abs(pos.x()) + rc < wx && std::abs(pos.y()) + rc < wy && std::abs(pos.z()) + rc < wz) {
-      new G4PVPlacement(nullptr, pos, new G4LogicalVolume(new G4Orb("SourceCapsule", rc), mat, "SourceCapsule"), "SourceCapsule",
-                        worldL, false, 0, kCheck);
+    auto inside = [](const G4ThreeVector& q, double r, double zlo, double zhi, double pad) {
+      return q.perp() < r + pad && q.z() > zlo - pad && q.z() < zhi + pad;
+    };
+    G4LogicalVolume* capMother = nullptr;
+    G4ThreeVector capPos = pos;
+    if (vacuumL && inside(pos, vacuumR, vacuumC - vacuumHalf, vacuumC + vacuumHalf, -rc)) {
+      // the inner vessel: its tube over the full height, the flanges (ring + blind) only in the end zones
+      const bool inVessel = inside(pos, tubeR, vesselBot, vesselTop, rc) || inside(pos, vesselR, tubeTop - ringT, vesselTop, rc) ||
+                            inside(pos, vesselR, vesselBot, tubeBot + ringT, rc);
+      if (!inVessel) {  // in the vacuum between the vessels
+        capMother = vacuumL;
+        capPos = pos - G4ThreeVector(0, 0, vacuumC);
+      }
+    } else if (!(vacuumL ? inside(pos, oTubeR, outerBot, outerTop, rc) || inside(pos, outerR, oTubeTop - oRingT, outerTop, rc) ||
+                               inside(pos, outerR, outerBot, oTubeBot + oRingT, rc)
+                         : inside(pos, tubeR, vesselBot, vesselTop, rc) || inside(pos, vesselR, tubeTop - ringT, vesselTop, rc) ||
+                               inside(pos, vesselR, vesselBot, tubeBot + ringT, rc)) &&
+               std::abs(pos.x()) + rc < wx && std::abs(pos.y()) + rc < wy && std::abs(pos.z()) + rc < wz) {
+      capMother = worldL;  // outside the cryostat
+    }
+    if (rc > 0. && capMother) {
+      new G4PVPlacement(nullptr, capPos, new G4LogicalVolume(new G4Orb("SourceCapsule", rc), mat, "SourceCapsule"), "SourceCapsule",
+                        capMother, false, 0, kCheck);
+      if (capMother == vacuumL)
+        G4cout << "source capsule in the vacuum between the cryostat vessels (inside the outer vessel)" << G4endl;
+    if (rc > 0. && capMother == worldL) G4cout << "source capsule outside the cryostat" << G4endl;
     } else if (rc > 0.) {
-      G4Exception("BuildXams", "GEOM040", JustWarning, "source capsule not placed (inside the vessel or outside the world)");
+      G4Exception("BuildXams", "GEOM041", JustWarning,
+                  "source capsule not placed (in a vessel wall / flange or in the inner vessel, or outside the world)");
     }
   }
   return worldP;

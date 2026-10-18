@@ -170,7 +170,7 @@ void DetectorConstruction::ApplySurfaces() {
       MakeReflector(lv, c.Num("optics/ptfe_in_gas/reflectivity", 0.75), c.Num("optics/ptfe_in_gas/specular_fraction", 0.15));
     else if (n == "CopperRing")
       MakeReflector(lv, c.Num("optics/copper_reflectivity", 0.3), 0.);  // copper: Lambertian
-    else if (n == "Vessel")
+    else if (n == "Vessel" || n == "VesselFlange")   // inner vessel tube and flanges (the gas sees the blind flanges)
       MakeReflector(lv, rSteel, 0.);
     else if (n == "MeshFoil" || n == "MeshRing") {
       MakeReflector(lv, rSteel, 0.);  // steel: Lambertian

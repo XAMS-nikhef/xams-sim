@@ -38,7 +38,7 @@ def test_g4io_roundtrip(tmp_path):
     d.tofile(tmp_path / "deposits.bin")
     e.tofile(tmp_path / "deposits.events.bin")
     h = {"deposit_dtype": ddt, "event_dtype": edt, "deposit_record_bytes": np.dtype(ddt).itemsize,
-         "event_record_bytes": np.dtype(edt).itemsize, "files": {"deposits": str(tmp_path / "deposits.bin")},
+         "event_record_bytes": np.dtype(edt).itemsize, "files": {"deposits": "/somewhere/else/deposits.bin"},  # moved folder
          "codes": {"particle": ["none", "e-", "gamma"]}, "counts": {"deposits": 3, "events": 2}}
     (tmp_path / "deposits.json").write_text(json.dumps(h))
     hh, dd, ee = g4io.read(tmp_path)

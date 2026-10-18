@@ -1,6 +1,7 @@
 # Cs-137 point source at the raised position planned for the short fill (run plan 2026-10-12): level with the middle of
-# the drift region, >= 10 cm from the TPC axis. Exact position to be filled in from the lab notes after the fill.
+# the drift region, >= 10 cm from the TPC axis; in the model at r = 130 mm, just outside the outer
+# cryostat vessel (tube r 127 mm; user 2026-10-18: source outside the outer vacuum vessel, z as planned). Exact position to be filled in from the lab notes after the fill.
 isotope: Cs-137
 activity_bq: null            # to be filled in
-position_mm: [0.0, 100.0, -26.0]   # x, y, z in the geometry frame (z = 0 at the gate); placeholder from the plan
+position_mm: [0.0, 130.0, -26.0]   # x, y, z in the geometry frame (z = 0 at the gate); placeholder from the plan
 collimator: null

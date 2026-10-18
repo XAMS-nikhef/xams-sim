@@ -5,7 +5,7 @@ open in the COMSOL GUI with geometry, materials, physics, mesh, study (one auxil
 place.
 
 Model (3D, mm, z = 0 at the gate, frame as geometry.yaml; SiPM azimuths in the data x-y frame):
-- domain: inside of the grounded inner cryostat vessel; PTFE bucket with liquid xenon up to the level, gas elsewhere;
+- domain: the gas cavity of the grounded inner cryostat vessel (between its blind flanges); PTFE bucket with liquid xenon up to the level, gas elsewhere;
 - meshes (top screen, anode, gate, cathode, bottom screen) as solid conducting discs r < 36 mm (the etched holes are
   not resolved) plus their support rings (r 36-46.3 mm, on the side given by foil_side);
 - inner PTFE cylinder (r 31-36 mm, top against the gate, 0.875 mm gap above the cathode), copper field-shaping rings
@@ -86,9 +86,9 @@ def main():
     bk_t = bk["bottom_thickness_mm"] or 10.0
     ves = G["cryostat_vessel"]
     r_ves = ves["inner_diameter_mm"] / 2
-    ves_bot = bk_bottom - (ves["bottom_gap_mm"] or 10.0)
-    wall = (ves["outer_diameter_mm"] - ves["inner_diameter_mm"]) / 2
-    ves_h = ves["height_mm"] - 2 * (ves["end_thickness_mm"] or wall)
+    # the grounded boundary is the gas cavity of the inner vessel (between its blind flanges), centred on center_z_mm
+    ves_h = ves["height_mm"]
+    ves_bot = ves.get("center_z_mm", -25.9) - 0.5 * ves_h
     pmt = G["pmt_common"]
     s_pmt, h_pmt = pmt["outer_square_mm"], pmt["height_mm"]
     pz = {p["name"]: p["window_z_mm"] for p in G["pmts"]}
