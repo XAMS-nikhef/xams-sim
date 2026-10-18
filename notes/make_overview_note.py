@@ -59,13 +59,15 @@ WHAT = {
     "MergeLineage": "one row per cluster: energy-weighted position, summed energy, time",
     "FindCluster": "DBSCAN clustering in space and time (option clustering: dbscan)",
     "MergeCluster": "one row per DBSCAN cluster",
-    "XamsVolumeProperties": "volume of each cluster (1 drift region, 2 below cathode, 3 gas, 4 liquid above the gate), its "
-                            "xenon density and whether its electrons are kept",
+    "XamsVolumeProperties": "volume of each cluster from the drift map (1 drift region, 2 below cathode, 3 gas, 4 liquid "
+                            "above the gate) and its xenon density",
     "XamsVolumeSelection": "keeps clusters in the four volumes (fuse itself keeps only 1 and 2)",
     "DefaultSimulation": "applies the selection: interactions_in_roi",
     "XamsElectricField": "|E| at the cluster position (x, y, z) from the state's 3D field map",
     "NestYields": "NEST photons / electrons / excitons with the local field and the volume's density",
     "MicroPhysicsSummary": "all of the above in one table per cluster",
+    "XamsElectronDrift": "electrons at the liquid surface per cluster from the state's drift map (end point: surface, "
+                         "bottom, wall, SiPM; survival exp(−t/τ)), drift time and diffusion spread, position at the gate",
 }
 # configuration files: what they define (written here); keys and users are read below
 CONFIG = [
@@ -252,6 +254,8 @@ def fmt(v):
     s = repr(v) if not isinstance(v, str) else v
     if isinstance(v, str) and "/maps/field/" in v:
         return "maps/field/&lt;key&gt;/efield_xyz.npz"
+    if isinstance(v, str) and "/maps/drift/" in v:
+        return "maps/drift/&lt;key&gt;/drift_xyz.npz"
     if isinstance(v, str) and v.startswith(str(ROOT)):
         s = v[len(str(ROOT)) + 1:]
     return esc(s if len(s) <= 34 else s[:32] + "…")
@@ -272,6 +276,7 @@ def main():
         raise SystemExit(f"no description for plugins {missing}: add them to WHAT")
     gdir = chain.g4_dir(res)
     settings = chain.settings(res, gdir, xams_efield_map=str(ROOT / "maps" / "field" / "KEY" / "efield_xyz.npz"),
+                              xams_drift_map=str(ROOT / "maps" / "drift" / "KEY" / "drift_xyz.npz"),
                               g4_output_hash="(content hash of the Geant4 output)")
     fig_architecture(maps.KINDS, list(config.PRODUCTS)); fig_chain(pl)
 
@@ -374,6 +379,9 @@ def main():
                 ["COMSOL mesh cells", "efield/comsol/make_cell.py",
                  "field through one cell of an etched mesh (gate, cathode, gate + anode stack); extraction and EL (S5)",
                  "efield/comsol/run_cell.sh"],
+                ["drift map", "xamssim/driftmap.py",
+                 "electron end points, drift times, gate crossings on a 1 × 1 × 0.5 mm grid, tracked through the 3D field",
+                 "xamssim maps --state … --export drift"],
                 ["field export", "xamssim/fieldmap.py (mph: COMSOL's API)",
                  "the state's 3D field on a 0.5 mm grid → &lt;data&gt;/maps/field/&lt;key&gt;/efield_xyz.npz",
                  "xamssim maps --state … --export field"]],

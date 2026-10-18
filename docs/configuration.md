@@ -44,13 +44,14 @@ materials:
     pressure_bar: 2.0
     geant4: {composition: {Xe: 1}, molar_mass_g_mol: 131.29}     # or {nist: G4_...} or {composition_by_mass: {...}}
     electrical: {kind: dielectric, relative_permittivity: 1.96}  # or {kind: conductor}
+    transport: {drift_velocity: nest, diffusion_longitudinal_cm2_s: 25.0, diffusion_transverse_cm2_s: 55.0}  # electrons
   ...                     # gas_xenon, ptfe, stainless_steel, copper, silica, aluminium, kovar
 optics:                   # refractive indices, Rayleigh / absorption lengths, reflectivities; a range = free parameter
   ...
 ```
 
 Used by: Geant4 (through `xamssim/g4config.py`), the COMSOL generators (permittivities), xamssim (validation,
-map hashes), fuse settings (densities). Every `material:` in `geometry.yaml` must exist here. Optics: [Optics](optics.md).
+map hashes), the chain (densities; drift velocity and diffusion of the liquid for the drift map and drift). Every `material:` in `geometry.yaml` must exist here. Optics: [Optics](optics.md).
 
 ## Detector states — `config/states/<name>.yaml`
 
@@ -61,7 +62,7 @@ One operating condition of the detector.
 | `hv_case` | yes | key in `efield/cases.yaml`: anode, gate, cathode, screens, PMT and SiPM potentials |
 | `liquid_level_mm` | yes | liquid level above the gate (must equal `liquid_level_mm` in `efield/cases.yaml`) |
 | `pressure_bar` | | gas pressure (EL yield) |
-| `electron_lifetime_us` | | electron lifetime (drift), null if unknown |
+| `electron_lifetime_us` | | electron lifetime in µs (drift; required for `drifted_electrons`), null if unknown |
 | `sensors` | | e.g. `pmt_hv_v: {top: -1000, bottom: -1000}` |
 | `description` | | free text |
 

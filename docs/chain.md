@@ -11,7 +11,7 @@ xamssim maps --state cmb50 --export field                      # once per state:
 xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax/
 ```
 
-`--target` is the last product: `geant4_interactions`, `clustered_interactions` or `quanta`. Without it the chain
+`--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta` or `drifted_electrons`. Without it the chain
 stops at the run's `stop_after`, or at the last product implemented so far. `--g4 DIR` reads Geant4 output from
 somewhere other than `<data>/g4/<run name>/`.
 
@@ -21,8 +21,9 @@ somewhere other than `<data>/g4/<run name>/`.
 |---|---|---|
 | `geant4_interactions` | `XamsG4Input` (`xamssim/plugins/input.py`) | reads `deposits.*` and builds fuse's input table; events on a timeline at `source_rate_hz` |
 | `clustered_interactions` | fuse `LineageClustering` + `MergeLineage` (or `FindCluster` + `MergeCluster`) | groups deposits into clusters, each with one NEST interaction type |
-| `volume_properties`, `interactions_in_roi` | `XamsVolumeProperties`, `XamsVolumeSelection` (`xamssim/plugins/volumes.py`), fuse `DefaultSimulation` | volume of each cluster, its xenon density and whether its electrons are kept; clusters outside the volumes are dropped |
+| `volume_properties`, `interactions_in_roi` | `XamsVolumeProperties`, `XamsVolumeSelection` (`xamssim/plugins/volumes.py`), fuse `DefaultSimulation` | volume of each cluster (from the drift map) and its xenon density; clusters outside the volumes are dropped |
 | `electric_field_values` | `XamsElectricField` (`xamssim/plugins/field.py`) | \|E\| at the cluster position (x, y, z) from the state's 3D field map |
+| `drifted_electrons` | `XamsElectronDrift` (`xamssim/plugins/drift.py`) | electrons at the liquid surface (end point and lifetime from the drift map), drift time and its spread, position at the gate |
 | `quanta` | fuse `NestYields` | NEST photons / electrons / excitons with the local field and density |
 | `microphysics_summary` | fuse `MicroPhysicsSummary` | all of the above in one table per cluster |
 
@@ -33,29 +34,47 @@ Geant4 11 process name `RadioactiveDecay` → `RadioactiveDecayBase` (the name f
 
 | option | value | from |
 |---|---|---|
-| `z_gate_cm`, `z_cathode_cm` | gate and cathode mesh z | `geometry.yaml` (`meshes`) |
-| `z_liquid_cm` | gate z + liquid level | state (`liquid_level_mm`) |
-| `z_bottom_pmt_cm`, `z_top_pmt_cm` | PMT window z | `geometry.yaml` (`pmts`) |
+| `z_liquid_cm` | gate z + liquid level (liquid / gas boundary) | `geometry.yaml` + state (`liquid_level_mm`) |
 | `r_field_cage_cm` | inner radius of the PTFE cylinder (3.1 cm) | `geometry.yaml` (`ptfe_cylinder`) |
 | `density_liquid_g_cm3`, `density_gas_g_cm3` | liquid / gas xenon density | `materials.yaml` |
 | `xams_efield_map` | `<data>/maps/field/<key>/efield_xyz.npz` | map registry, state's field key |
+| `xams_drift_map` | `<data>/maps/drift/<key>/drift_xyz.npz` | map registry, state's drift key |
+| `electron_lifetime_us` | electron lifetime in the liquid | state (`electron_lifetime_us`; needed for `drifted_electrons`) |
+| `diffusion_longitudinal_cm2_s`, `diffusion_transverse_cm2_s` | diffusion of electrons in the liquid | `materials.yaml` (`liquid_xenon.transport`) |
 | `nest_er_yields_parameters`, `nest_nr_yields_parameters`, `nest_width_parameters` | `-1`, `-1`, `{}` (NEST defaults) | fixed |
 | clustering, `source_rate` | run file `physics` block | below |
 
-Four volumes, all with r < 3.1 cm (`XamsVolumeProperties`; fuse's own volume plugins are not used: they know three
-volumes, named after XENONnT, and keep two). Ids 1–3 are the ids fuse uses, so fuse plugins downstream read them as
-usual.
+Four volumes inside the field cage (r < 3.1 cm), taken from the **drift map** of the state: where the electrons of a
+cluster go decides its region (`XamsVolumeProperties`; fuse's own volume plugins, named after XENONnT, are not used).
+Ids 1–3 are the ids fuse uses.
 
-| volume (`vol_id`) | z range | density | electrons kept |
-|---|---|---|---|
-| 1 drift region | cathode → gate | liquid | yes |
-| 2 below cathode | bottom PMT window → cathode | liquid | no (light only) |
-| 3 gas | liquid surface → top PMT window | gas | yes |
-| 4 above gate | gate → liquid surface | liquid | yes |
+| volume (`vol_id`) | cluster in ... whose electrons ... | density |
+|---|---|---|
+| 1 drift region | the liquid; cross the gate to the surface, or end on the PTFE wall / a SiPM | liquid |
+| 2 below cathode | the liquid; drift down to the bottom screen | liquid |
+| 3 gas | the gas (above the surface) | gas |
+| 4 above gate | the liquid; reach the surface without crossing the gate | liquid |
 
-"Electrons kept" means NEST electrons are passed on; for clusters above the gate and in the gas the later steps (drift,
-extraction, EL) decide what they give. Xenon outside the field cage (r ≥ 3.1 cm) is in no volume: those clusters are
-dropped.
+NEST makes electrons for every cluster; `XamsElectronDrift` decides how many reach the surface. Xenon outside the field
+cage is in no volume: those clusters are dropped.
+
+## Drift map and drift
+
+```bash
+xamssim maps --state sept --export drift                          # once per state, ~15 s, from the field map
+xamssim chain <run> --target drifted_electrons
+```
+
+The drift map is a look-up table made once per state (`xamssim/driftmap.py`): from every point of a
+1 × 1 × 0.5 mm grid inside the field cage one test electron is moved against the field (0.1 mm steps, drift velocity
+v(\|E\|) of the liquid from NEST) until it reaches the liquid surface (`surface`), the bottom screen (`bottom`), the
+PTFE wall (`wall`) or a SiPM opening (`sipm`); points in the gas are `gas`. Stored per point: end code, drift time to
+the surface, where it crosses the gate, path length. In the chain each cluster takes the values of its grid point
+(drift time and gate position shifted to the exact position): all electrons of a cluster follow the same field line;
+lifetime (binomial with exp(−t/τ)) and diffusion (σ_t from D_L, σ_xy from D_T) act statistically. `drifted_electrons`:
+`n_electron_interface`, `drift_time_mean`, `drift_time_spread` [ns], `x_obs`, `y_obs` (at the gate) [cm],
+`xy_spread`, `drift_end`, `survival`. Not yet in the map: electrons passing through the cathode holes (the meshes are
+solid discs in the full field model), partial losses at the edges of a catchment area.
 
 ## Physics options (run file)
 

@@ -10,6 +10,7 @@
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
     xamssim maps     --state cmb50 --export field          3D COMSOL field of the state -> <data>/maps/ (registered)
+    xamssim maps     --state cmb50 --export drift          drift map (end points, drift times) from the field map
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
 """
 from __future__ import annotations
@@ -59,7 +60,8 @@ def cmd_maps(a) -> int:
     res = resolve_state(a.state)
     if a.export:
         from . import fieldmap
-        e = {"field": fieldmap.export}[a.export](res)
+        from . import driftmap
+        e = {"field": fieldmap.export, "drift": driftmap.export}[a.export](res)
         print(f"registered {e['kind']} {e['key']}: maps/{e['files'][0]}  ({e['producer_version']})")
     print(f"state {a.state} (hv_case {res.state['hv_case']}, level {res.state['liquid_level_mm']} mm)")
     _print_maps(res, list(KINDS))
@@ -114,7 +116,9 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_status)
     p = sub.add_parser("maps", help="map status for one detector state")
     p.add_argument("--state", required=True)
-    p.add_argument("--export", choices=["field"], help="export to the registry (field: 3D field of the state from the solved COMSOL model; needs the COMSOL licence)")
+    p.add_argument("--export", choices=["field", "drift"],
+                   help="make a map and register it (field: 3D field from the solved COMSOL model, needs the licence; "
+                        "drift: electron end points and drift times from the field map)")
     p.set_defaults(func=cmd_maps)
     p = sub.add_parser("validate", help="check run configuration files")
     p.add_argument("runs", nargs="+")
@@ -129,7 +133,7 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_particle)
     p = sub.add_parser("chain", help="simulation chain (strax / fuse) on the Geant4 output of a run")
     p.add_argument("run")
-    p.add_argument("--target", choices=["geant4_interactions", "clustered_interactions", "quanta"],
+    p.add_argument("--target", choices=["geant4_interactions", "clustered_interactions", "quanta", "drifted_electrons"],
                    help="last product (default: the run's stop_after, at most the last implemented one)")
     p.add_argument("--g4", help="Geant4 output folder (default <data>/g4/<run name>)")
     p.set_defaults(func=cmd_chain)

@@ -59,23 +59,18 @@ def physics(res: Resolved) -> dict:
 
 
 def volumes(res: Resolved) -> dict:
-    """Volume settings of XamsVolumeProperties (cm) from geometry.yaml and the state's liquid level."""
+    """The two boundaries XamsVolumeProperties needs (cm): liquid surface and field-cage radius; the regions inside
+    come from the drift map."""
     g = res.geometry
-    z = {m["name"]: m["z_mm"] for m in g["meshes"]}
-    pmt = {p["name"]: p["window_z_mm"] for p in g["pmts"]}
-    r = g["ptfe_cylinder"]["inner_diameter_mm"] / 2
-    return dict(
-        z_gate_cm=z["gate"] / 10, z_cathode_cm=z["cathode"] / 10,
-        z_liquid_cm=(z["gate"] + res.state["liquid_level_mm"]) / 10,
-        z_bottom_pmt_cm=pmt["bottom"] / 10, z_top_pmt_cm=pmt["top"] / 10,
-        r_field_cage_cm=r / 10,
-    )
+    z_gate = next(m["z_mm"] for m in g["meshes"] if m["name"] == "gate")
+    return dict(z_liquid_cm=(z_gate + res.state["liquid_level_mm"]) / 10,
+                r_field_cage_cm=g["ptfe_cylinder"]["inner_diameter_mm"] / 20)
 
 
 def plugins(clustering: str) -> list:
     import fuse
 
-    from .plugins import XamsElectricField, XamsG4Input, XamsVolumeProperties, XamsVolumeSelection
+    from .plugins import XamsElectricField, XamsElectronDrift, XamsG4Input, XamsVolumeProperties, XamsVolumeSelection
     mp = fuse.micro_physics
     clus = ([mp.LineageClustering, mp.MergeLineage] if clustering == "lineage" else [mp.FindCluster, mp.MergeCluster])
     return [XamsG4Input, 
@@ -85,11 +80,13 @@ def plugins(clustering: str) -> list:
             mp.cuts_and_selections.DefaultSimulation, 
             XamsElectricField, 
             mp.NestYields, 
-            mp.MicroPhysicsSummary]
+            mp.MicroPhysicsSummary,
+            XamsElectronDrift]
 
 
-def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4_output_hash: str | None = None) -> dict:
-    from . import fieldmap, g4io
+def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4_output_hash: str | None = None,
+             xams_drift_map: str | None = None) -> dict:
+    from . import driftmap, fieldmap, g4io
     p = physics(res)
     mats = res.materials["materials"]
     lxe, gxe = mats["liquid_xenon"]["density_g_cm3"], mats["gas_xenon"]["density_g_cm3"]
@@ -107,6 +104,11 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         # field, NEST
         xams_efield_map=str(xams_efield_map or fieldmap.path(res)),
         nest_er_yields_parameters=-1, nest_nr_yields_parameters=-1, nest_width_parameters={},
+        # drift (S4): drift map of the state, lifetime of the state, diffusion of the liquid
+        xams_drift_map=str(xams_drift_map or driftmap.path(res)),
+        **({"electron_lifetime_us": res.state["electron_lifetime_us"]} if res.state.get("electron_lifetime_us") else {}),
+        diffusion_longitudinal_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_longitudinal_cm2_s"],
+        diffusion_transverse_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_transverse_cm2_s"],
     )
 
 
@@ -122,7 +124,8 @@ def context(run_path, g4_out=None, store=STORE, **overrides):
     gdir = Path(g4_out) if g4_out else g4_dir(res)
     if not (gdir / "deposits.json").exists():
         raise ConfigError(f"no Geant4 output in {gdir}: xamssim particle {res.run_path}")
-    cfg = settings(res, gdir, xams_efield_map=overrides.get("xams_efield_map"))
+    cfg = settings(res, gdir, xams_efield_map=overrides.get("xams_efield_map"),
+                   xams_drift_map=overrides.get("xams_drift_map"))
     cfg.update(overrides)
     st = strax.Context(storage=[strax.DataDirectory(str(store))], register=plugins(physics(res)["clustering"]),
                        config=cfg)
@@ -132,7 +135,7 @@ def context(run_path, g4_out=None, store=STORE, **overrides):
 
 # chain products (config.PRODUCTS) implemented so far -> strax data type
 TARGETS = {"geant4_interactions": "geant4_interactions", "clustered_interactions": "clustered_interactions",
-           "quanta": "microphysics_summary"}
+           "quanta": "microphysics_summary", "drifted_electrons": "drifted_electrons"}
 
 
 def run(run_path, target: str | None = None, g4_out=None) -> int:
@@ -151,19 +154,32 @@ def run(run_path, target: str | None = None, g4_out=None) -> int:
             print(f"stop_after '{stop}' not implemented yet; processing up to '{target}'")
     if target not in TARGETS:
         raise ConfigError(f"target '{target}' not implemented (available: {list(TARGETS)})")
+    if PRODUCTS.index(target if target != "quanta" else "quanta") >= PRODUCTS.index("drifted_electrons") and \
+            not res.state.get("electron_lifetime_us"):
+        raise ConfigError(f"state '{res.state_name}' has no electron_lifetime_us (needed for the drift)")
     st, run_id = context(run_path, g4_out=g4_out)
     t0 = time.time()
     # store the clusters and their volumes too (all clusters, also the dropped ones), then the target; fuse saves a
     # product only when it is the single target of a request (SaveWhen.TARGET), hence one make per product
-    if target == "quanta":
-        for t in ("clustered_interactions", "volume_properties"):
+    if target in ("quanta", "drifted_electrons"):
+        keep = ["clustered_interactions", "volume_properties"] + (["microphysics_summary"] if target != "quanta" else [])
+        for t in keep:                                   # NEST stored too: every later step reads the same draw
             st.make(run_id, t)
     d = st.get_array(run_id, TARGETS[target])
     print(f"run {res.run_path.name} (run id {run_id}): {TARGETS[target]} — {len(d)} rows, "
-          f"{len(np.unique(d['eventid'])) if len(d) else 0} events, {time.time() - t0:.0f} s; stored in {STORE}")
+          f"{len(np.unique(d['eventid'])) if len(d) and 'eventid' in d.dtype.names else '-'} events, "
+          f"{time.time() - t0:.0f} s; stored in {STORE}")
     from .plugins import VOLUME_NAMES
     if "vol_id" in (d.dtype.names or ()):
         for v, name in VOLUME_NAMES.items():
             m = d["vol_id"] == v
             print(f"  {name:<14} {m.sum():8d} clusters, mean {d['ed'][m].mean() if m.any() else 0:6.1f} keV")
+    if "drift_end" in (d.dtype.names or ()):
+        from .driftmap import CODES
+        q = st.get_array(run_id, "microphysics_summary", progress_bar=False)
+        for c, name in CODES.items():
+            m = d["drift_end"] == c
+            if m.any():
+                print(f"  electrons ending at {name:<8} {m.sum():8d} clusters, {q['electrons'][m].sum():12d} electrons made, "
+                      f"{d['n_electron_interface'][m].sum():12d} at the surface")
     return 0

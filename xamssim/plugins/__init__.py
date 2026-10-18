@@ -6,8 +6,9 @@ import numpy as _np
 if not hasattr(_np, "in1d"):
     _np.in1d = _np.isin
 
+from .drift import XamsElectronDrift  # noqa: E402
 from .field import XamsElectricField  # noqa: E402
 from .input import XamsG4Input, XamsG4Loader  # noqa: E402
 from .volumes import VOLUME_NAMES, XAMS_VOLUME_IDS, XamsVolumeProperties, XamsVolumeSelection  # noqa: E402
 
-__all__ = ["XamsElectricField", "XamsG4Input", "XamsG4Loader", "XamsVolumeProperties", "XamsVolumeSelection", "XAMS_VOLUME_IDS", "VOLUME_NAMES"]
+__all__ = ["XamsElectronDrift", "XamsElectricField", "XamsG4Input", "XamsG4Loader", "XamsVolumeProperties", "XamsVolumeSelection", "XAMS_VOLUME_IDS", "VOLUME_NAMES"]

@@ -1,16 +1,18 @@
-"""XAMS volumes: which part of the detector each cluster is in, its xenon density and whether its electrons are kept.
+"""XAMS volumes: which part of the detector each cluster is in, and its xenon density (plan S4: from the drift map).
 
-Replaces fuse's VolumeProperties / VolumeSelection, whose options are named after XENONnT and which know only three
-volumes (fuse keeps two of them). All four volumes lie inside the field-cage radius:
+The region of a cluster follows from where its electrons go (state's drift map, xamssim.driftmap), not from fixed
+planes; only the two real boundaries are settings: the liquid surface (liquid / gas) and the inner radius of the PTFE
+cylinder (behind it there is no field and no light: no volume).
 
-    vol_id  name           z range                               density   electrons kept
-    1       tpc            cathode -> gate                       liquid    yes  (drift region)
-    2       below_cathode  bottom PMT window -> cathode          liquid    no   (light only)
-    3       gas_phase      liquid surface -> top PMT window      gas       yes  (what they give: S4 / S5)
-    4       above_gate     gate -> liquid surface                liquid    yes
+    vol_id  name           cluster in the liquid inside the field cage whose electrons ...   density
+    1       tpc            cross the gate (to the surface), or end on the wall / a SiPM      liquid
+    2       below_cathode  drift down to the bottom screen                                    liquid
+    3       gas_phase      (cluster in the gas, above the surface)                           gas
+    4       above_gate     reach the surface without crossing the gate                       liquid
+    0       outside        outside the field-cage radius or the drift map                   (dropped)
 
-Lower bounds inclusive, upper bounds exclusive (as fuse's in_cylinder); outside the radius: vol_id 0, dropped.
-Ids 1-3 are fuse's (fuse.common.VOLUMES_IDS), so fuse plugins further down read them as usual.
+NEST gets the electrons of every cluster (create_S2 = True); what happens to them is decided by the drift
+(XamsElectronDrift: survival from the end point and the lifetime). Ids 1-3 are fuse's (fuse.common.VOLUMES_IDS).
 """
 from __future__ import annotations
 
@@ -20,32 +22,33 @@ import straxen
 from fuse.common import VOLUMES_IDS
 from fuse.dtypes import volume_properties_fields
 from fuse.plugin import FuseBasePlugin
-from fuse.plugins.micro_physics.volume_properties import in_cylinder
+
+from ..driftmap import BOTTOM, SIPM, SURFACE, WALL, DriftMap
 
 export, __all__ = strax.exporter()
 
 XAMS_VOLUME_IDS = {**VOLUMES_IDS, "above_gate": 4}
 VOLUME_NAMES = {1: "drift region", 2: "below cathode", 3: "gas", 4: "above gate"}
-ELECTRONS_KEPT = {1: True, 2: False, 3: True, 4: True}
 
 
 @export
 class XamsVolumeProperties(FuseBasePlugin):
-    """vol_id, xe_density and create_S2 (electrons kept) per cluster, from the XAMS geometry and state."""
+    """vol_id and xe_density per cluster, from the drift map of the state and the liquid surface."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     depends_on = "clustered_interactions"
     provides = "volume_properties"
     dtype = volume_properties_fields + strax.time_fields
 
-    z_gate_cm = straxen.URLConfig(type=(int, float), help="gate mesh z [cm] (geometry.yaml)")
-    z_cathode_cm = straxen.URLConfig(type=(int, float), help="cathode mesh z [cm] (geometry.yaml)")
     z_liquid_cm = straxen.URLConfig(type=(int, float), help="liquid surface z [cm] (gate + liquid level of the state)")
-    z_bottom_pmt_cm = straxen.URLConfig(type=(int, float), help="bottom PMT window z [cm] (geometry.yaml)")
-    z_top_pmt_cm = straxen.URLConfig(type=(int, float), help="top PMT window z [cm] (geometry.yaml)")
     r_field_cage_cm = straxen.URLConfig(type=(int, float), help="inner radius of the PTFE cylinder [cm] (geometry.yaml)")
     density_liquid_g_cm3 = straxen.URLConfig(type=(int, float), help="liquid xenon density (materials.yaml)")
     density_gas_g_cm3 = straxen.URLConfig(type=(int, float), help="gas xenon density (materials.yaml)")
+    xams_drift_map = straxen.URLConfig(type=str, help="drift map of the state (<data>/maps/drift/<key>/drift_xyz.npz)")
+
+    def setup(self):
+        super().setup()
+        self.drift = DriftMap(self.xams_drift_map)
 
     def compute(self, clustered_interactions):
         c = clustered_interactions
@@ -53,18 +56,22 @@ class XamsVolumeProperties(FuseBasePlugin):
         out["time"], out["endtime"] = c["time"], c["endtime"]
         if not len(c):
             return out
-        r = float(self.r_field_cage_cm)
-        zones = (  # (vol_id, z_min, z_max, density)
-            (1, self.z_cathode_cm, self.z_gate_cm, self.density_liquid_g_cm3),
-            (2, self.z_bottom_pmt_cm, self.z_cathode_cm, self.density_liquid_g_cm3),
-            (4, self.z_gate_cm, self.z_liquid_cm, self.density_liquid_g_cm3),
-            (3, self.z_liquid_cm, self.z_top_pmt_cm, self.density_gas_g_cm3),
-        )
-        for vid, lo, hi, rho in zones:
-            m = in_cylinder(c["x"], c["y"], c["z"], float(lo), float(hi), r)
-            out["vol_id"][m] = vid
-            out["xe_density"][m] = float(rho)
-            out["create_S2"][m] = ELECTRONS_KEPT[vid]
+        x, y, z = c["x"] * 10.0, c["y"] * 10.0, c["z"] * 10.0            # cm -> mm (drift map)
+        dm = self.drift
+        inside = ((np.hypot(c["x"], c["y"]) < self.r_field_cage_cm) & (z >= dm.z[0]) & (z <= dm.z[-1]))
+        gas = inside & (c["z"] >= self.z_liquid_cm)
+        liq = inside & ~gas
+        end = dm(x, y, z, "end")
+        crossed = dm(x, y, z, "crossed")
+        vid = np.zeros(len(c), np.int8)
+        vid[gas] = 3
+        vid[liq & np.isin(end, (WALL, SIPM))] = 1
+        vid[liq & (end == SURFACE) & crossed] = 1
+        vid[liq & (end == SURFACE) & ~crossed] = 4
+        vid[liq & (end == BOTTOM)] = 2
+        out["vol_id"] = vid
+        out["xe_density"] = np.where(gas, self.density_gas_g_cm3, np.where(liq, self.density_liquid_g_cm3, 0.0))
+        out["create_S2"] = vid > 0
         return out
 
 
