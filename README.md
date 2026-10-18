@@ -12,12 +12,30 @@ state before the restructure is tag `optical-sim-final`). Layout:
 | `xamssim/` | simulation chain: config resolution, map registry, CLI (`xamssim status config/runs/<run>.yaml`) |
 | `maps/` | generated maps (not in git) · `results/`, `notes/`, `docs/` as before · `run/` scan output (not in git) |
 
-Geant4 particle mode (plan S2): `xamssim g4 config/runs/<run>.yaml [--events N]` → `run/g4/<run>/deposits.{bin,events.bin,json}`
-(one record per energy deposit in xenon, read with `xamssim.g4io.read`); check: `validation/s2_particle_check.py`,
-`results/s2_particle/`.
+## Environments and commands
 
-Full-chain plan: `docs/xams_sim_plan.md`. Environment for the chain: conda env `xamssim` (Python 3.12, strax 2.2.3,
-fuse 1.6.3, nestpy 2.0.6, amstrax; `pip install -e .[test]`); Geant4 stays in the `g4` env.
+One compiled program, **`g4/build/xamsg4`** (Geant4; optical mode by default, particle mode with `-m particle`), and
+one Python package, **`xamssim`**. Two conda environments:
+
+| env | what for |
+|---|---|
+| `xamssim` | **everything you run**: the commands below, the optical scan / check tools, analysis (Python 3.12, strax 2.2.3, fuse 1.6.3, nestpy 2.0.6, amstrax; `pip install -e .[test]`) |
+| `g4` | only to **compile** `xamsg4` (`conda activate g4; cmake -S g4 -B g4/build && cmake --build g4/build -j8`). `xamsg4` also needs the Geant4 libraries / data at run time: `xamssim/g4bin.py` starts it in `g4` automatically (`conda run -n g4`) |
+
+```bash
+conda activate xamssim
+xamssim particle config/runs/s2_cs137_raised.yaml [--events N]   # particle production -> run/g4/<run>/deposits.*
+xamssim particle config/runs/vis_cs137.yaml --vis                 # particle viewer (Cs events): /run/beamOn 10
+xamssim optical  optical/scans/fit_s2.yaml [--jobs 8]             # optical simulation (scan) -> run/scans/<scan>/
+xamssim optical  --vis --state cmb50                              # optical viewer (S1/S2 photons): /run/beamOn 20
+xamssim status   config/runs/<run>.yaml                           # resolved run, input hashes, map status
+python -m pytest tests                                            # tests
+```
+
+Particle output is read with `xamssim.g4io.read(<dir>)`; check of the particle mode: `validation/s2_particle_check.py`,
+`results/s2_particle/`. (The program was called `xamsopt` until 2026-10-18; macro commands are now `/xamsg4/...`.)
+
+Full-chain plan: `docs/xams_sim_plan.md`.
 
 ## Optical simulation
 
@@ -48,14 +66,14 @@ results). **Findings: PDF note `notes/XAMS_optical_simulation_2026-10-05.pdf`** 
 conda activate g4
 cmake -S g4 -B g4/build && cmake --build g4/build -j8
 python optical/make_config.py --level 4.0 --out run/config.json
-g4/build/xamsopt -c run/config.json -o run/photons.bin g4/build/<macro>.mac
+g4/build/xamsg4 -c run/config.json -o run/photons.bin g4/build/<macro>.mac
 ```
 
 Look at the geometry:
 
 ```bash
-cd g4/build && ./xamsopt -c ../../run/config.json -o /tmp/vis.bin             # Qt viewer; /run/beamOn 20 draws photons
-cd g4/build && ./xamsopt -c ../../run/config.json -o /tmp/vis.bin section.mac  # exact cross sections from Geant4's navigator
+cd g4/build && ./xamsg4 -c ../../run/config.json -o /tmp/vis.bin             # Qt viewer; /run/beamOn 20 draws photons
+cd g4/build && ./xamsg4 -c ../../run/config.json -o /tmp/vis.bin section.mac  # exact cross sections from Geant4's navigator
 python optical/plot_section.py g4/build/section_xz.bin                      # -> g4/build/section_xz.png (--zoom u0 u1 v0 v1)
 ```
 

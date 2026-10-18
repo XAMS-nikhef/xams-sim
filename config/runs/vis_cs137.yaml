@@ -1,0 +1,6 @@
+# Viewer run: xamssim particle config/runs/vis_cs137.yaml --vis   (then /run/beamOn 10 in the Qt window)
+state: cmb50
+source: cs137_vis_cone
+n_events: 10
+seed: 1
+stop_after: geant4_interactions

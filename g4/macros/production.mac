@@ -2,6 +2,6 @@
 /run/verbose 0
 /run/printProgress 0
 /run/initialize
-/xamsopt/source/shape {shape}
-/xamsopt/source/rmax {rmax} mm
+/xamsg4/source/shape {shape}
+/xamsg4/source/rmax {rmax} mm
 /run/beamOn {n}

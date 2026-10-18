@@ -16,8 +16,8 @@
 #include <vector>
 
 SectionScan::SectionScan() {
-  fDir = std::make_unique<G4UIdirectory>("/xamsopt/");
-  fCmd = std::make_unique<G4UIcommand>("/xamsopt/section", this);
+  fDir = std::make_unique<G4UIdirectory>("/xamsg4/");
+  fCmd = std::make_unique<G4UIcommand>("/xamsg4/section", this);
   fCmd->SetGuidance("Volume map of a plane: file plane(xz|yz|xy) offset umin umax vmin vmax step (mm)");
   fCmd->SetParameter(new G4UIparameter("file", 's', false));
   fCmd->SetParameter(new G4UIparameter("plane", 's', false));
@@ -34,7 +34,7 @@ void SectionScan::Scan(const std::string& args) {
   double off, umin, umax, vmin, vmax, step;
   ss >> file >> plane >> off >> umin >> umax >> vmin >> vmax >> step;
   if (!ss) {
-    G4cerr << "usage: /xamsopt/section file plane offset umin umax vmin vmax step   (mm)" << G4endl;
+    G4cerr << "usage: /xamsg4/section file plane offset umin umax vmin vmax step   (mm)" << G4endl;
     return;
   }
   auto* nav = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking();

@@ -1,4 +1,4 @@
-"""Draw a geometry cross section written by /xamsopt/section (Geant4 navigator: volume at each grid point).
+"""Draw a geometry cross section written by /xamsg4/section (Geant4 navigator: volume at each grid point).
 
     python optical/plot_section.py build/section_xz.bin [-o section_xz.png] [--zoom umin umax vmin vmax]
 """

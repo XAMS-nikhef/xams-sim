@@ -5,7 +5,7 @@ geometry.yaml  ─┐
  (dimensions)    ├make_config.py──► config.json ──┐
 materials.yaml ─┘                (one concrete    │
  (materials, optics)              setting)        ▼
-                                  macro.mac ──► xamsopt (Geant4) ──► photons.bin  (+ .summary.json, .volumes.json)
+                                  macro.mac ──► xamsg4 (Geant4) ──► photons.bin  (+ .summary.json, .volumes.json)
                                   (what to do:                         one record per photon
                                    source, how many)                        │
                                                                             ▼

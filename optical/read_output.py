@@ -1,4 +1,4 @@
-"""Read the per-photon output of xamsopt (binary records, layout of g4/include/Output.hh PhotonRecord)."""
+"""Read the per-photon output of xamsg4 (binary records, layout of g4/include/Output.hh PhotonRecord)."""
 import json
 from pathlib import Path
 

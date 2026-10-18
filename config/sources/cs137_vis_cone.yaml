@@ -1,0 +1,11 @@
+# For looking at events in the viewer: 662 keV gammas (the Cs-137 line) from the raised source position, aimed at the
+# TPC in a 20° cone, so that most events interact in the xenon (isotropic decays at 10 cm mostly miss the TPC).
+description: "662 keV gammas from the raised position, 20° cone towards the TPC centre (viewer)"
+isotope: Cs-137
+type: gamma
+energy_keV: 661.657
+position_mm: [0.0, 100.0, -26.0]
+direction: cone
+half_angle_deg: 20.0
+z_target_mm: -26.0
+collimator: null

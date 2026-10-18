@@ -1,8 +1,8 @@
 // One 178 nm optical photon per event, isotropic, random linear polarisation.
-// Source shapes (macro commands /xamsopt/source/...):
-//   point     at /xamsopt/source/position
+// Source shapes (macro commands /xamsg4/source/...):
+//   point     at /xamsg4/source/position
 //   cylinder  uniform in a cylinder of radius rmax between zmin and zmax (S1: liquid; S2: gas gap), centred on x = y = 0
-//   beam      from /xamsopt/source/position in the fixed /xamsopt/source/direction (tests)
+//   beam      from /xamsg4/source/position in the fixed /xamsg4/source/direction (tests)
 //   beam_disc as beam, from random points in a disc of radius rmax around position (tests)
 //   s2        uniform in the gas gap: liquid surface to just below the anode foil, r < rmax (z range from the config)
 //   s1        uniform in the drift region: just above the cathode foil to just below the gate foil, r < rmax

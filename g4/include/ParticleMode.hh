@@ -1,7 +1,7 @@
-// Particle mode of xamsopt (xams-sim plan S2): radioactive sources / gammas through the full XAMS geometry, every energy
+// Particle mode of xamsg4 (xams-sim plan S2): radioactive sources / gammas through the full XAMS geometry, every energy
 // deposit in xenon (liquid and gas) written as a fixed-size binary record.
 //
-//   xamsopt -m particle -c config.json -o run/x/deposits.bin [-s seed] macro.mac
+//   xamsg4 -m particle -c config.json -o run/x/deposits.bin [-s seed] macro.mac
 //
 // Output (read in Python with xamssim.g4io):
 //   <stem>.bin         one DepositRecord per Geant4 step with energy deposit in LXe / GXe

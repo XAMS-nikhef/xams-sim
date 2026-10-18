@@ -1,6 +1,6 @@
 // XAMS Geant4 application (xams-sim): optical mode (default) and particle mode.
-//   xamsopt -c run/config.json -o run/photons.bin [-s seed] [-d] [-v] [macro.mac]          optical photons
-//   xamsopt -m particle -c config.json -o run/x/deposits.bin [-s seed] macro.mac           sources -> energy deposits
+//   xamsg4 -c run/config.json -o run/photons.bin [-s seed] [-d] [-v] [macro.mac]          optical photons
+//   xamsg4 -m particle -c config.json -o run/x/deposits.bin [-s seed] macro.mac           sources -> energy deposits
 //     (particle mode: include/ParticleMode.hh; normally started by `xamssim g4 config/runs/<run>.yaml`)
 // -d: records only for detected photons (every photon still counted in <out>.summary.json).
 // Without a macro: interactive session with visualisation (Qt). -v: visualisation also in batch (offscreen images).
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     else macro = a;
   }
   if (config.empty()) {
-    std::cerr << "usage: xamsopt [-m optical|particle] -c config.json [-o out.bin] [-s seed] [-d] [-v] [macro.mac]\n";
+    std::cerr << "usage: xamsg4 [-m optical|particle] -c config.json [-o out.bin] [-s seed] [-d] [-v] [macro.mac]\n";
     return 1;
   }
   if (mode != "optical" && mode != "particle") {
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     Output::Get().SetInfo("seed", std::to_string(seed));
     Output::Get().SetInfo("macro", macro);
   }
-  SectionScan scanner;  // /xamsopt/section
+  SectionScan scanner;  // /xamsg4/section
 
   auto* ui = G4UImanager::GetUIpointer();
   if (!macro.empty()) {
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     auto* vis = new G4VisExecutive("quiet");
     vis->Initialize();
     ui->ApplyCommand("/run/initialize");
-    ui->ApplyCommand("/control/execute vis_interactive.mac");
+    ui->ApplyCommand(mode == "particle" ? "/control/execute vis_particle.mac" : "/control/execute vis_interactive.mac");
     session->SessionStart();
     delete session;
     delete vis;

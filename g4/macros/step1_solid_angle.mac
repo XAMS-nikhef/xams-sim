@@ -4,6 +4,6 @@
 /event/verbose 0
 /tracking/verbose 0
 /run/initialize
-/xamsopt/source/shape point
-/xamsopt/source/position 0 0 0 mm
+/xamsg4/source/shape point
+/xamsg4/source/position 0 0 0 mm
 /run/beamOn 200000

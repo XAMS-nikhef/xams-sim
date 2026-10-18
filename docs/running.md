@@ -1,19 +1,21 @@
 # Running
 
-All commands from `optical_sim/`, inside `conda activate g4`.
+All commands from the repository root (`xams-sim/`), inside `conda activate xamssim` — the Geant4 program `xamsg4`
+is started in the `g4` env automatically ([setup](setup.md)). The direct `./xamsg4` lines further down also work, but
+only inside `conda activate g4`.
 
 ## Look at the geometry (viewer)
 
 ```bash
-python optical/make_config.py --level 4.0 --out run/config_level4.json
-cd g4/build && ./xamsopt -c ../../run/config_level4.json -o /tmp/vis.bin
+xamssim optical --vis --state cmb50          # optical viewer (liquid level from the state; or --level 4.0)
+xamssim particle config/runs/vis_cs137.yaml --vis   # particle viewer: Cs-137 events (/run/beamOn 10)
 ```
 
 A Qt window opens (drag = rotate, scroll = zoom). Type commands in the box at the bottom:
 
 | command | does |
 |---|---|
-| `/xamsopt/source/shape s2`, `/xamsopt/source/rmax 30 mm`, `/run/beamOn 50` | shoot 50 S2 photons, tracks drawn |
+| `/xamsg4/source/shape s2`, `/xamsg4/source/rmax 30 mm`, `/run/beamOn 50` | shoot 50 S2 photons, tracks drawn |
 | `/vis/viewer/clearCutawayPlanes` | the viewer starts cut open (plane x = 0, keeps x < 0: a plane keeps the side its normal points to); this closes it |
 | `/vis/viewer/addCutawayPlane 0 0 0 m 0 1 0` | add another cut (intersection mode: only what is on the kept side of all planes; `/vis/viewer/set/cutawayMode union` for any) |
 | `/vis/geometry/set/visibility Vessel 0 false` | hide the steel vessel (also `Bucket`) |
@@ -28,23 +30,23 @@ Only the xenon is drawn see-through: in this viewer, see-through volumes inside 
 The viewer is a rendering; for the exact geometry ask Geant4's navigator which volume sits at every grid point:
 
 ```bash
-cd g4/build && ./xamsopt -c ../../run/config_level4.json -o /tmp/s.bin section.mac && cd ../..
+cd g4/build && ./xamsg4 -c ../../run/config_level4.json -o /tmp/s.bin section.mac && cd ../..
 python optical/plot_section.py g4/build/section_xz.bin --zoom 25 50 -14 22    # → g4/build/section_xz.png
 ```
 
 `section.mac` makes an x–z plane at y = 0 and an x–y plane through the gate; the command is
-`/xamsopt/section <file> <xz|yz|xy> <offset> <u_min> <u_max> <v_min> <v_max> <step>` (mm).
+`/xamsg4/section <file> <xz|yz|xy> <offset> <u_min> <u_max> <v_min> <v_max> <step>` (mm).
 
 ## One run
 
 ```bash
 cat > g4/build/my_run.mac <<'MAC'
 /run/initialize
-/xamsopt/source/shape s2
-/xamsopt/source/rmax 30 mm
+/xamsg4/source/shape s2
+/xamsg4/source/rmax 30 mm
 /run/beamOn 1000000
 MAC
-cd g4/build && ./xamsopt -c ../../run/config_level4.json -o ../../run/my_run.bin -s 1 -d my_run.mac && cd ../..
+cd g4/build && ./xamsg4 -c ../../run/config_level4.json -o ../../run/my_run.bin -s 1 -d my_run.mac && cd ../..
 ```
 
 | option | meaning |
@@ -56,8 +58,8 @@ cd g4/build && ./xamsopt -c ../../run/config_level4.json -o ../../run/my_run.bin
 | `-v` | allow pictures in batch mode |
 | no macro | interactive viewer |
 
-Source commands: `/xamsopt/source/shape` `s2 | s1 | point | cylinder | beam | beam_disc`, `/xamsopt/source/rmax`,
-`/xamsopt/source/position`, `/xamsopt/source/direction`, `/xamsopt/source/zmin`, `/xamsopt/source/zmax`.
+Source commands: `/xamsg4/source/shape` `s2 | s1 | point | cylinder | beam | beam_disc`, `/xamsg4/source/rmax`,
+`/xamsg4/source/position`, `/xamsg4/source/direction`, `/xamsg4/source/zmin`, `/xamsg4/source/zmax`.
 Speed: ~1.5·10⁵ photons per second per process.
 
 ## A scan (recommended)

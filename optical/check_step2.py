@@ -10,6 +10,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from xamssim import g4bin  # noqa: E402  (starts xamsg4 in the g4 env from any env)
 sys.path.insert(0, str(ROOT / "optical"))
 from read_output import read  # noqa: E402
 
@@ -46,7 +48,7 @@ def main():
         m.write_text(macro.replace("{px}", f"{p[0]:.6f}").replace("{pz}", f"{p[1]:.6f}")
                      .replace("{dx}", f"{d[0]:.8f}").replace("{dz}", f"{d[1]:.8f}"))
         out = RUN / f"photons_{th}.bin"
-        subprocess.run([str(BUILD / "xamsopt"), "-c", str(cfg), "-o", str(out), "-s", "2", str(m)],
+        subprocess.run(g4bin.command(["-c", str(cfg), "-o", str(out), "-s", "2", str(m)]),
                        check=True, capture_output=True, cwd=BUILD)
         rec, _ = read(out)
         refl = float((rec["z1"] < 0).mean())

@@ -1,27 +1,24 @@
-"""Run the Geant4 particle mode for a simulation run (plan S2).
+"""Geant4 particle mode for a simulation run (plan S2).
 
-    xamssim g4 config/runs/cs137_cmb50_001.yaml [--events N] [--seed S] [--out run/g4/<name>] [--dry-run]
+    xamssim particle config/runs/s2_cs137_raised.yaml [--events N] [--seed S] [--out run/g4/<name>] [--dry-run]
+    xamssim particle config/runs/vis_cs137.yaml --vis      interactive viewer (Qt): /run/beamOn N in the window
 
 Steps: resolve the run (config.py) -> config.json from geometry.yaml + materials.yaml (optical/make_config.py, liquid
-level of the state) + mode "particle" + the source -> run.mac -> `xamsopt -m particle` in the conda env with Geant4
-(default `g4`, via `conda run`) -> run/g4/<name>/deposits.{bin,events.bin,json} + g4.log. Read the output with
-`xamssim.g4io.read(<dir>/deposits)`.
+level of the state) + mode "particle" + the source -> run.mac -> `xamsg4 -m particle` (started in the Geant4 env by
+g4bin) -> run/g4/<name>/deposits.{bin,events.bin,json} + g4.log. Read the output with `xamssim.g4io.read(<dir>)`.
 """
 from __future__ import annotations
 
 import json
-import os
 import re
-import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+from . import g4bin
 from .config import ROOT, ConfigError, Resolved, resolve
 
-G4_ENV = os.environ.get("XAMSSIM_G4_ENV", "g4")
-XAMSOPT = ROOT / "g4" / "build" / "xamsopt"
 # Z of the elements of common calibration sources (fallback: periodictable)
 Z = {"H": 1, "Na": 11, "K": 19, "Co": 27, "Kr": 36, "Rb": 37, "Y": 39, "Cs": 55, "Ba": 56, "Eu": 63, "Pb": 82, "Bi": 83,
      "Po": 84, "Rn": 86, "Ra": 88, "Th": 90, "U": 92, "Am": 95}
@@ -90,17 +87,23 @@ def build(res: Resolved, out_dir: Path, n_events: int, seed: int) -> tuple[Path,
     return cfg_path, mac
 
 
+def vis(run_path, out_dir=None) -> None:
+    """Interactive Qt session in particle mode (viewer macro g4/macros/vis_particle.mac); /run/beamOn N in the window."""
+    res = resolve(run_path)
+    out = (Path(out_dir) if out_dir else ROOT / "run" / "g4" / (Path(run_path).stem + "_vis")).resolve()
+    cfg, _ = build(res, out, int(res.run["n_events"]), int(res.run["seed"]))
+    args = ["-m", "particle", "-c", cfg, "-o", out / "deposits.bin", "-s", res.run["seed"]]
+    print("viewer:", " ".join(g4bin.command(args)), f"\n  in the window: /run/beamOn 10   (deposits of the shown events -> {out})")
+    g4bin.run(args)
+
+
 def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=None, dry_run: bool = False) -> Path:
     res = resolve(run_path)
     n = int(n_events or res.run["n_events"])
     sd = int(res.run["seed"] if seed is None else seed)
     out = (Path(out_dir) if out_dir else ROOT / "run" / "g4" / Path(run_path).stem).resolve()
-    if not XAMSOPT.exists():
-        raise FileNotFoundError(f"{XAMSOPT} not built: cmake -S g4 -B g4/build && cmake --build g4/build -j8 (conda env {G4_ENV})")
     cfg, mac = build(res, out, n, sd)
-    cmd = [str(XAMSOPT), "-m", "particle", "-c", str(cfg), "-o", str(out / "deposits.bin"), "-s", str(sd), str(mac)]
-    if shutil.which("geant4-config") is None:   # not inside the Geant4 env: run through conda
-        cmd = ["conda", "run", "-n", G4_ENV, "--no-capture-output"] + cmd
+    cmd = g4bin.command(["-m", "particle", "-c", cfg, "-o", out / "deposits.bin", "-s", sd, mac])
     print("run:", " ".join(cmd))
     if dry_run:
         return out
@@ -108,7 +111,7 @@ def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=
     with open(out / "g4.log", "w") as log:
         p = subprocess.run(cmd, cwd=out, stdout=log, stderr=subprocess.STDOUT)
     if p.returncode != 0:
-        raise RuntimeError(f"xamsopt failed (exit {p.returncode}); see {out / 'g4.log'}")
+        raise RuntimeError(f"xamsg4 failed (exit {p.returncode}); see {out / 'g4.log'}")
     h = json.loads((out / "deposits.json").read_text())
     print(f"done in {time.time() - t0:.0f} s: {h['counts']} -> {out}")
     return out

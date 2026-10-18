@@ -16,6 +16,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from xamssim import g4bin  # noqa: E402  (starts xamsg4 in the g4 env from any env)
 sys.path.insert(0, str(ROOT / "optical"))
 from read_output import read  # noqa: E402
 
@@ -60,7 +62,7 @@ def main():
                          .replace("{pz}", f"{p[2]:.6f}").replace("{dx}", f"{d[0]:.8f}")
                          .replace("{dy}", f"{d[1]:.8f}").replace("{dz}", f"{d[2]:.8f}"))
             out = RUN / f"photons_t{th}_p{phi}.bin"
-            subprocess.run([str(BUILD / "xamsopt"), "-c", str(cfg), "-o", str(out), "-s", "3", str(m)],
+            subprocess.run(g4bin.command(["-c", str(cfg), "-o", str(out), "-s", "3", str(m)]),
                            check=True, capture_output=True, cwd=BUILD)
             rec, _ = read(out)
             passed = (rec["end_code"] == 4) & (rec["z1"] > 1)  # escaped above the mesh (not stopped on a bar)

@@ -81,7 +81,7 @@ void DepositOutput::Close() {
   fOut.close();
   fEvents.close();
   nlohmann::json h;
-  h["format"] = "xamsopt particle mode v1";
+  h["format"] = "xamsg4 particle mode v1";
   h["files"] = {{"deposits", fPath}, {"events", fStem + ".events.bin"}};
   h["units"] = {{"length", "mm"}, {"time", "ns"}, {"energy", "keV"}};
   h["deposit_dtype"] = nlohmann::json::array(

@@ -7,7 +7,7 @@ Per event the energy deposited in the drift region (liquid xenon, r < 31 mm, cat
   - comparison with the September data (SR-2026.2 Cs-137, Δ750 V): photopeak events with the clean cuts of
     optical/spread_map.py, z from the drift time (gate 1.15 µs, cathode 38.2 µs), r < 22 mm. The September source height
     was not recorded; simulated heights at 100 mm from the axis are compared by shape.
-Uses runs made with `xamssim g4 config/runs/s2_*.yaml`.
+Uses runs made with `xamssim particle config/runs/s2_*.yaml`.
 
     python validation/s2_particle_check.py   ->  results/s2_particle/ (s2_particle.png, summary.json)
 """

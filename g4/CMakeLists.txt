@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(xamsopt CXX)
+project(xamsg4 CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,13 +11,13 @@ find_package(Geant4 REQUIRED ui_all vis_all)
 find_package(nlohmann_json 3 QUIET)
 
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
-add_executable(xamsopt xamsopt.cc ${sources})
-target_include_directories(xamsopt PRIVATE ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(xamsopt PRIVATE ${Geant4_LIBRARIES})
-target_compile_definitions(xamsopt PRIVATE ${Geant4_DEFINITIONS})
-target_include_directories(xamsopt SYSTEM PRIVATE ${Geant4_INCLUDE_DIRS})
+add_executable(xamsg4 xamsg4.cc ${sources})
+target_include_directories(xamsg4 PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(xamsg4 PRIVATE ${Geant4_LIBRARIES})
+target_compile_definitions(xamsg4 PRIVATE ${Geant4_DEFINITIONS})
+target_include_directories(xamsg4 SYSTEM PRIVATE ${Geant4_INCLUDE_DIRS})
 if(nlohmann_json_FOUND)
-  target_link_libraries(xamsopt PRIVATE nlohmann_json::nlohmann_json)
+  target_link_libraries(xamsg4 PRIVATE nlohmann_json::nlohmann_json)
 endif()
 
 # copy the macros next to the executable

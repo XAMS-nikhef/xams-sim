@@ -16,6 +16,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from xamssim import g4bin  # noqa: E402  (starts xamsg4 in the g4 env from any env)
 sys.path.insert(0, str(ROOT / "optical"))
 from read_output import read  # noqa: E402
 from scan_data import load, top_fraction  # noqa: E402
@@ -41,7 +43,7 @@ def part_a():
         m = RUN / f"src_{shape}_{level}.mac"
         m.write_text(macro.replace("{shape}", shape).replace("{rmax}", "30").replace("{n}", "100000"))
         out = RUN / f"src_{shape}_{level}.bin"
-        subprocess.run([str(BUILD / "xamsopt"), "-c", str(cfg), "-o", str(out), "-s", "7", str(m)], check=True,
+        subprocess.run(g4bin.command(["-c", str(cfg), "-o", str(out), "-s", "7", str(m)]), check=True,
                        capture_output=True, cwd=BUILD)
         rec, _ = read(out)
         z, r2, phi = rec["z0"], rec["x0"] ** 2 + rec["y0"] ** 2, np.arctan2(rec["y0"], rec["x0"])

@@ -56,12 +56,12 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - **Check:** a box of liquid xenon with one photocathode; detected fraction equals the solid angle.
 
 **Done (2026-10-05).**
-- Code (C++17, Geant4 11.3, CMake): `xamsopt.cc` (`xamsopt -c config.json -o out.bin [-s seed] [macro]`; without a
+- Code (C++17, Geant4 11.3, CMake): `xamsg4.cc` (`xamsg4 -c config.json -o out.bin [-s seed] [macro]`; without a
   macro an interactive session with visualisation), `src/` + `include/`: `Config` (reads the JSON from
   `make_config.py`), `DetectorConstruction` (geometry_mode `test_box` now; `xams` = step 3), `PhysicsList`
   (G4OpticalPhysics only; scintillation, Cherenkov, WLS, Mie off; e−/e+/γ/p defined because G4OpticalPhysics looks
   them up), `PrimaryGeneratorAction` (one 178 nm photon per event, isotropic, random polarisation; shapes `point` and
-  `cylinder` via `/xamsopt/source/...`), `PhotonActions` (per-photon record: origin, end point, end code detected /
+  `cylinder` via `/xamsg4/source/...`), `PhotonActions` (per-photon record: origin, end point, end code detected /
   bulk-absorbed / surface-absorbed / escaped, sensor id, end volume, number of reflections), `Output` (binary records
   + `<file>.volumes.json`). Sequential run manager (fast enough; per-thread output would be needed for MT).
 - Photocathodes: optical surface dielectric_metal, REFLECTIVITY 0, EFFICIENCY = QE; sensor id = copy number
@@ -85,7 +85,7 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
   (G4_STAINLESS-STEEL; optics via its surface, step 4), photocathode (G4_Al; detection via its surface). All optical
   properties flat over 6–8 eV (178 nm).
 - Test geometry `test_interface` (liquid below z = 0, gas above, plain boundary) and a `beam` source
-  (`/xamsopt/source/direction`); `optical/check_step2.py`, macro `step2_interface.mac`.
+  (`/xamsg4/source/direction`); `optical/check_step2.py`, macro `step2_interface.mac`.
 - **Check passed:** beam from the liquid onto the surface at 0–80°, 10⁵ photons per angle, random linear polarisation:
   reflected fraction equals (Rs + Rp)/2 from 6.6 % at normal incidence to 37.7 % at 35.5°, and 100 % (total internal
   reflection) from 37° on (critical angle 36.3°). All pulls within ±1.4 except 30° (+2.5), which a rerun with 4·10⁵
@@ -119,8 +119,8 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - PTFE cylinder r 30.97–35.97 mm, z −50.9 to −0.9 mm (between the gate and cathode rings). PMTs: silica window
   54.6 mm square, 2.5 mm; photocathode 48.5 mm square (top: 4 sectors, copies 1–4; bottom: copy 0); absorbing frame and
   body. SiPMs (copies 6, 7) on the PTFE inner wall at azimuth 0° / 90°, z −25 mm.
-- Viewing: `xamsopt -c config.json` without a macro opens the Qt viewer (`vis_interactive.mac`: media hidden, colours,
-  axes; `/run/beamOn N` draws photon tracks). `/xamsopt/section file plane offset umin umax vmin vmax step` asks
+- Viewing: `xamsg4 -c config.json` without a macro opens the Qt viewer (`vis_interactive.mac`: media hidden, colours,
+  axes; `/run/beamOn N` draws photon tracks). `/xamsg4/section file plane offset umin umax vmin vmax step` asks
   Geant4's navigator for the volume at every point of a grid (`section.mac`), `optical/plot_section.py` draws it
   (`build/section_xz.png`, `section_xz_zoom.png`, `section_gate_xy.png`).
 - **Checks passed:** overlap check at every placement clean; the cross sections match section A–A (z positions, ring
@@ -169,12 +169,12 @@ Each step ends with a check; a step is only done when its check passes. Rough ef
 - **Check:** statistical precision of the top fraction per point < 0.5 %; run time per scan point measured.
 
 **Done (2026-10-05).**
-- Sources (`/xamsopt/source/shape s2 | s1`, z range from the config, so every liquid level is right automatically):
+- Sources (`/xamsg4/source/shape s2 | s1`, z range from the config, so every liquid level is right automatically):
   S2 uniform from the liquid surface to 0.01 mm below the anode foil (z 4.0–7.915 mm at the 4 mm level); S1 uniform
   from just above the cathode foil to just below the gate foil (z −51.715 to −0.085 mm); both r < rmax (30 mm).
   Instead of a grid of source points, photons start uniformly and every record keeps its origin: maps (r, sector
   pattern, z slices) are made by binning afterwards, one run per parameter point.
-- Output for production (`xamsopt -d`): records only for detected photons; every photon is counted in
+- Output for production (`xamsg4 -d`): records only for detected photons; every photon is counted in
   `<file>.summary.json` (end code × end volume, detected per sensor, seed, config).
 - `optical/run_scan.py scans/<name>.yaml`: parameter grid (liquid level and any config path) → one config per point,
   each point split into parallel parts with their own seeds; resumable; output in `run/scans/<name>/`.

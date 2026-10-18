@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run a parameter scan of the XAMS optical simulation (production runs, step 5).
 
-    python optical/run_scan.py scans/<name>.yaml [--jobs N] [--dry]
+    xamssim optical optical/scans/<name>.yaml [--jobs N] [--dry]     (or: python optical/run_scan.py ..., any env)
 
 The scan file:
     name: s2_reference
@@ -33,6 +33,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from xamssim import g4bin  # noqa: E402  (starts xamsg4 in the g4 env from any env)
 BUILD = ROOT / "g4" / "build"
 
 
@@ -89,7 +91,7 @@ def main():
             p["parts"].append(dict(file=stem.name + ".bin", seed=seed, photons=per[k]))
             if Path(str(stem) + ".bin.summary.json").exists():
                 continue
-            cmd = [str(BUILD / "xamsopt"), "-c", str(cfg), "-o", str(stem) + ".bin", "-s", str(seed), "-d", str(mac)]
+            cmd = g4bin.command(["-c", str(cfg), "-o", str(stem) + ".bin", "-s", str(seed), "-d", str(mac)])
             jobs.append((cmd, str(stem) + ".log"))
     json.dump(dict(spec=spec, points=points), open(out / "points.json", "w"), indent=1)
     print(f"{spec['name']}: {len(points)} points x {chunks} parts, {n:.2g} photons per point; {len(jobs)} parts to run")

@@ -23,11 +23,12 @@ Full write-up: the PDF note `notes/XAMS_optical_simulation_2026-10-07.pdf` and t
 ## Quick start
 
 ```bash
-conda activate g4
-cd /Users/acolijn/Documents/XAMS/optical_sim
-cmake -S g4 -B g4/build && cmake --build g4/build -j8        # once
-python optical/make_config.py --level 4.0 --out run/config_level4.json
-cd g4/build && ./xamsopt -c ../../run/config_level4.json -o /tmp/vis.bin  # the viewer
+conda activate g4 && cd ~/Documents/XAMS/xams-sim
+cmake -S g4 -B g4/build && cmake --build g4/build -j8   # once: compile xamsg4 (the only thing that needs g4)
+conda activate xamssim
+xamssim optical --vis --state cmb50                     # the optical viewer
+xamssim optical optical/scans/fit_s2.yaml               # an optical scan
+xamssim particle config/runs/s2_cs137_raised.yaml       # Cs-137 energy deposits (particle mode)
 ```
 
 Then: [how it works](concepts.md) → [running](running.md) → [your own analysis](analysis.md).

@@ -2,7 +2,7 @@
 # Direction set by optical/check_step4.py through {px} {pz} {dx} {dz}; the beam hits the origin.
 /run/verbose 0
 /run/initialize
-/xamsopt/source/shape beam
-/xamsopt/source/position {px} 0 {pz} mm
-/xamsopt/source/direction {dx} 0 {dz}
+/xamsg4/source/shape beam
+/xamsg4/source/position {px} 0 {pz} mm
+/xamsg4/source/direction {dx} 0 {dz}
 /run/beamOn {n}

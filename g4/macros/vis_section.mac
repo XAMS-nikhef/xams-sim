@@ -1,4 +1,4 @@
-# Offscreen picture of the geometry: side view, cut open along the x-z plane (xamsopt -v ... vis_section.mac)
+# Offscreen picture of the geometry: side view, cut open along the x-z plane (xamsg4 -v ... vis_section.mac)
 /run/initialize
 /vis/open TSG_OFFSCREEN 1600x1400
 /vis/tsg/offscreen/set/file xams_section.png

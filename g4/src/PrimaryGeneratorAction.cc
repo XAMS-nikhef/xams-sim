@@ -18,7 +18,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction() : fGun(std::make_unique<G4Parti
   fGun->SetParticleDefinition(G4OpticalPhoton::Definition());
   fGun->SetParticleEnergy(kPhotonEnergy);
 
-  fMessenger = std::make_unique<G4GenericMessenger>(this, "/xamsopt/source/", "photon source");
+  fMessenger = std::make_unique<G4GenericMessenger>(this, "/xamsg4/source/", "photon source");
   fMessenger->DeclareProperty("shape", fShape, "point | cylinder | beam | beam_disc | s1 | s2");
   fMessenger->DeclareProperty("direction", fDirection, "beam direction (beam shape only)");
   fMessenger->DeclarePropertyWithUnit("position", "mm", fPosition, "point source position");

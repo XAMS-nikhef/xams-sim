@@ -1,6 +1,6 @@
 # S2 check — Geant4 particle mode, Cs-137 (2026-10-18)
 
-`validation/s2_particle_check.py` on three runs of 2·10⁶ Cs-137 decays each (`xamssim g4 config/runs/s2_*.yaml`,
+`validation/s2_particle_check.py` on three runs of 2·10⁶ Cs-137 decays each (`xamssim particle config/runs/s2_*.yaml`,
 ~35 s per run on the Mac): source 100 mm from the axis at z = −26 mm (raised, short-fill plan), −52 mm (cathode
 level) and −82 mm (30 mm below the cathode). Drift region = liquid xenon, r < 31 mm, −51.8 < z < 0 mm; photopeak =
 E ≥ 655 keV in the drift region.

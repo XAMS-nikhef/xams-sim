@@ -11,6 +11,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from xamssim import g4bin  # noqa: E402  (starts xamsg4 in the g4 env from any env)
 sys.path.insert(0, str(ROOT / "optical"))
 from read_output import read  # noqa: E402
 
@@ -30,8 +32,8 @@ def main():
                         "--set", "optics.lxe.absorption_length_cm=1e9", "--set", "optics.lxe.rayleigh_length_cm=1e9",
                         "--out", str(cfg)], check=True, capture_output=True)
         out = RUN / f"photons_d{d:.0f}.bin"
-        subprocess.run([str(BUILD / "xamsopt"), "-c", str(cfg), "-o", str(out), "-s", "1",
-                        str(BUILD / "step1_solid_angle.mac")], check=True, capture_output=True, cwd=BUILD)
+        subprocess.run(g4bin.command(["-c", str(cfg), "-o", str(out), "-s", "1",
+                                      str(BUILD / "step1_solid_angle.mac")]), check=True, capture_output=True, cwd=BUILD)
         rec, _ = read(out)
         n = len(rec)
         f_sim = float((rec["end_code"] == 1).mean())

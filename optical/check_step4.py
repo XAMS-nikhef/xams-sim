@@ -15,6 +15,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from xamssim import g4bin  # noqa: E402  (starts xamsg4 in the g4 env from any env)
 sys.path.insert(0, str(ROOT / "optical"))
 from read_output import read  # noqa: E402
 
@@ -38,7 +40,7 @@ def run(cfg, macro, subs, out, seed=4):
         text = text.replace("{" + k + "}", str(v))
     m = out.with_suffix(".mac")
     m.write_text(text)
-    subprocess.run([str(BUILD / "xamsopt"), "-c", str(cfg), "-o", str(out), "-s", str(seed), str(m)],
+    subprocess.run(g4bin.command(["-c", str(cfg), "-o", str(out), "-s", str(seed), str(m)]),
                    check=True, capture_output=True, cwd=BUILD)
     return read(out)
 
