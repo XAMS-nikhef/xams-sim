@@ -1,4 +1,21 @@
-# XAMS optical simulation
+# xams-sim — XAMS simulation
+
+Simulation of the XAMS TPC (repository `XAMS-nikhef/xams-sim`, until 2026-10-18 `acolijn/xams-optical-sim`; the last
+state before the restructure is tag `optical-sim-final`). Layout:
+
+| Folder | What |
+|---|---|
+| `config/` | geometry (`geometry.yaml`, `mesh_holes.json`), `materials.yaml`, detector `states/`, `sources/`, simulation `runs/` |
+| `g4/` | Geant4 application (optical mode now; particle mode planned) — build: `cmake -S g4 -B g4/build && cmake --build g4/build -j8` |
+| `optical/` | optical scans, fits and analysis tools (was `tools/`), scan definitions, data targets, examples |
+| `efield/` | electric field (COMSOL), drift lines, mesh cells |
+| `xamssim/` | simulation chain: config resolution, map registry, CLI (`xamssim status config/runs/<run>.yaml`) |
+| `maps/` | generated maps (not in git) · `results/`, `notes/`, `docs/` as before · `run/` scan output (not in git) |
+
+Full-chain plan: `docs/xams_sim_plan.md`. Environment for the chain: conda env `xamssim` (Python 3.12, strax 2.2.3,
+fuse 1.6.3, nestpy 2.0.6, amstrax; `pip install -e .[test]`); Geant4 stays in the `g4` env.
+
+## Optical simulation
 
 Geant4 optical simulation of the XAMS TPC, to find out how much of the observed light distribution (in particular the
 low S2 light on the top PMT) follows from the geometry: the etched meshes, the liquid surface, the PTFE cylinder and the

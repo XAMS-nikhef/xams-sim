@@ -5,7 +5,7 @@ extraction and electroluminescence, light collection, sensor response, waveforms
 **unchanged** amstrax processing, so simulation and data are compared with the same code and cuts. Every part can also
 be run on its own, and **one configuration file** drives a complete simulation.
 
-Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18); **S0 done 2026-10-18**.
+Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18); **S0 and S1 done 2026-10-18**.
 
 ## Principles
 
@@ -156,7 +156,16 @@ Original task list:
 decision per other fuse plugin written down; environment and versions fixed (one environment, or the chain and amstrax
 separately with `raw_records` on disk in between).
 
-### S1. Repository, config and map registry (1–2 days)
+### S1. Repository, config and map registry (1–2 days) — **done 2026-10-18**
+
+Result: repository renamed and transferred to `XAMS-nikhef/xams-sim` (private; tag `optical-sim-final` = last state
+before the restructure); layout `config/`, `g4/`, `optical/`, `efield/`, `xamssim/`, `maps/`; Geant4 build in
+`g4/build`; check_step1–3 pass (check_step4 / 5 fail as before the move); conda env `xamssim` (Python 3.12, strax 2.2.3,
+straxen 4.1.1, xenon-fuse 1.6.3, nestpy 2.0.6, amstrax master, `pip install -e .[test]`); `xamssim status | maps |
+validate`, 8 tests. States reference the HV cases in `efield/cases.yaml` (not duplicated); map keys are hashes of
+exactly the inputs per map kind (light maps shared by all HV states).
+
+Original task list:
 - Repository move (decision above), in one go:
   1. rename `acolijn/xams-optical-sim` → `xams-sim` and transfer it to XAMS-nikhef (private);
   2. restructure in a few commits: `geometry.yaml` → `config/`, the Geant4 code → `g4/`, scan tools and step 6–8 →

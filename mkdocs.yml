@@ -1,4 +1,4 @@
-site_name: XAMS optical simulation
+site_name: XAMS simulation (xams-sim)
 site_description: Geant4 optical simulation of the XAMS TPC — how it works, how to run it, how to analyse it
 docs_dir: docs
 strict: true
