@@ -7,7 +7,7 @@
 (c) Precision and speed, from the reference scans scans/step5_reference*.yaml (run them first with
     optical/run_scan.py): statistical precision of the top fraction per scan point < 0.5 % (relative); photons needed
     for 0.5 % per bin (S2 in 5 mm rings of r, S1 in 2 mm slices of z); photons per second.
-Run inside the g4 environment from optical_sim/:  python optical/check_step5.py"""
+Run inside the g4 environment from the repository root:  python optical/check_step5.py"""
 import json
 import subprocess
 import sys

@@ -1,7 +1,7 @@
 """Note: XAMS optical simulation — model, validation, results, comparison with the data (incl. Cs photopeak fit, readout
 toy, 2D maps), design study.
 Figures and numbers from results/ (optical/step6_results.py, step7_compare.py, design_ptfe.py) and results/geometry.
-Usage (from optical_sim/): python notes/make_note.py notes/XAMS_optical_simulation_2026-10-09.pdf"""
+Usage (from the repository root): python notes/make_note.py notes/XAMS_optical_simulation_2026-10-09.pdf"""
 import json
 import sys
 from pathlib import Path

@@ -1,6 +1,7 @@
 """S0: run the fuse micro-physics chain offline with XAMS settings (synthetic Cs-137-like events, COMSOL CM-B field map)."""
 import gzip, json, os, shutil, sys, warnings
 warnings.filterwarnings("ignore")
+from pathlib import Path  # noqa: E402
 import numpy as np, pandas as pd, strax, straxen, fuse, nestpy  # noqa: E401,E402
 
 # usage: python micro_test.py <work dir> [dbscan|lineage]   (work dir receives the map, the CSV and strax data)
@@ -8,7 +9,7 @@ OUT = os.path.abspath(sys.argv[1])
 CLUSTERING = sys.argv[2] if len(sys.argv) > 2 else "lineage"
 os.makedirs(OUT, exist_ok=True)
 # 1. field map: COMSOL (r, z) plane of the CM-B case (-50 V margin), r >= 0 side, mm -> cm, V/m -> V/cm
-M = np.load("/Users/acolijn/Documents/XAMS/optical_sim/results/efield/comsol/maps_rz.npz")
+M = np.load(Path(__file__).resolve().parents[1] / "results" / "efield" / "comsol" / "maps_rz.npz")
 r, z = M["r"], M["z"]
 k = r >= 0
 E = np.hypot(M["cmb50_Er"], M["cmb50_Ez"])[k] / 100

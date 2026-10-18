@@ -2,7 +2,7 @@
 """Step-2 check: Fresnel reflection and total internal reflection at the liquid-gas surface.
 A beam from inside the liquid (n1 = 1.69) hits the surface (gas n2 = 1.00) at angle theta; with random linear
 polarisation the reflected fraction is R = (Rs + Rp) / 2, and R = 1 beyond the critical angle asin(n2/n1) = 36.3 deg.
-Run inside the g4 environment from optical_sim/:  python optical/check_step2.py"""
+Run inside the g4 environment from the repository root:  python optical/check_step2.py"""
 import subprocess
 import sys
 from pathlib import Path

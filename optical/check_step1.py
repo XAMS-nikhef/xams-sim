@@ -2,7 +2,7 @@
 """Step-1 check: point source in liquid xenon, square photocathode (side a, QE 1) at distance d, no absorption /
 Rayleigh / reflection. The detected fraction must equal the solid angle of the square / 4 pi:
     Omega = 4 arcsin( a^2 / (a^2 + 4 d^2) )      (square of side a, centred, at distance d)
-Run inside the g4 environment from optical_sim/:  python optical/check_step1.py"""
+Run inside the g4 environment from the repository root:  python optical/check_step1.py"""
 import json
 import subprocess
 import sys

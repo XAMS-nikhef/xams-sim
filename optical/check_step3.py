@@ -8,7 +8,7 @@ The bars are black (no optical surface yet), so a photon either passes or stops 
 Two comparisons: (1) per photon, the straight path through the foil (|z| < t/2) is traced analytically against the bar
 lattice (bar centre lines at k p, crossing on the axis); Geant4 must agree photon by photon; (2) the transmitted
 fraction against the formula above (the 25 mm beam disc averages over ~290 cells, so a small sampling offset remains).
-Run inside the g4 environment from optical_sim/:  python optical/check_step3.py"""
+Run inside the g4 environment from the repository root:  python optical/check_step3.py"""
 import subprocess
 import sys
 from pathlib import Path

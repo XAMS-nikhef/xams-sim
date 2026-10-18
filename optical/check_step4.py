@@ -7,7 +7,7 @@
 (c) XAMS with PTFE and steel reflectivity 1, no bulk absorption / scattering: the bookkeeping closes — every photon
     ends detected, on an absorber (PMT frame/body, photocathode beyond QE, world) or escaped; none ends on PTFE or
     steel, none undefined.
-Run inside the g4 environment from optical_sim/:  python optical/check_step4.py"""
+Run inside the g4 environment from the repository root:  python optical/check_step4.py"""
 import subprocess
 import sys
 from pathlib import Path

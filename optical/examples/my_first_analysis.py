@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Example: read simulation output and do a small analysis of your own.
 
-Run from optical_sim/ (any Python with numpy + matplotlib; Geant4 not needed):
+Run from the repository root (xams-sim/) (any Python with numpy + matplotlib; Geant4 not needed):
     python optical/examples/my_first_analysis.py
 
 It reads the scan run/scans/s2_optics (made by: python optical/run_scan.py optical/scans/s2_optics.yaml) and shows

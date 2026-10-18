@@ -1,7 +1,7 @@
 """Results note: the optical simulation against a clean data set — selection, comparison, best optical parameters and
 the relative top/bottom efficiencies, as currently understood. The full history (all intermediate steps) is in
 make_note.py.
-Usage (from optical_sim/, base conda python with reportlab):
+Usage (from the repository root, base conda python with reportlab):
     python notes/make_results_note.py notes/XAMS_optical_simulation_results_2026-10-11.pdf"""
 import json
 import sys
