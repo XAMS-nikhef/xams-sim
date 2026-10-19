@@ -35,7 +35,7 @@ listed cases in one sweep (~1.5 min, ~2.3 M elements), saves `build/XAMS_efield.
 parses the log (`parse_log.py`) into `<data>/efield/comsol/checks.json` and `maps_rz.npz` (a failed solve, e.g. no
 licence, leaves both unchanged). The 3D field of a solved case goes to the [simulation chain](chain.md#field-map) with
 `xamssim maps --state <state> --export field`, which reads the `.mph` through COMSOL's API (package `mph`). All
-geometry, including the SiPMs, comes from `config/geometry.yaml`; `cases.yaml` holds only voltages.
+geometry, including the SiPMs, comes from the detector of the states (`config/detectors/<d>/geometry.yaml`; with `--cases`: `--detector`, default xams2026); the model carries a geometry tag that the exports check; `cases.yaml` holds only voltages.
 
 Model: the inside of the grounded vessel; PTFE bucket with liquid xenon up to the level, gas elsewhere; the meshes as
 solid conducting discs with their rings (etched holes not resolved — see the mesh cell below); PTFE cylinder with

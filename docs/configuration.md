@@ -4,13 +4,22 @@ Everything that describes the detector and a simulation lives in `config/` (plus
 Every kind of information has exactly one place:
 
 ```
-config/runs/<run>.yaml ─┬─ state ──► config/states/<state>.yaml ── hv_case ──► efield/cases.yaml (voltages, field cage, SiPMs)
+config/runs/<run>.yaml ─┬─ state ──► config/states/<state>.yaml ─┬─ detector ─► config/detectors/<detector>/geometry.yaml
+                        │                                          │               (dimensions; which part is which material)
+                        │                                          └─ hv_case ──► efield/cases.yaml (voltages, field cage, SiPMs)
                         ├─ source ─► config/sources/<source>.yaml
-                        ├─ config/geometry.yaml   (dimensions; which part is which material)
                         └─ config/materials.yaml  (all material properties incl. optics)
 ```
 
 `xamssim validate <run>` loads and checks all of it; `xamssim status <run>` shows the result.
+
+## Detectors — `config/detectors/<detector>/`
+
+One folder per detector: `geometry.yaml` and the files it refers to (`mesh_holes.json`). Now one detector,
+`xams2026` (the current XAMS). A different detector (e.g. a SiPM top array) is a new folder; its states name it, and
+since every key (Geant4, maps, lineage) follows the resolved geometry, runs of one detector never make those of another
+old. Small changes for a study belong in a new detector folder too (copy and edit) — never edit the geometry of a
+detector whose data you still use, it makes all its runs old.
 
 ## `geometry.yaml` — dimensions
 
@@ -63,6 +72,7 @@ One operating condition of the detector.
 
 | field | required | meaning |
 |---|---|---|
+| `detector` | yes | folder in `config/detectors/` (geometry of the detector this state describes) |
 | `hv_case` | yes | key in `efield/cases.yaml`: anode, gate, cathode, screens, PMT and SiPM potentials |
 | `liquid_level_mm` | yes | liquid level above the gate (must equal `liquid_level_mm` in `efield/cases.yaml`) |
 | `pressure_bar` | | gas pressure (EL yield) |
@@ -108,6 +118,13 @@ Existing: `cs137_raised`, `cs137_r130_cathode`, `cs137_r130_below`,
 Unknown keys are rejected.
 
 ## Hashes and provenance
+
+- **Provenance file:** every `xamssim chain` run writes `<data>/provenance/<run id>/<date-time>_<run key>_<x>.json`
+  (not when the newest one has the same content): the run file, state, source and detector as resolved then (full
+  geometry, materials, HV case), the chain settings incl. the lifetime, the maps used, the Geant4 config and output
+  hash, every product with its lineage, and the code (commit, uncommitted changes). `xamssim show <run>` reads it;
+  `--hash H` picks the entry that made a product (hash as in `xamssim list`), `--diff` lists what changed since in the
+  configuration, `--full` prints all. Not removed by `xamssim list --delete`.
 
 - **Map keys:** per kind of map (field, mesh cells, drift, extraction / EL, S1 light, S2 pattern) a 12-character hash of exactly
   the inputs that map depends on. Light maps do not depend on voltages, so all HV states share them; field maps differ

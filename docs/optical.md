@@ -54,7 +54,7 @@ see the [xamsg4 reference](xamsg4.md).
 
 ## Changing the model
 
-- Values: `config/geometry.yaml` (dimensions), `config/materials.yaml` (materials, optics). Each value has its source
+- Values: `config/detectors/<d>/geometry.yaml` (dimensions; scan files `detector:`, default xams2026), `config/materials.yaml` (materials, optics). Each value has its source
   next to it.
 - Design options without new code: `extra_ptfe` (extra PTFE cylinders; example scans in the 2026-10-05 study).
 - New kinds of parts: C++ in `g4/src/XamsGeometry.cc`, then rebuild and run the [checks](validation.md).

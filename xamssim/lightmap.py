@@ -13,10 +13,12 @@ cylinder). Channels: CHANNELS (sensor id of xamsg4: 0 bottom PMT, 1-4 top-PMT se
 azimuths of geometry.yaml). Registry files `<data>/maps/s1_light/<key>/s1.npz`, `s2_pattern/<key>/s2.npz` (one key:
 both depend on the geometry, the optics and the level only, not on the voltages).
 
-    xamssim maps --state sept --export light [--photons-s1 5e7 --photons-s2 2e7 --jobs 8]   (~5 min on 8 cores)
+    xamssim maps --state sept --export light [--photons-s1 5e7 --photons-s2 1e8 --jobs 8]   (~3 min on 8 cores)
 
-The default statistics give ~10 % per voxel for the bottom PMT (S1) and ~2 % per bin for a top sector (S2); the
-plugins interpolate linearly between voxel centres. More photons for precision studies.
+Both maps are smoothed with a Gaussian of SMOOTH_MM in x, y (not in z): the light pattern on the sensors changes over
+~10 mm, the bin-to-bin noise of the raw map (S2 at 2e7 photons: ~12 % per 1 mm bin and top sector) scrambles the
+small differences between neighbouring gate holes in the top-PMT pattern. The defaults (MODEL) are part of the light
+key; other --photons values overwrite the map under the same key (remake the strax light products then).
 """
 from __future__ import annotations
 
@@ -38,6 +40,10 @@ CHANNELS = (0, 1, 2, 3, 4, 6, 7)
 CHANNEL_NAMES = ("bottom", "top_ch1", "top_ch2", "top_ch3", "top_ch4", "sipm_1", "sipm_2")
 N_CHANNELS = len(CHANNELS)
 S1_STEP_MM, S2_STEP_MM = 2.0, 1.0
+SMOOTH_MM = 2.0                  # Gaussian smoothing in x, y (statistical noise; the light pattern changes over ~10 mm)
+PHOTONS_S1, PHOTONS_S2 = 5e7, 1e8
+MODEL = (f"lightmap v2: Geant4 optical, S1 {PHOTONS_S1:.0e} / S2 {PHOTONS_S2:.0e} photons, bins {S1_STEP_MM} / "
+         f"{S2_STEP_MM} mm, smoothed sigma {SMOOTH_MM} mm in x, y")      # part of the light key (config.map_inputs)
 FILES = {"s1_light": "s1.npz", "s2_pattern": "s2.npz"}
 
 
@@ -70,11 +76,19 @@ def _fill_edge(p, frac, min_frac=0.3):
     return p[:, ix, iy]
 
 
+def _smooth(p, step):
+    """Gaussian smoothing over x, y (axes 1, 2) of every channel; edge bins already filled from the inside."""
+    from scipy.ndimage import gaussian_filter
+    sig = [0, SMOOTH_MM / step, SMOOTH_MM / step] + [0] * (p.ndim - 3)
+    return gaussian_filter(p, sig, mode="nearest")
+
+
 def _run_geant4(res: Resolved, work: Path, shape: str, n: int, z: tuple, r: float, jobs: int, seed: int, log) -> list:
     """Geant4 optical runs in `jobs` parts; returns the record files."""
     cfg = work / "config.json"
     if not cfg.exists():
-        subprocess.run([sys.executable, "-m", "xamssim.g4config", "--level", str(res.state["liquid_level_mm"]),
+        subprocess.run([sys.executable, "-m", "xamssim.g4config", "--detector", res.detector,
+                        "--level", str(res.state["liquid_level_mm"]),
                         "--out", str(cfg)], check=True, capture_output=True, text=True)
     per = [n // jobs + (1 if k < n % jobs else 0) for k in range(jobs)]
     cmds, files = [], []
@@ -109,7 +123,7 @@ def _detected(files):
     return rec[rec["end_code"] == 1]
 
 
-def compute(res: Resolved, photons_s1: float = 5e7, photons_s2: float = 2e7, jobs: int = 8, seed: int = 1,
+def compute(res: Resolved, photons_s1: float = PHOTONS_S1, photons_s2: float = PHOTONS_S2, jobs: int = 8, seed: int = 1,
             work: Path | None = None, log=print) -> dict:
     reg = _region(res)
     r = reg["r"]
@@ -136,7 +150,7 @@ def compute(res: Resolved, photons_s1: float = 5e7, photons_s2: float = 2e7, job
                     h, _ = np.histogramdd(np.stack([d["x0"], d["y0"], d["z0"]], axis=1), bins=(xe, ye, ze))
                     p[i] = np.where(emitted > 0, h / np.maximum(emitted, 1e-12), 0.0)
                 out[kind] = dict(x=0.5 * (xe[1:] + xe[:-1]), y=0.5 * (ye[1:] + ye[:-1]), z=0.5 * (ze[1:] + ze[:-1]),
-                                 p=_fill_edge(p, frac).astype(np.float32), inside=frac.astype(np.float32))
+                                 p=_smooth(_fill_edge(p, frac), step).astype(np.float32), inside=frac.astype(np.float32))
             else:
                 emitted = per_area * frac * step ** 2
                 p = np.zeros((N_CHANNELS,) + emitted.shape)
@@ -145,7 +159,7 @@ def compute(res: Resolved, photons_s1: float = 5e7, photons_s2: float = 2e7, job
                     h, _, _ = np.histogram2d(d["x0"], d["y0"], bins=(xe, ye))
                     p[i] = np.where(emitted > 0, h / np.maximum(emitted, 1e-12), 0.0)
                 out[kind] = dict(x=0.5 * (xe[1:] + xe[:-1]), y=0.5 * (ye[1:] + ye[:-1]), z_range=np.array(z),
-                                 p=_fill_edge(p, frac).astype(np.float32), inside=frac.astype(np.float32))
+                                 p=_smooth(_fill_edge(p, frac), step).astype(np.float32), inside=frac.astype(np.float32))
             tot = len(det) / n
             by = ", ".join(f"{nm} {(det['sensor'] == ch).sum() / n:.4f}" for nm, ch in zip(CHANNEL_NAMES, CHANNELS))
             log(f"  {kind}: detected {tot:.4f} of the photons ({by})")
@@ -156,7 +170,7 @@ def compute(res: Resolved, photons_s1: float = 5e7, photons_s2: float = 2e7, job
     return out
 
 
-def export(res: Resolved, photons_s1: float = 5e7, photons_s2: float = 2e7, jobs: int = 8) -> list:
+def export(res: Resolved, photons_s1: float = PHOTONS_S1, photons_s2: float = PHOTONS_S2, jobs: int = 8) -> list:
     d = compute(res, photons_s1, photons_s2, jobs)
     key = res.map_keys()["s1_light"]
     entries = []

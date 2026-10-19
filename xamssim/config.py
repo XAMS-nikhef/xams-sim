@@ -3,10 +3,15 @@
 A simulation run is one YAML file (config/runs/<name>.yaml) that names a detector state and a source; everything else is
 referenced:
 
-    run  ─┬─ state  (config/states/<name>.yaml) ── hv_case ── efield/cases.yaml (electrode voltages, field cage, SiPMs)
+    run  ─┬─ state  (config/states/<name>.yaml) ─┬─ detector ── config/detectors/<detector>/geometry.yaml (shapes,
+          │                                       │               positions, which part is which material)
+          │                                       └─ hv_case ── efield/cases.yaml (voltages, field cage, SiPMs)
           ├─ source (config/sources/<name>.yaml)
-          ├─ geometry (config/geometry.yaml: shapes, positions, which part is which material)
           └─ materials (config/materials.yaml: the single source of material properties incl. optics)
+
+Several detectors can live side by side (e.g. today's XAMS, a future one with a SiPM top array): each state says which
+one it describes, and every key (Geant4, maps, lineage) follows the resolved geometry, so runs of one detector never
+make those of another old.
 
 `resolve(run_path)` loads and checks all of it and returns a `Resolved` object; `Resolved.map_keys()` gives, per kind of
 map, a short hash of exactly the inputs that map depends on (the map registry uses it to find or request maps).
@@ -23,6 +28,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config"
+DETECTORS = CONFIG / "detectors"           # one folder per detector: geometry.yaml (+ its hole pattern etc.)
 # where all outputs live (Geant4 runs, strax data, optical scans, maps, COMSOL results, check scratch): next to the
 # code, in the simulations folder (studies), not in this repository; override with $XAMSSIM_DATA
 DATA = Path(os.environ.get("XAMSSIM_DATA", ROOT.parent / "simulations" / "data")).resolve()
@@ -37,9 +43,9 @@ OPT_NUM = (int, float, type(None))
 SCHEMA = {
     "run": ({"state": str, "source": str, "n_events": int, "seed": int, "stop_after": str, "physics": dict},
             {"state", "source", "n_events", "seed"}),
-    "state": ({"description": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
+    "state": ({"description": str, "detector": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
                "electron_lifetime_us": OPT_NUM, "sensors": dict},
-              {"hv_case", "liquid_level_mm"}),
+              {"detector", "hv_case", "liquid_level_mm"}),
     "source": ({"isotope": str, "activity_bq": OPT_NUM, "position_mm": (list, type(None)), "collimator": (dict, str, type(None)),
                 "type": str, "energy_keV": OPT_NUM, "direction": str, "half_angle_deg": NUM, "z_target_mm": NUM,
                 "description": str},
@@ -76,9 +82,33 @@ def check(d: dict, kind: str, where: str) -> None:
             raise ConfigError(f"{where}: '{k}' has type {type(v).__name__}, expected {keys[k]}")
 
 
-def load_materials_and_geometry() -> tuple:
-    """geometry.yaml + materials.yaml, with the check that every material the geometry names is defined."""
-    geo = load_yaml(CONFIG / "geometry.yaml")
+def geometry_path(detector: str) -> Path:
+    p = DETECTORS / detector / "geometry.yaml"
+    if not p.exists():
+        known = sorted(d.name for d in DETECTORS.iterdir() if (d / "geometry.yaml").exists()) if DETECTORS.exists() else []
+        raise ConfigError(f"detector '{detector}': no {p} (known detectors: {known})")
+    return p
+
+
+def load_geometry(detector: str) -> dict:
+    """The detector's geometry.yaml, with the files it refers to read in (mesh hole pattern), so that everything
+    derived from it (keys, Geant4, COMSOL) follows their content."""
+    p = geometry_path(detector)
+    geo = load_yaml(p)
+    mc = geo.get("mesh_common", {})
+    if mc.get("hole_pattern_file") and "holes" not in mc:
+        mc["holes"] = json.loads((p.parent / mc["hole_pattern_file"]).read_text())["holes"]
+    return geo
+
+
+def geometry_hash(geo: dict) -> str:
+    """Hash of the physical geometry (what COMSOL, Geant4 and the maps depend on)."""
+    return short_hash({k: v for k, v in geo.items() if k not in {"meta", "targets", "sources", "liquid"}})
+
+
+def load_materials_and_geometry(detector: str) -> tuple:
+    """The detector's geometry + materials.yaml, with the check that every material the geometry names is defined."""
+    geo = load_geometry(detector)
     mat = load_yaml(CONFIG / "materials.yaml")
     for k in ("materials", "optics"):
         if k not in mat:
@@ -121,6 +151,7 @@ class Resolved:
     source: dict
     geometry: dict
     materials: dict
+    detector: str
     hv_case: dict
     hv_global: dict          # efield/cases.yaml sections that apply to every case (field cage, SiPM model)
 
@@ -128,11 +159,17 @@ class Resolved:
     def _geometry_physical(self) -> dict:
         return {k: v for k, v in self.geometry.items() if k not in {"meta", "targets", "sources", "liquid"}}
 
+    @property
+    def geometry_path(self) -> Path:
+        return geometry_path(self.detector)
+
     def map_inputs(self) -> dict:
         level = self.state["liquid_level_mm"]
         mats = self.materials["materials"]
         eps = {k: v["electrical"].get("relative_permittivity") for k, v in mats.items()}
-        light = {"geometry": self._geometry_physical(), "optics": self.materials["optics"], "liquid_level_mm": level}
+        from .lightmap import MODEL
+        light = {"geometry": self._geometry_physical(), "optics": self.materials["optics"], "liquid_level_mm": level,
+                 "model": MODEL}
         hv = {k: self.hv_case[k] for k in HV_KEYS}
         field = {"geometry": self._geometry_physical(), "permittivity": eps, "hv": hv,
                  "hv_global": self.hv_global, "liquid_level_mm": level}
@@ -146,7 +183,7 @@ class Resolved:
                                           "transport": {k: v for k, v in (mats["liquid_xenon"].get("transport") or {}).items()
                                                         if k in ("drift_velocity", "diffusion_longitudinal_cm2_s",
                                                                  "diffusion_transverse_cm2_s")}},
-                      "mesh_cells": cells, "tracking": "driftmap v2: composite field (full TPC + mesh cells), against E, "
+                      "mesh_cells": cells, "tracking": "driftmap v3: composite field (full TPC + mesh cells, cell average without x, y), against E, "
                                                       "NEST v(E), step 0.1 / 0.02 mm, grid 1 x 1 x 0.5 mm"},
             "mesh_cells": cells,
             "extraction_el": {"mesh_common": self.geometry.get("mesh_common"), "meshes": self.geometry.get("meshes"),
@@ -204,9 +241,9 @@ def resolve(run_path) -> Resolved:
     if missing_hv:
         raise ConfigError(f"{HV_CASES}: case '{hv_name}' lacks {missing_hv}")
 
-    geo, mat = load_materials_and_geometry()
+    geo, mat = load_materials_and_geometry(state["detector"])
     return Resolved(run_path=run_path, run=run, state_name=run["state"], state=state, source_name=run["source"],
-                    source=source, geometry=geo, materials=mat,
+                    source=source, geometry=geo, materials=mat, detector=state["detector"],
                     hv_case=hv_case, hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
 
 
@@ -219,10 +256,23 @@ def resolve_state(state_name: str) -> Resolved:
     cases = load_yaml(HV_CASES)
     if state["hv_case"] not in cases.get("cases", {}):
         raise ConfigError(f"{sp}: hv_case '{state['hv_case']}' not in {HV_CASES}")
-    geo, mat = load_materials_and_geometry()
+    geo, mat = load_materials_and_geometry(state["detector"])
     return Resolved(run_path=sp, run=tmp, state_name=state_name, state=state, source_name="-", source={},
-                    geometry=geo, materials=mat,
+                    geometry=geo, materials=mat, detector=state["detector"],
                     hv_case=cases["cases"][state["hv_case"]], hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
+
+
+def efield_detector(states: str = "", detector: str | None = None) -> str:
+    """The detector of one COMSOL solve: that of the states (all the same), else --detector (default xams2026)."""
+    if states:
+        dets = {load_yaml(_named("state", n))["detector"] for n in states.split(",")}
+        if len(dets) != 1:
+            raise ConfigError(f"states {states} belong to different detectors {sorted(dets)}: solve them separately")
+        d = dets.pop()
+        if detector and detector != d:
+            raise ConfigError(f"--detector {detector} differs from the states' detector {d}")
+        return d
+    return detector or "xams2026"
 
 
 def efield_selection(states: str = "", cases: str = "", level: float | None = None) -> tuple[dict, float]:

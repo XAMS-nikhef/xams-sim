@@ -1,6 +1,6 @@
 # efield — electric field and electron drift
 
-COMSOL 6.2 models of the XAMS TPC (full TPC with the SiPMs; single mesh cells), generated from `config/geometry.yaml`,
+COMSOL 6.2 models of the XAMS TPC (full TPC with the SiPMs; single mesh cells), generated from the detector's `config/detectors/<d>/geometry.yaml`,
 `config/materials.yaml` and `cases.yaml`, solved in batch, analysed in Python.
 
 **Manual: `docs/efield.md`** (also in the MkDocs site). Results of the models: `<data>/efield/comsol/README.md`.

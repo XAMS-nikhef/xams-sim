@@ -129,9 +129,12 @@ the PMTs, PDE of the SiPMs, so the map includes the QE). Per bin and channel: de
 | `s2_pattern` (`s2.npz`) | the gas gap, liquid surface to anode, uniform in z | 1 × 1 mm (x, y) |
 
 Channels (`lightmap.CHANNEL_NAMES`): bottom PMT, top-PMT sectors ch1–ch4, the two SiPMs. Bins mostly outside the
-cylinder take the value of the nearest bin inside. Default statistics (5·10⁷ S1, 2·10⁷ S2 photons) give ~10 % per
-voxel for the bottom PMT and ~2 % per bin for a top sector; `--photons-s1`, `--photons-s2` for more. Both maps share
-one key (geometry, optics, level): states that differ only in voltages share them.
+cylinder take the value of the nearest bin inside. Both maps are smoothed with a Gaussian of 2 mm in x, y (not in z):
+the light pattern changes over ~10 mm, while the raw bins are noisy (S2 at 2·10⁷ photons: ~12 % per 1 mm bin and top
+sector), and that noise scrambles the small differences between neighbouring gate holes in the top-PMT pattern (u, v).
+Defaults: 5·10⁷ S1 and 10⁸ S2 photons (~3 min on 8 cores); they and the smoothing are part of the light key
+(`lightmap.MODEL`). Other `--photons-s1`, `--photons-s2` overwrite the map under the same key. Both maps share one key
+(geometry, optics, level, model): states that differ only in voltages share them.
 
 `XamsS1Light` and `XamsS2Light` interpolate the map linearly at the cluster (S1: its position; S2: its gate crossing
 `x_obs`, `y_obs`) and draw the photoelectrons per channel from a multinomial (the rest undetected). No sensor response
@@ -182,6 +185,9 @@ when its output is current); the clustering is redone only when the Geant4 outpu
 file names unique (they also name the Geant4 output folder). When the run file now asks for another Geant4
 configuration than the output was made with (`g4_key`: geometry, materials, level, source, events, seed), the chain
 warns.
+
+Every chain run also writes a provenance file (`<data>/provenance/<run id>/`, see [Configuration](configuration.md#hashes-and-provenance));
+`xamssim show <run>` prints with which parameters the data were made, `--diff` what changed since.
 
 `xamssim list` shows per run which Geant4 output and strax products exist and whether each is current (the lineage
 hash the chain gives now for the run file, its state, maps and settings); `xamssim list --prune` lists the old ones

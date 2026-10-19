@@ -32,6 +32,22 @@ ELECTRODES = {"A": "Va", "G": "Vg", "C": "Vc", "BS": "Vbs", "TS": "Vts", "PMT_T"
 GRID = dict(step=0.5, xy=36.0)            # mm; z from the bottom to the top PMT window (geometry.yaml)
 
 
+def check_geometry_tag(model, geometry: dict, what: str) -> None:
+    """The COMSOL model (an mph.Model) must have been generated from this geometry (parameter ghash, set by
+    make_model / make_cell); models made before the tag existed (2026-10-19) are accepted with a warning."""
+    from .config import geometry_hash
+    want = int(geometry_hash(geometry)[:7], 16)
+    try:
+        got = int(round(float(str(model.parameter("ghash")).split("[")[0])))
+    except Exception:
+        print(f"WARNING: {what} has no geometry tag (made before 2026-10-19): cannot check that it belongs to this "
+              f"detector's geometry; regenerate it to get the check")
+        return
+    if got != want:
+        raise LookupError(f"{what} was made for another geometry (tag {got:07x}, this detector {want:07x}): "
+                          f"regenerate it for this state (efield/comsol/run.sh / run_cell.sh --states <state>)")
+
+
 def _find_solution(num, case: dict, level_mm: float, n_max: int = 50) -> int:
     """Solution number whose electrode parameters equal the case's voltages; the model's liquid level must match."""
     import jpype
@@ -79,6 +95,7 @@ def read_comsol(case_name: str, level_mm: float, geometry: dict, mph_file: Path 
     t0 = time.time()
     client = mph.start(cores=cores)
     model = client.load(str(mph_file))
+    check_geometry_tag(model, geometry, mph_file.name)
     num = model.java.result().numerical().create("xamssim_grid", "Interp")
     sol = _find_solution(num, case, level_mm)
     log(f"COMSOL {client.version}, {mph_file.name}: case {case_name} = solution {sol}")

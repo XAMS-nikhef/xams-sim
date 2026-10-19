@@ -5,7 +5,7 @@ Picks one liquid-level scenario, applies --set overrides (scans), checks that ev
 present and that every optical parameter is a single value, and adds derived quantities (liquid surface z, mesh list
 sorted by z).
 
-    python -m xamssim.g4config --level 4.0 --out <data>/config.json
+    python -m xamssim.g4config --level 4.0 --out <data>/config.json            (detector xams2026; --detector NAME)
     python -m xamssim.g4config --level 2.0 --set optics.ptfe_in_gas.reflectivity=0.75 --out /tmp/scan_01.json
 """
 import argparse
@@ -56,12 +56,16 @@ def check_single(x, path="optics"):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--geometry", default=str(ROOT / "config" / "geometry.yaml"))
+    ap.add_argument("--detector", default="xams2026", help="config/detectors/<detector>/geometry.yaml (default xams2026)")
+    ap.add_argument("--geometry", help="another geometry file (instead of the detector's)")
     ap.add_argument("--materials", default=str(ROOT / "config" / "materials.yaml"))
     ap.add_argument("--level", type=float, required=True, help="liquid level above the gate (mm)")
     ap.add_argument("--set", action="append", default=[], help="override, e.g. optics.lxe.rayleigh_length_cm=40")
     ap.add_argument("--out", default=str(DATA / "config.json"))
     args = ap.parse_args()
+    if not args.geometry:
+        from xamssim.config import geometry_path
+        args.geometry = str(geometry_path(args.detector))
 
     g = yaml.safe_load(open(args.geometry))
     mat = yaml.safe_load(open(args.materials))
@@ -114,7 +118,8 @@ def main():
     if not 0 < args.level < anode:
         print(f"liquid level {args.level} mm must lie between the gate (0) and the anode ({anode})")
         return 1
-    cfg["meta"] = {"geometry": str(Path(args.geometry).resolve()), "geometry_version": g["meta"]["version"],
+    cfg["meta"] = {"detector": args.detector, "geometry": str(Path(args.geometry).resolve()),
+                   "geometry_version": g["meta"]["version"],
                    "materials": str(Path(args.materials).resolve()),
                    "overrides": args.set}
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

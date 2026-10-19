@@ -229,7 +229,13 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
             + (["extracted_electrons", "s1_photoelectrons", "s2_photoelectrons"] if target == "photoelectrons" else [])
         for t in keep:                                   # NEST stored too: every later step reads the same draw
             st.make(run_id, t)
+    else:
+        keep = []
     d = st.get_array(run_id, TARGETS[target])
+    from . import provenance
+    made = list(dict.fromkeys(keep + list(TARGETS[target] if isinstance(TARGETS[target], tuple) else [TARGETS[target]])))
+    pf = provenance.write(provenance.record(res, st, run_id, made, dict(st.config), g4_out or g4_dir(res)))
+    print(f"provenance: {pf}  (xamssim show {run_id})")
     print(f"run {res.run_path.name} (run id {run_id}): {target} — {len(d)} rows, "
           f"{len(np.unique(d['eventid'])) if len(d) and 'eventid' in d.dtype.names else '-'} events, "
           f"{time.time() - t0:.0f} s; stored in {STORE}")

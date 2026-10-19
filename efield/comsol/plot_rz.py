@@ -52,7 +52,8 @@ def drift(fr, fz, r0, z0, step=0.05, nmax=40000):
 
 def main():
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
-    sp = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))["sipms"]
+    from xamssim.config import load_geometry
+    sp = load_geometry("xams2026")["sipms"]                      # the SiPMs of the current detector
     M = np.load(OUT / "maps_rz.npz")
     r, z = M["r"], M["z"]
     names = sys.argv[1:] or sorted({k.rsplit("_", 1)[0] for k in M.files if k.endswith("_V")})

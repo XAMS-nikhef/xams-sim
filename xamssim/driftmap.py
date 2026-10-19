@@ -44,12 +44,10 @@ GRID = dict(dxy=1.0, dz=0.5)
 
 def mesh_holes(geometry: dict) -> set:
     """(i, j) of the etched holes (hole centre at ((i + 1/2) p, (j + 1/2) p) in the mesh frame)."""
-    import json
-    from .config import CONFIG
     mc = geometry["mesh_common"]
     holes = mc.get("holes")
     if holes is None:
-        holes = json.loads((CONFIG / mc["hole_pattern_file"]).read_text())["holes"]
+        raise ValueError("geometry without mesh_common.holes: load it with config.load_geometry (reads the hole file)")
     return {(int(i), int(j)) for i, j in holes}
 
 
@@ -107,7 +105,9 @@ class _Cell:
     def __init__(self, data: dict, prefix: str, mesh: dict, geo: dict):
         self.u, self.z = data[f"{prefix}_u"], data[f"{prefix}_z"]
         self.c = [np.nan_to_num(data[f"{prefix}_{k}"]).astype(np.float32) for k in ("Ex", "Ey", "Ez")]
-        self.mean = data[f"{prefix}_mean"]
+        self.mean = np.array(data[f"{prefix}_mean"], float)
+        self.mean[:2] = 0.0          # the full cell's average has no x, y field (symmetry); a quarter-cell average
+                                     # does (~300 V/cm at the gate) and pushed every electron 0.15 mm off the hole centre
         self.z0, self.cos, self.sin = mesh["z"], np.cos(mesh["angle"]), np.sin(mesh["angle"])
         self.p, self.hole, self.foil, self.holes = geo["pitch"], geo["hole"], geo["foil"], geo["holes"]
         self.du, self.dz = self.u[1] - self.u[0], self.z[1] - self.z[0]
@@ -284,6 +284,7 @@ def compute(res: Resolved, field_file=None, cells_file="registry", dxy: float = 
     out["end_xyz"] = np.full(shape + (3,), np.nan, np.float32)
     out["end_xyz"][inside] = tr["end_xyz"]
     out["codes"] = np.array([CODES[i] for i in range(len(CODES))])
+    out["pitch_mm"] = np.float32(geo["pitch"])
     counts = {CODES[c]: int((tr["end"] == c).sum()) for c in CODES}
     log(f"  end points: {counts}")
     return out
@@ -295,7 +296,7 @@ def export(res: Resolved) -> dict:
     rel = f"drift/{key}/{FILE}"
     (MAPS / rel).parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(MAPS / rel, **d)
-    return register(res, "drift", [rel], producer_version=f"xamssim driftmap v2 (composite field), step {STEP_MM} / "
+    return register(res, "drift", [rel], producer_version=f"xamssim driftmap v3 (composite field, cell average without x, y), step {STEP_MM} / "
                                                           f"{STEP_NEAR_MESH_MM} mm")
 
 
@@ -314,6 +315,7 @@ class DriftMap:
         d = np.load(file)
         self.x, self.y, self.z = d["x"], d["y"], d["z"]
         self.d = {k: d[k] for k in ("end", "t_us", "x_gate", "y_gate", "crossed", "path_mm")}
+        self.pitch = float(d["pitch_mm"]) if "pitch_mm" in d.files else 2.6
 
     def index(self, x, y, z):
         def nearest(a, v):
@@ -326,12 +328,23 @@ class DriftMap:
 
     def at(self, x, y, z) -> dict:
         """All quantities at the nearest grid point, the continuous ones moved to the exact position: the gate
-        crossing shifted by the offset in x, y; the drift time by the offset in z over the mean velocity."""
+        crossing interpolated towards the neighbouring grid points in x and y when their electrons cross the gate in
+        the same hole (so the focusing into the holes is kept; across a catchment boundary the nearest grid point's
+        crossing is used); the drift time by the offset in z over the mean velocity."""
         x, y, z = (np.asarray(a, float) for a in (x, y, z))
         i, j, k = self.index(x, y, z)
         r = {key: a[i, j, k] for key, a in self.d.items()}
-        r["x_gate"] = r["x_gate"] + (x - self.x[i])
-        r["y_gate"] = r["y_gate"] + (y - self.y[j])
+        xg0, yg0 = r["x_gate"].astype(float), r["y_gate"].astype(float)
+        xg, yg = xg0.copy(), yg0.copy()
+        for off, ax, n in ((x - self.x[i], self.x, 0), (y - self.y[j], self.y, 1)):
+            s = np.where(off >= 0, 1, -1)
+            i2, j2 = (np.clip(i + s, 0, len(ax) - 1), j) if n == 0 else (i, np.clip(j + s, 0, len(ax) - 1))
+            xn, yn = self.d["x_gate"][i2, j2, k], self.d["y_gate"][i2, j2, k]
+            f = np.abs(off) / (ax[1] - ax[0])
+            same = np.isfinite(xn) & np.isfinite(yn) & (np.abs(xn - xg0) < self.pitch / 2) & (np.abs(yn - yg0) < self.pitch / 2)
+            xg += np.where(same, f * (xn - xg0), 0.0)
+            yg += np.where(same, f * (yn - yg0), 0.0)
+        r["x_gate"], r["y_gate"] = xg, yg
         t = r["t_us"].astype(float)
         v = np.where(t > 0, r["path_mm"] / np.where(t > 0, t, 1.0), np.nan)
         r["t_us"] = np.where(np.isfinite(v) & (v > 0), np.maximum(t + (self.z[k] - z) / v, 0.0), t)

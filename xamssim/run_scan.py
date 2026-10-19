@@ -5,6 +5,7 @@
 
 The scan file:
     name: s2_reference
+    detector: xams2026         # config/detectors/<detector> (default xams2026)
     source: s2                 # s2 (gas gap) | s1 (drift region); uniform in the volume, r < rmax_mm
     rmax_mm: 30
     photons: 2000000           # per scan point
@@ -76,7 +77,8 @@ def main():
     jobs = []
     for p in points:
         cfg = out / f"point_{p['id']}.json"
-        args = [sys.executable, "-m", "xamssim.g4config", "--level", str(p["level"]), "--out", str(cfg)]
+        args = [sys.executable, "-m", "xamssim.g4config", "--detector", spec.get("detector", "xams2026"),
+                "--level", str(p["level"]), "--out", str(cfg)]
         for k, v in p["set"].items():
             args += ["--set", f"{k}={json.dumps(v)}"]
         if not a.dry:

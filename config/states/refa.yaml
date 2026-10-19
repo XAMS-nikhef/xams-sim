@@ -1,5 +1,6 @@
 # Detector state: short-fill REF-a (Oct-2024 fields at today's liquid level).
 description: "short fill REF-a: anode +1550, gate -1200, cathode -1700, BS -1000, TS -500 V"
+detector: xams2026           # config/detectors/xams2026/geometry.yaml
 hv_case: refa
 liquid_level_mm: 4.0
 pressure_bar: 2.0            # assumed

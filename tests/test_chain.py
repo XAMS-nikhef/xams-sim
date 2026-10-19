@@ -186,7 +186,7 @@ def test_fieldmap_3d(tmp_path):
     assert m(18, 5, -25, "Ex")[0] == pytest.approx(50.0, rel=1e-5)            # x matters, not only r
     assert m(-18, 5, -25, "Ex")[0] == pytest.approx(-50.0, rel=1e-5)
     assert m(100, 0, -200)[0] == pytest.approx(m(36, 0, -65)[0])               # outside: grid edge
-    x, y, z = fieldmap.grid_axes(config.load_yaml(config.ROOT / "config" / "geometry.yaml"))
+    x, y, z = fieldmap.grid_axes(config.load_geometry("xams2026"))
     assert x[0] == -36 and z[0] == pytest.approx(-64.1) and z[-1] <= 22.5
 
 
@@ -245,3 +245,19 @@ def test_chain_end_to_end(tmp_path):
                            xams_efield_map=str(flat_map(tmp_path / "f.npz")), xams_drift_map=str(dpath),
                            electron_lifetime_us=300.0)
     assert st2.key_for(rid, "clustered_interactions").lineage_hash != key
+
+
+def test_drift_lookup_keeps_focusing(tmp_path):
+    """DriftMap.at: between grid points of the same hole the gate crossing is interpolated (focusing kept), across a
+    catchment boundary the nearest grid point's crossing is used (no positions between holes)."""
+    from xamssim import driftmap
+    x = np.array([0.0, 1.0, 2.0])
+    shape = (3, 3, 2)
+    xg = np.zeros(shape, np.float32)
+    xg[0], xg[1], xg[2] = 0.1, 0.2, 2.7                    # grid x 0, 1 -> hole at 0; x 2 -> next hole (2.6 mm on)
+    np.savez(tmp_path / "d.npz", x=x, y=x, z=np.array([-10.0, -9.5]), end=np.full(shape, driftmap.SURFACE, np.int8),
+             t_us=np.ones(shape, np.float32), x_gate=xg, y_gate=np.zeros(shape, np.float32), crossed=np.ones(shape, bool),
+             path_mm=np.ones(shape, np.float32), pitch_mm=np.float32(2.6))
+    m = driftmap.DriftMap(tmp_path / "d.npz")
+    r = m.at(np.array([0.25, 1.4, 1.6]), np.zeros(3), np.full(3, -10.0))
+    assert np.allclose(r["x_gate"], [0.125, 0.2, 2.7])     # same hole: 0.1 + 0.25 x 0.1; boundary: no shift

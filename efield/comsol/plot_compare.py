@@ -28,7 +28,8 @@ OUT = DATA / "efield" / "comsol"
 def main():
     names = sys.argv[1:]
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
-    zs = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))["sipms"]["z_mm"][0]
+    from xamssim.config import load_geometry
+    zs = load_geometry("xams2026")["sipms"]["z_mm"][0]           # the SiPM height of the current detector
     M = np.load(OUT / "maps_rz.npz")
     r, z = M["r"], M["z"]
     fig, ax = plt.subplots(1, len(names), figsize=(3.6 * len(names), 7.2), sharey=True)

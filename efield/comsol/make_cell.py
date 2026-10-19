@@ -33,13 +33,17 @@ def main():
                     help="stack = gate + liquid surface + anode mesh + top screen, anode aligned with the gate; "
                          "stackx = the same with the anode shifted by half a pitch in x")
     ap.add_argument("--states", default="", help="states (config/states): their HV cases and liquid level")
+    ap.add_argument("--detector", help="detector for --cases without --states (default xams2026; with --states: theirs)")
     ap.add_argument("--cases", default="", help="extra HV cases of cases.yaml (without --states: needs --level)")
     ap.add_argument("--level", type=float, help="liquid level above the gate [mm] for --cases without --states")
     ap.add_argument("--hmax", type=float, default=0.06)
     ap.add_argument("--hbar", type=float, default=0.012)
     ap.add_argument("--map3d", action="store_true", help="also print the 3D field near the foil (M3 lines) for plot_cell3d.py")
     a = ap.parse_args()
-    G = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))
+    from xamssim.config import efield_detector, geometry_hash, load_geometry
+    detector = efield_detector(a.states, a.detector)
+    G = load_geometry(detector)
+    ghash = int(geometry_hash(G)[:7], 16)          # marks the model: exports check it against the state's geometry
     MAT = yaml.safe_load(open(ROOT / "config" / "materials.yaml"))["materials"]
     eps_l = MAT["liquid_xenon"]["electrical"]["relative_permittivity"]
     eps_g = MAT["gas_xenon"]["electrical"]["relative_permittivity"]
@@ -78,6 +82,7 @@ def main():
     j = lambda s: L_.append("    " + s)  # noqa: E731
     j('Model model = ModelUtil.create("Model");')
     j(f'model.label("{cls}.mph");')
+    j(f'model.param().set("ghash", "{ghash}", "geometry hash of detector {detector}");')
     j('model.param().set("Vbot", "0[V]"); model.param().set("Vtop", "0[V]"); model.param().set("Vel", "0[V]"); model.param().set("Ezd", "0[V/m]"); model.param().set("Va", "0[V]");')
     j('model.component().create("comp1", true);')
     j('GeomSequence g = model.component("comp1").geom().create("geom1", 3);')

@@ -65,7 +65,8 @@ def vis(scan_file, point: int = 0) -> None:
     out = (DATA / "vis_optical" / f"{spec['name']}_point{point}").resolve()
     out.mkdir(parents=True, exist_ok=True)
     cfg = out / "config.json"
-    args = [sys.executable, "-m", "xamssim.g4config", "--level", str(p["level"]), "--out", str(cfg)]
+    args = [sys.executable, "-m", "xamssim.g4config", "--detector", spec.get("detector", "xams2026"),
+            "--level", str(p["level"]), "--out", str(cfg)]
     for k, v in p["set"].items():
         args += ["--set", f"{k}={json.dumps(v)}"]
     subprocess.run(args, check=True, capture_output=True)

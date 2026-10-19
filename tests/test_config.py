@@ -68,7 +68,7 @@ def test_register_and_find(tmp_path, monkeypatch):
 
 
 def test_materials_single_source():
-    geo, mat = config.load_materials_and_geometry()
+    geo, mat = config.load_materials_and_geometry("xams2026")
     assert "optics" not in geo and "optics" in mat
     for part in ("mesh_common", "field_shaping_rings", "cryostat_vessel", "ptfe_cylinder", "ptfe_bucket", "pmt_ptfe"):
         assert geo[part]["material"] in mat["materials"]
@@ -130,3 +130,17 @@ def test_list_old_items_all():
     assert sorted(str(i["path"]) for i in listing.old_items(d, maps=False)) == ["o"]
     assert sorted(str(i["path"]) for i in listing.old_items(d, maps=False, everything=True)) == ["c", "g", "o", "q"]
     assert any(i["kind"] == "map" for i in listing.old_items(d))
+
+
+def test_detectors():
+    """A state names its detector; the geometry comes from config/detectors/<detector>/ with its hole pattern read in;
+    an unknown detector is an error."""
+    import copy as _copy
+    res = config.resolve_state("sept")
+    assert res.detector == "xams2026" and res.geometry_path.parent.name == "xams2026"
+    assert len(res.geometry["mesh_common"]["holes"]) == 456
+    with pytest.raises(config.ConfigError):
+        config.load_geometry("no_such_detector")
+    other = _copy.deepcopy(res.geometry)
+    other["mesh_common"]["holes"] = other["mesh_common"]["holes"][:-1]
+    assert config.geometry_hash(other) != config.geometry_hash(res.geometry)    # the holes are part of the geometry

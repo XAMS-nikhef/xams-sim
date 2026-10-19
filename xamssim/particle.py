@@ -65,7 +65,8 @@ def source_config(res: Resolved) -> dict:
 def build(res: Resolved, out_dir: Path, n_events: int, seed: int) -> tuple[Path, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     cfg_path = out_dir / "config.json"
-    subprocess.run([sys.executable, "-m", "xamssim.g4config", "--level", str(res.state["liquid_level_mm"]),
+    subprocess.run([sys.executable, "-m", "xamssim.g4config", "--detector", res.detector,
+                    "--level", str(res.state["liquid_level_mm"]),
                     "--out", str(cfg_path)], check=True, capture_output=True, text=True)
     cfg = json.loads(cfg_path.read_text())
     src = source_config(res)
@@ -99,6 +100,10 @@ def vis(run_path, out_dir=None) -> None:
     g4bin.run(args)
 
 
+SCREEN = re.compile(r"Event \d+ starts|WARNING|Warning|ERROR|Error|Exception|G4Exception|-------- WWWW|EEEE")
+EVENT = re.compile(r"Event (\d+) starts")
+
+
 def is_current(res: Resolved, out: Path, n: int, seed: int) -> bool:
     """The output in `out` was made for this Geant4 configuration (Geant4 key, events, seed) and is complete."""
     try:
@@ -127,7 +132,15 @@ def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=
     t0 = time.time()
     from .runlock import run_lock
     with run_lock(Path(run_path).stem), open(out / "g4.log", "w") as log:
-        p = subprocess.run(cmd, cwd=out, stdout=log, stderr=subprocess.STDOUT)
+        # everything to g4.log; progress, warnings and errors also to the screen
+        p = subprocess.Popen(cmd, cwd=out, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        for line in p.stdout:
+            log.write(line)
+            if SCREEN.search(line):
+                ev = EVENT.search(line)
+                print(f"  geant4: event {int(ev.group(1)):,} of {n:,} ({time.time() - t0:.0f} s)" if ev
+                      else f"  geant4: {line.rstrip()}", flush=True)
+        p.wait()
     if p.returncode != 0:
         raise RuntimeError(f"xamsg4 failed (exit {p.returncode}); see {out / 'g4.log'}")
     h = json.loads((out / "deposits.json").read_text())

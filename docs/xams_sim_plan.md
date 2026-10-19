@@ -121,7 +121,7 @@ XAMS-nikhef/xams-sim
 **Decision (2026-10-18): one repository — optical_sim is renamed and restructured into xams-sim**, not a new repo
 and not separate repositories per producer:
 
-- *one geometry in one place*: Geant4, COMSOL and the event chain all read `config/geometry.yaml`; no consistency
+- *one geometry in one place*: Geant4, COMSOL and the event chain all read the detector's `config/detectors/<d>/geometry.yaml`; no consistency
   problem between repositories when a dimension changes;
 - *history kept*: optical fits, mesh / field studies, notes and results keep their commits (logbook links stay valid);
 - *least work*: a rename plus a few move commits; the producers (efield, optical) stay standalone through their own
@@ -316,6 +316,12 @@ from detector effects.
 ### S9. Validation suite, overview and docs (2–3 days)
 - Validation: one command per comparison with data (targets from analysis_SR2026.2), report per state; the comparisons
   themselves are studies in `../simulations/`.
+- **Detectors (2026-10-19):** `config/detectors/<detector>/geometry.yaml`, `detector:` in every state; keys follow
+  the resolved geometry (hole pattern included), COMSOL models carry a geometry tag. Now one detector, `xams2026`.
+  For a structurally different detector (e.g. a SiPM top array) still to make generic: Geant4 sensors from a list,
+  the chain's channel list, the COMSOL electrodes and sensors; with regression tests that xams2026 stays the same.
+- **Provenance (2026-10-19):** every chain run writes `<data>/provenance/<run>/…json` (full resolved configuration,
+  maps, Geant4 config, products with lineage, code); `xamssim show <run> [--hash H] [--diff] [--full]`.
 - `xamssim list` (**first version 2026-10-19**: runs, Geant4 output, strax products current / old, maps per
   state, `--prune` listing old data, `--delete` removing it after a confirmation; to do: study summary, map staleness per run): overview of everything in the data folder — per run (study, run file, state, source, run key): the
   Geant4 output (events, output hash, xams-sim version), the strax products made with their lineage hashes and whether

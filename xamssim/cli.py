@@ -15,6 +15,7 @@
     xamssim maps     --state cmb50 --export el             extraction / EL map from the gate + anode cell (licence)
     xamssim maps     --state cmb50 --export light          S1 / S2 light maps per channel (Geant4 optical, ~5 min)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
+    xamssim show     <run> [--hash H] [--diff] [--full]    with which parameters the run's data were made
     xamssim list     [--run PAT] [--prune | --delete]      runs, Geant4 output, strax products (current / old), maps;
                                                           --delete removes the old data after a confirmation,
                                                           --delete --all --run PAT: all data of those runs
@@ -54,7 +55,8 @@ def cmd_status(a) -> int:
     print(f"           level {st['liquid_level_mm']} mm, pressure {st.get('pressure_bar')} bar, "
           f"electron lifetime {st.get('electron_lifetime_us')} µs")
     print(f"source     {res.source_name}: {src.get('isotope')} at {src.get('position_mm')} mm, collimator {src.get('collimator')}")
-    print(f"geometry   config/geometry.yaml (version {res.geometry.get('meta', {}).get('version')}), config/materials.yaml")
+    print(f"detector   {res.detector}: config/detectors/{res.detector}/geometry.yaml (version "
+          f"{res.geometry.get('meta', {}).get('version')}), config/materials.yaml")
     print(f"chain      Geant4 particle mode -> {' -> '.join(('clustered_interactions', 'quanta', 'drifted_electrons', 'extracted_electrons', 's2_photons', 'photoelectrons', 'raw_records'))}")
     print("           (Geant4 particle mode: xamssim particle; up to photoelectrons: xamssim chain; S7-S8 not yet available)")
     missing = _print_maps(res, needed(stop))
@@ -109,6 +111,11 @@ def cmd_chain(a) -> int:
         return run(a.run, target=a.target, g4_out=a.g4, lifetime_us=a.lifetime_us)
 
 
+def cmd_show(a) -> int:
+    from .provenance import show
+    return show(a.run, product=a.product, lineage_hash=a.hash, n=a.n, full=a.full, with_diff=a.diff)
+
+
 def cmd_list(a) -> int:
     from .listing import show
     if a.all and not (a.delete and a.run):
@@ -144,7 +151,7 @@ def main(argv=None) -> int:
                         "el: extraction and electroluminescence from the gate + anode cell, needs the licence; "
                         "light: S1 and S2 light maps per channel from Geant4 optical runs, ~5 min)")
     p.add_argument("--photons-s1", type=float, default=5e7, help="light: photons for the S1 map (default 5e7)")
-    p.add_argument("--photons-s2", type=float, default=2e7, help="light: photons for the S2 map (default 2e7)")
+    p.add_argument("--photons-s2", type=float, default=1e8, help="light: photons for the S2 map (default 1e8)")
     p.add_argument("--jobs", type=int, default=8, help="light: parallel Geant4 runs (default 8)")
     p.set_defaults(func=cmd_maps)
     p = sub.add_parser("list", help="what is in the data folder: runs, Geant4 output, strax products (current or "
@@ -160,6 +167,14 @@ def main(argv=None) -> int:
                                                       "products of the selected runs, current ones too (not the maps)")
     p.add_argument("--yes", action="store_true", help="with --delete: no confirmation")
     p.set_defaults(func=cmd_list)
+    p = sub.add_parser("show", help="with which parameters a run's data were made (provenance written by xamssim chain)")
+    p.add_argument("run", help="run id or run file")
+    p.add_argument("--product", help="the entry that made this product (data type), e.g. s2_photoelectrons")
+    p.add_argument("--hash", help="the entry that made the product with this lineage hash (as in xamssim list)")
+    p.add_argument("--n", type=int, help="entry number (default: the newest)")
+    p.add_argument("--diff", action="store_true", help="what changed since: the run file resolved now vs the entry")
+    p.add_argument("--full", action="store_true", help="the whole provenance record (JSON)")
+    p.set_defaults(func=cmd_show)
     p = sub.add_parser("validate", help="check run configuration files")
     p.add_argument("runs", nargs="+")
     p.set_defaults(func=cmd_validate)

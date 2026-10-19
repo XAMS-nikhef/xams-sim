@@ -1,5 +1,6 @@
 # Detector state: SR-2026.2 science settings (Sept 2026, Δ750 V). Sources: measurements/run_overview.md, elife_v2.
 description: "SR-2026.2 (Sept 2026): anode +2.5, gate -2.5, cathode -3.25 kV; PMTs -950 / -800 V"
+detector: xams2026           # config/detectors/xams2026/geometry.yaml
 hv_case: sept                # key in efield/cases.yaml (electrode voltages, SiPM potential)
 liquid_level_mm: 4.0         # above the gate
 pressure_bar: 2.0            # assumed (EL yield estimates); to be checked against the SC archive

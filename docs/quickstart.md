@@ -19,6 +19,7 @@ conda activate xamssim && cd ~/Documents/XAMS/xams-sim
 | `xamssim status config/runs/<run>.yaml` | the resolved run (state, voltages, source), input hashes, which maps exist | (text) |
 | `xamssim maps --state cmb50` | map status of one detector state | (text) |
 | `xamssim list [--run PATTERN] [--prune \| --delete]` | what is in the data folder: per run the Geant4 output and strax products, current or old for the run file as it is now; maps per state; `--prune` lists old data with sizes, `--delete` removes it after a confirmation; `--run 'example*'`: only runs whose id matches the pattern (shell wildcards `*`, `?`, the whole id; then no maps); `--delete --all --run PATTERN`: all data of those runs, current too | (text) |
+| `xamssim show <run> [--hash H] [--diff] [--full]` | with which parameters a run's data were made (provenance written by every chain run): detector, state, source, optics, maps, products, code; `--diff`: what changed in the configuration since | (text) |
 | `xamssim validate config/runs/*.yaml` | check run files and everything they refer to | (text) |
 | `efield/comsol/run.sh --states cmb50` | COMSOL field model of the TPC for a state (HV case + liquid level) | `efield/comsol/build/`, `<data>/efield/comsol/` |
 | `xamssim maps --state cmb50 --export field` | field map of a state for the chain | `<data>/maps/field/<key>/` |

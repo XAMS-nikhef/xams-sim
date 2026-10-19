@@ -77,7 +77,8 @@ WHAT = {
 }
 # configuration files: what they define (written here); keys and users are read below
 CONFIG = [
-    ("config/geometry.yaml", "the detector: every dimension, position and angle, in the data frame; version", "Geant4, COMSOL, chain"),
+    ("config/detectors/<d>/geometry.yaml", "a detector (now: xams2026): every dimension, position and angle, in the data frame; version; "
+     "the states say which detector they describe", "Geant4, COMSOL, chain"),
     ("config/materials.yaml", "material properties at the reference conditions (2 bar, 175 K) and the optical parameters",
      "Geant4, COMSOL (permittivities), chain (densities)"),
     ("config/states/*.yaml", "a detector condition: HV case, liquid level, pressure, lifetime", "all (via the run)"),
@@ -278,7 +279,8 @@ def main():
     out = sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "notes" / "XAMS_simulation_overview.pdf")
     commit, dirty = git("rev-parse", "--short", "HEAD"), git("status", "--porcelain")
     gitinfo = commit + (" + local changes" if dirty else "")
-    geo = load_yaml(ROOT / "config" / "geometry.yaml")
+    from xamssim.config import load_geometry
+    geo = load_geometry("xams2026")
     res = config.resolve(EXAMPLE_RUN)
     pl = [plugin_info(c) for c in chain.plugins("lineage")]
     alt = [plugin_info(c) for c in chain.plugins("dbscan") if c not in chain.plugins("lineage")]
@@ -298,8 +300,8 @@ def main():
         r = config.resolve_state(f.stem)
         hv = r.hv_case
         st = {row["kind"]: row["present"] for row in maps.status(r)}
-        present = ", ".join(k for k in ("field", "mesh_cells", "drift") if st.get(k)) or "–"
-        states.append([f"<b>{f.stem}</b>", esc(s.get("description", "")), s["hv_case"],
+        present = ", ".join(k for k in ("field", "mesh_cells", "drift", "extraction_el", "s1_light") if st.get(k)) or "–"
+        states.append([f"<b>{f.stem}</b>", esc(s.get("description", "")), f"{s['detector']}<br/>{s['hv_case']}",
                        f"A {hv['A']:+g}, G {hv['G']:+g}, C {hv['C']:+g}, SiPM {hv['SIPM']:+g}",
                        f"{s['liquid_level_mm']}", present])
     sources = []
@@ -349,11 +351,11 @@ def main():
                "configured from the same files, every product traceable to them."), GREEN),
          P("1. Principles", h2),
          table([["principle", "what it means here"],
-                ["one definition", "every dimension, position and angle is written once, in config/geometry.yaml; material "
+                ["one definition", "every dimension, position and angle is written once per detector, in config/detectors/<d>/geometry.yaml; material "
                                    "properties once, in config/materials.yaml; voltages in efield/cases.yaml; the liquid "
                                    "level and the HV case of a condition in its state. Geant4, COMSOL and the chain read "
                                    "them; a missing value is an error, never a built-in default."],
-                ["one frame", "geometry.yaml is in the data frame of the position reconstruction (z = 0 at the gate, +x towards "
+                ["one frame", "the geometry is in the data frame of the position reconstruction (z = 0 at the gate, +x towards "
                               "top-PMT sectors I / III, +y towards I / II). No program converts frames."],
                 ["one front door", "everything runs from the xamssim env through the xamssim command (section 7); Geant4 runs "
                                    "in its own env, started automatically."],
@@ -370,7 +372,7 @@ def main():
          P("3. The definition: configuration files", h2),
          table(cfg_rows, [36 * mm, 58 * mm, 36 * mm, W - 130 * mm]),
          P("Detector states", h2),
-         table([["state", "description", "HV case", "voltages (V)", "level (mm)", "maps present"]] + states,
+         table([["state", "description", "detector / HV case", "voltages (V)", "level (mm)", "maps present"]] + states,
                [16 * mm, 62 * mm, 15 * mm, 50 * mm, 15 * mm, W - 158 * mm]),
          P("Sources and runs", h2),
          table([["source", "isotope / type", "position (mm)", "description"]] + sources, [30 * mm, 22 * mm, 30 * mm, W - 82 * mm]),

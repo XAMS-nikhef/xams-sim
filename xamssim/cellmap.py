@@ -47,6 +47,8 @@ def read_cell(electrode: str, case: dict, geometry: dict, step: float = STEP, co
     t0 = time.time()
     client = mph.start(cores=cores)
     model = client.load(str(f))
+    from .fieldmap import check_geometry_tag
+    check_geometry_tag(model, geometry, f.name)
     num = model.java.result().numerical().create("xamssim_cell", "Interp")
     num.setInterpolationCoordinates(jpype.JArray(jpype.JDouble, 2)([[0.5 * h], [0.5 * h], [z0]]))
     num.set("expr", list(params))
@@ -73,6 +75,7 @@ def read_cell(electrode: str, case: dict, geometry: dict, step: float = STEP, co
     out /= 100.0                                                             # V/m -> V/cm
     client.remove(model)
     mean = np.nanmean(out, axis=(1, 2))                                      # (3, nz): cell average per z
+    mean[:2] = 0.0                    # x, y average of the full cell is zero by symmetry (not of the quarter cell)
     log(f"  {electrode} cell: solution {sol}, {len(u)} x {len(u)} x {len(z)} points, "
         f"far field {mean[2, 0]:.0f} / {mean[2, -1]:.0f} V/cm ({time.time() - t0:.0f} s)")
     return dict(u=u, z=z, Ex=out[0], Ey=out[1], Ez=out[2], mean=mean.astype(np.float32),

@@ -4,7 +4,7 @@
 
 | path | content | edit? |
 |---|---|---|
-| `config/geometry.yaml`, `config/mesh_holes.json` | dimensions; the 456 etched mesh holes | geometry changes |
+| `config/detectors/<d>/geometry.yaml`, `mesh_holes.json` | a detector's dimensions; the 456 etched mesh holes | geometry changes; a new detector = a new folder |
 | `config/materials.yaml` | all material properties incl. optics | material / optics changes |
 | `config/states/`, `config/sources/`, `config/runs/` | detector states, sources, simulation runs | yes, add your own |
 | `efield/cases.yaml` | HV cases | yes |

@@ -1,6 +1,7 @@
 # Detector state: short-fill CM-B (cmb50) with the anode raised to +3.6 kV: anode-gate 3.3 kV, so that g2 is about
 # that of the Flierman thesis (0.74 PE/e; estimate 2026-10-19). Everything else as cmb50.
 description: "cmb50 with anode +3600 V: anode +3600, gate +303 (NaI channel), cathode -215, BS -65 V"
+detector: xams2026           # config/detectors/xams2026/geometry.yaml
 hv_case: cmb50_a36
 liquid_level_mm: 4.0
 pressure_bar: 2.0            # assumed

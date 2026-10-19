@@ -56,16 +56,19 @@ def main():
     ap.add_argument("--hmax", type=float, default=8.0, help="global max element size [mm]")
     ap.add_argument("--no-sipm", action="store_true", help="leave the SiPMs out (axisymmetric reference)")
     ap.add_argument("--states", default="", help="states (config/states): their HV cases and liquid level")
+    ap.add_argument("--detector", help="detector for --cases without --states (default xams2026; with --states: theirs)")
     ap.add_argument("--cases", default="", help="extra HV cases of cases.yaml (without --states: needs --level)")
     ap.add_argument("--level", type=float, help="liquid level above the gate [mm] for --cases without --states")
     a = ap.parse_args()
-    from xamssim.config import ConfigError, efield_selection
+    from xamssim.config import ConfigError, efield_detector, efield_selection, geometry_hash, load_geometry
     try:
         cases, level = efield_selection(a.states, a.cases, a.level)
+        detector = efield_detector(a.states, a.detector)
     except ConfigError as e:
         raise SystemExit(f"make_model: {e}")
 
-    G = yaml.safe_load(open(ROOT / "config" / "geometry.yaml"))
+    G = load_geometry(detector)
+    ghash = int(geometry_hash(G)[:7], 16)          # marks the model: exports check it against the state's geometry
     MAT = yaml.safe_load(open(ROOT / "config" / "materials.yaml"))["materials"]
     eps = {k: str(v["electrical"]["relative_permittivity"]) for k, v in MAT.items() if v["electrical"]["kind"] == "dielectric"}
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
@@ -117,6 +120,7 @@ def main():
         j(f'model.param().set("{n}", "{v}[V]", "{d}");')
     j('model.param().set("icase", "1", "case index (auxiliary sweep)");')
     j(f'model.param().set("level", "{level}[mm]", "liquid level above the gate (from the state)");')
+    j(f'model.param().set("ghash", "{ghash}", "geometry hash of detector {detector} (xamssim.config.geometry_hash)");')
     R = C["field_cage"]["resistors_gohm"]
     for i, r in enumerate(R, 1):
         j(f'model.param().set("R{i}", "{r}[Gohm]", "chain resistor {i}");')
