@@ -137,8 +137,8 @@ and E on a 0.5 mm (x, y, z) grid: x, y ±36 mm, z from the bottom to the top PMT
 `geometry.yaml`. The file `efield_xyz.npz` holds the axes (mm), V (V) and Ex, Ey, Ez (V/cm). `XamsElectricField`
 interpolates \|E\| trilinearly; positions outside the grid get the value at its edge.
 
-The full model has the meshes as solid discs: within a few mm of a mesh the real field (holes) comes from the
-mesh-cell models (later step). The map is registered under the state's field key (geometry, HV, level,
+The full model has the meshes as solid discs: within a few mm of the gate and the cathode the real field (holes)
+comes from the mesh-cell models (composite field of the drift map, below). The map is registered under the state's field key (geometry, HV, level,
 permittivities), so states with the same inputs share it and any change of an input asks for a new one.
 
 ## Output and reading it
@@ -168,3 +168,7 @@ st2, _ = chain.context("config/runs/cs137_cmb50_001.yaml", time_threshold=100, e
 - fuse 1.6.3 calls `np.in1d`, removed in numpy 2.4. `xamssim.plugins` puts it back as `np.isin` when it is missing.
 - fuse reads a whole Geant4 file into memory before it makes chunks (2 × 10⁶ Cs-137 decays, 6 × 10⁶ deposits: fine on
   a laptop). For much larger productions split the Geant4 run (`--events`, `--seed`, `--out`).
+- The first chunk starts 10 ns before the first event (`first_chunk_left`). fuse's default (1 ms) gives a negative
+  chunk start when the first event is earlier; 0 fails when MergeLineage's energy-weighted cluster time rounds 1 ns
+  below the first deposit. Changing it changes the lineage: a notebook kernel started before such a change
+  recomputes instead of loading (restart the kernel).

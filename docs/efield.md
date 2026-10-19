@@ -50,7 +50,7 @@ in the extraction gap, chain current, wall potential at the SiPM height.
 ```bash
 efield/comsol/run_cell.sh gate    --states sept,refa,cmb50      # drift region below, extraction above
 efield/comsol/run_cell.sh cathode --states sept,cmb50 --map3d    # drift region above, reverse field below
-efield/comsol/run_cell.sh stack   --states sept                 # gate + liquid surface + anode + top screen (aligned)
+efield/comsol/run_cell.sh stack   --states sept,cmb50,cmb50_a36 # gate + liquid surface + anode + top screen (aligned)
 efield/comsol/run_cell.sh stackx  --states sept                 # the same, anode shifted half a pitch in x
 python efield/comsol/plot_cell3d.py cathode sept                # interactive 3D view (HTML; needs --map3d)
 ```
@@ -61,12 +61,17 @@ leaking through the holes shows up correctly. Outputs: `<data>/efield/comsol/cel
 equipotentials, drift lines through the hole centres), `cell_<electrode>.json`, and with `--map3d` the 3D views
 `cell3d_*.html` (10–25 MB, not in git).
 
+All cases of one call are solved in one sweep; cases with the same cell potentials (e.g. two states that differ only
+in the anode, for the cathode cell) are solved once. The export (`xamssim maps --export cells|el`) picks a state's
+solution by all potentials that define the cell: gate cell gate + anode, cathode cell cathode + bottom screen, stack
+gate + anode. So one `.mph` serves several states, as long as each state was in the `--states` of its last solve.
+
 ## Drift lines
 
 COMSOL solves the field; the scripts sample it on a regular grid and Python traces electrons along −E (linear
 interpolation, fixed steps: 0.05 mm in the TPC, a few µm in the cells). Lines stop at the gate / surface, a wall,
-a SiPM, a mesh bar or the edge. In liquid xenon electrons follow the field lines, so the paths are right; drift times
-(v(E)) and diffusion are not included yet (step S4 of the [roadmap](xams_sim_plan.md)).
+a SiPM, a mesh bar or the edge. In liquid xenon electrons follow the field lines, so the paths are right. Drift times
+(v(E)) and diffusion are in the chain's drift map ([Simulation chain](chain.md)).
 
 ## COMSOL notes
 

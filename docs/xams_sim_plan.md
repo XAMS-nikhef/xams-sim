@@ -272,6 +272,11 @@ electron ~1.9× too high); width growth with depth faster in the data than D_L =
 drift velocity, the g2 factor, anode alignment (aligned assumed; shifted cell model exists), single-electron size
 with S6 / S7.
 
+Short-fill states (2026-10-19, `../simulations/2026-10-18_example/`): `cmb50` (anode–gate 2.2 kV, 4 mm liquid)
+has E_liq 1.70 kV/cm at the surface and NEST extraction ≈ 0, so no S2. `cmb50_a36` (anode +3.6 kV, 3.3 kV) has
+E_liq 2.55 / E_gas 4.99 kV/cm, extraction 0.23, 148 EL photons / e, g2 (bottom) 1.19 PE/e (≈ 0.64 with the sept
+factor 1.9), about the Flierman-thesis g2 (0.74 PE/e at 3.2 kV); S2 width ≈ 800 ns at the gate.
+
 Original task list:
 - Extraction probability vs field below the surface; S2 photons per electron and their timing along the gas path
   (from the mesh-cell model incl. gate–anode alignment); S2 width.

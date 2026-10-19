@@ -70,7 +70,8 @@ One operating condition of the detector.
 | `sensors` | | e.g. `pmt_hv_v: {top: -1000, bottom: -1000}` |
 | `description` | | free text |
 
-Existing: `sept` (SR-2026.2), `cmb50` (short-fill CM-B with −50 V SiPM margin), `refa` (short-fill REF-a).
+Existing: `sept` (SR-2026.2), `cmb50` (short-fill CM-B with −50 V SiPM margin), `cmb50_a36` (cmb50 with the anode at
++3.6 kV: extraction 0.23 instead of ≈ 0), `refa` (short-fill REF-a).
 
 ## HV cases — `efield/cases.yaml`
 
