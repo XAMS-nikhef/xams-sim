@@ -299,7 +299,15 @@ Original task list:
 
 **Check:** AFT vs r and S1 AFT vs depth against data (step 7/8 targets) for S1 and S2.
 
-### S7. Sensors, fast output at peak level (2–3 days)
+### S7. Sensors, fast output at peak level (2–3 days) — **chain step done 2026-10-19**, check against data open
+
+Result: `XamsSensorResponse` (`peak_areas`: areas per channel with double-PE, SiPM crosstalk, SPE resolution from the
+LED fits; detector `sensors.yaml`) and `XamsEvents` (`xams_events`, target `events`: one row per decay with S1, main /
+alt S2, AFT, drift time, position, u, v, cS1 and cS2 corrected with the light maps and the lifetime). cmb50_a36
+(2·10⁷ decays): photopeak cS1 2220 PE (10.7 %), cS2 6.2·10⁴ PE (12.8 %). Open: afterpulses, top-PMT non-linearity
+(the analysis' top factor), measured double-PE / crosstalk, the comparison with the SR-2026.2 spectra.
+
+Original task list:
 - PMT: QE / CE, gain and SPE spectrum, double-PE, afterpulses, non-linearity under load (top PMT); SiPM: PDE,
   crosstalk. A "fast" output straight at peak level (S1, S2 areas per channel, positions) for quick studies.
 

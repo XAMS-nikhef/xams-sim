@@ -1,0 +1,17 @@
+# Sensor response of the xams2026 readout channels (plan S7): photoelectrons -> areas per channel [PE], as the analysis
+# calibrates them (LED single-PE gains, visible light: no double-PE in the calibration).
+# Channel names: xamssim.lightmap.CHANNEL_NAMES. Separate from geometry.yaml: changing it renews only the sensor step.
+# Sources: A = analysis_SR2026.2 outputs/step1_led.json (LED fits, median of the fits with chi2/ndf < 3, runs 7603 ...)
+channels:
+  bottom:  {kind: pmt,  spe_resolution: 0.51}   # A: 10 fits, 0.24-0.59
+  top_ch1: {kind: pmt,  spe_resolution: 0.38}   # A: 4 fits, 0.33-0.40
+  top_ch2: {kind: pmt,  spe_resolution: 0.44}   # A: 4 fits, 0.36-0.59
+  top_ch3: {kind: pmt,  spe_resolution: 0.40}   # A: 4 fits, 0.35-0.45
+  top_ch4: {kind: pmt,  spe_resolution: 0.37}   # A: 4 fits, 0.34-0.49
+  sipm_1:  {kind: sipm, spe_resolution: 0.10}   # assumed (SiPM PE peaks are narrow); not measured here
+  sipm_2:  {kind: sipm, spe_resolution: 0.10}   # assumed
+pmt:
+  double_pe_probability: 0.2    # assumed: VUV photons on R11410-type photocathodes (literature ~0.2); not measured in XAMS
+sipm:
+  crosstalk_probability: 0.05   # assumed (VUV4 MPPC at moderate overvoltage); not measured in XAMS
+# not modelled (v1): afterpulses, non-linearity of the top PMT under load (the analysis' top factor), SiPM afterpulses

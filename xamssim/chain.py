@@ -1,4 +1,4 @@
-"""The simulation chain as a strax context: one run file -> every setting (plan S3-S6: up to the photoelectrons).
+"""The simulation chain as a strax context: one run file -> every setting (plan S3-S7: up to the events).
 
     xamssim chain config/runs/cs137_cmb50_001.yaml                 # -> <data>/strax/, prints a summary
     st, run_id = chain.context("config/runs/cs137_cmb50_001.yaml")
@@ -17,6 +17,8 @@ Plugins (fuse 1.6.3 unless noted):
     extracted_electrons      XamsExtractionEL — extraction and EL from the state's extraction / EL map
     s1_photoelectrons        XamsS1Light — S1 photons -> photoelectrons per channel (S1 light map)
     s2_photoelectrons        XamsS2Light — S2 photons -> photoelectrons per channel (S2 pattern map)
+    peak_areas               XamsSensorResponse — areas per channel [PE] (detector sensors.yaml)
+    xams_events              XamsEvents — one row per decay: S1, S2, cS1, cS2, position (target `events`)
 
 All settings come from the configuration (fuse plugin defaults are XENONnT values; every one that matters is set):
     volumes (cm)   drift region  gate mesh z .. cathode z, r < PTFE cylinder inner radius          (geometry.yaml)
@@ -74,8 +76,8 @@ def volumes(res: Resolved) -> dict:
 def plugins(clustering: str) -> list:
     import fuse
 
-    from .plugins import (XamsElectricField, XamsElectronDrift, XamsExtractionEL, XamsG4Input, XamsS1Light,
-                          XamsS2Light, XamsVolumeProperties, XamsVolumeSelection)
+    from .plugins import (XamsElectricField, XamsElectronDrift, XamsEvents, XamsExtractionEL, XamsG4Input, XamsS1Light,
+                          XamsS2Light, XamsSensorResponse, XamsVolumeProperties, XamsVolumeSelection)
     mp = fuse.micro_physics
     clus = ([mp.LineageClustering, mp.MergeLineage] if clustering == "lineage" else [mp.FindCluster, mp.MergeCluster])
     return [XamsG4Input, 
@@ -89,7 +91,9 @@ def plugins(clustering: str) -> list:
             XamsElectronDrift,
             XamsExtractionEL,
             XamsS1Light,
-            XamsS2Light]
+            XamsS2Light,
+            XamsSensorResponse,
+            XamsEvents]
 
 
 def _el_settings(res: Resolved, xams_el_map: str | None) -> dict:
@@ -115,6 +119,25 @@ def _light_settings(res: Resolved) -> dict:
             out[opt] = str(lightmap.path(res, kind))
         except FileNotFoundError:
             pass
+    return out
+
+
+def _sensor_settings(res: Resolved) -> dict:
+    """Sensor response of the detector (sensors.yaml), in the channel order of the light maps; the gate / cathode z
+    for the cS1 reference (events)."""
+    from .lightmap import CHANNEL_NAMES
+    g = {m["name"]: m["z_mm"] for m in res.geometry["meshes"]}
+    out = dict(z_gate_cm=g["gate"] / 10, z_cathode_cm=g["cathode"] / 10)
+    s = res.sensors
+    if s:
+        ch = s["channels"]
+        missing = [n for n in CHANNEL_NAMES if n not in ch]
+        if missing:
+            raise ConfigError(f"{res.geometry_path.parent / 'sensors.yaml'}: channels {missing} missing")
+        out.update(spe_resolution=[float(ch[n]["spe_resolution"]) for n in CHANNEL_NAMES],
+                   channel_kind=[ch[n]["kind"] for n in CHANNEL_NAMES],
+                   double_pe_probability=float(s["pmt"]["double_pe_probability"]),
+                   crosstalk_probability=float(s["sipm"]["crosstalk_probability"]))
     return out
 
 
@@ -151,6 +174,8 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         **_el_settings(res, xams_el_map),
         # light (S6)
         **_light_settings(res),
+        # sensors, events (S7)
+        **_sensor_settings(res),
     )
 
 
@@ -194,7 +219,7 @@ def _check_g4(res: Resolved, gdir: Path) -> None:
 TARGETS = {"geant4_interactions": "geant4_interactions", "clustered_interactions": "clustered_interactions",
            "quanta": "microphysics_summary", "drifted_electrons": "drifted_electrons",
            "extracted_electrons": "extracted_electrons", "s2_photons": "extracted_electrons",
-           "photoelectrons": ("s1_photoelectrons", "s2_photoelectrons")}
+           "photoelectrons": ("s1_photoelectrons", "s2_photoelectrons"), "events": "xams_events"}
 
 
 def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | None = None) -> int:
@@ -223,10 +248,11 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
     t0 = time.time()
     # store the clusters and their volumes too (all clusters, also the dropped ones), then the target; fuse saves a
     # product only when it is the single target of a request (SaveWhen.TARGET), hence one make per product
-    if target in ("quanta", "drifted_electrons", "extracted_electrons", "s2_photons", "photoelectrons"):
+    if target in ("quanta", "drifted_electrons", "extracted_electrons", "s2_photons", "photoelectrons", "events"):
         keep = ["clustered_interactions", "volume_properties"] + (["microphysics_summary"] if target != "quanta" else []) \
-            + (["drifted_electrons"] if target in ("extracted_electrons", "s2_photons", "photoelectrons") else []) \
-            + (["extracted_electrons", "s1_photoelectrons", "s2_photoelectrons"] if target == "photoelectrons" else [])
+            + (["drifted_electrons"] if target in ("extracted_electrons", "s2_photons", "photoelectrons", "events") else []) \
+            + (["extracted_electrons", "s1_photoelectrons", "s2_photoelectrons"] if target in ("photoelectrons", "events") else []) \
+            + (["peak_areas"] if target == "events" else [])
         for t in keep:                                   # NEST stored too: every later step reads the same draw
             st.make(run_id, t)
     else:
@@ -251,6 +277,13 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
               f"({d['n_electron_extracted'].sum() / max(1, dr['n_electron_interface'].sum()):.3f}); S2 photons "
               f"{d['n_s2_photons'].sum():.3e}, {np.median(d['el_photons_per_electron'][m]):.0f} per electron (median), "
               f"S2 width50 {np.median(d['s2_width50'][m]):.0f} ns (median of the clusters)")
+    if "cs1" in (d.dtype.names or ()):
+        pk = (np.abs(d["energy"] - 661.7) < 5) & (d["energy_drift"] > 655) & (d["n_s2"] == 1)
+        print(f"  {len(d)} decays with clusters; photopeak, all in the drift region, one S2: {pk.sum()}")
+        for k in ("cs1", "cs2", "s1_aft", "s2_aft"):
+            x = d[k][pk]
+            if len(x):
+                print(f"    {k:<7} mean {np.mean(x):10.4g}, sigma/mean {np.std(x) / np.mean(x):.3f}")
     if "s1_pe" in (d.dtype.names or ()):
         from .lightmap import CHANNEL_NAMES
         for w in ("s1", "s2"):

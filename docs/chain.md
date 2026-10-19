@@ -12,7 +12,7 @@ xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax
 ```
 
 `--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`,
-`extracted_electrons` (= `s2_photons`) or `photoelectrons` (S1 and S2 per channel). Without it the chain
+`extracted_electrons` (= `s2_photons`), `photoelectrons` (S1 and S2 per channel) or `events` (one row per decay). Without it the chain
 stops at the run's `stop_after`, or at the last product implemented so far. `--g4 DIR` reads Geant4 output from
 somewhere other than `<data>/g4/<run name>/` (e.g. the output of another run file with the same Geant4 settings).
 `--lifetime-us T` sets the electron lifetime for a state without a measured one (it overrides the state and is part
@@ -30,6 +30,8 @@ of the lineage).
 | `extracted_electrons` | `XamsExtractionEL` (`xamssim/plugins/extraction.py`) | extracted electrons, S2 (EL) photons, S2 time and width per cluster, from the extraction / EL map at the gate-hole position |
 | `s1_photoelectrons` | `XamsS1Light` (`xamssim/plugins/light.py`) | S1 photoelectrons per channel per cluster: NEST photons spread over the channels with the S1 light map at (x, y, z) |
 | `s2_photoelectrons` | `XamsS2Light` (`xamssim/plugins/light.py`) | S2 photoelectrons per channel per cluster: S2 photons spread over the channels with the S2 pattern map at the gate crossing |
+| `peak_areas` | `XamsSensorResponse` (`xamssim/plugins/sensors.py`) | S1 and S2 area per channel [PE]: double-PE (PMTs), crosstalk (SiPMs), single-PE area resolution (detector `sensors.yaml`) |
+| `xams_events` | `XamsEvents` (`xamssim/plugins/sensors.py`) | one row per decay: S1, main and alternative S2, AFT, drift time, position, u, v, cS1, cS2 |
 | `quanta` | fuse `NestYields` | NEST photons / electrons / excitons with the local field and density |
 | `microphysics_summary` | fuse `MicroPhysicsSummary` | all of the above in one table per cluster |
 
@@ -139,6 +141,26 @@ Defaults: 5·10⁷ S1 and 10⁸ S2 photons (~3 min on 8 cores); they and the smo
 `XamsS1Light` and `XamsS2Light` interpolate the map linearly at the cluster (S1: its position; S2: its gate crossing
 `x_obs`, `y_obs`) and draw the photoelectrons per channel from a multinomial (the rest undetected). No sensor response
 yet (gain, SPE spectrum, double PE: S7) and no photon times (S8).
+
+## Sensors and events
+
+```bash
+xamssim chain <run> --target events
+```
+
+`XamsSensorResponse` turns the photoelectrons of each channel into an area in PE, as the analysis calibrates it with
+the LED single-PE gain: a PMT photoelectron makes a second one with the double-PE probability (VUV light; the LED
+calibration has none), a SiPM adds crosstalk, and every PE has a Gaussian area with the channel's single-PE resolution.
+The parameters are in `config/detectors/<d>/sensors.yaml` (xams2026: SPE resolution from the LED fits of the analysis,
+0.51 bottom, 0.37–0.44 top; double-PE 0.2 and SiPM crosstalk 0.05 assumed). Not modelled yet: afterpulses, the
+non-linearity of the top PMT under load.
+
+`XamsEvents` makes one row per decay (the fast output at peak level): S1 = all clusters; the main S2 = the clusters
+within 0.75 µs drift time of the brightest S2, the alternative S2 = the brightest outside it; area fraction top (PMTs
+only), drift time, position at the gate and true z, the top-PMT pattern u, v; cS1 = S1 divided by the relative S1 light
+yield at the clusters (S1 map, mean over the drift region = 1), cS2 = S2 divided by the relative S2 light collection
+at the gate crossings (S2 map, mean over the gate area = 1), times exp(t/τ). Example cmb50_a36 (2·10⁷ decays):
+photopeak cS1 2220 PE (σ/mean 10.7 %), cS2 6.2·10⁴ PE (12.8 %).
 
 ## Physics options (run file)
 

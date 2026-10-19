@@ -15,6 +15,7 @@ conda activate xamssim && cd ~/Documents/XAMS/xams-sim
 | `xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta` | clusters, local field and NEST quanta for those deposits | `<data>/strax/` |
 | `xamssim chain <run> --target extracted_electrons` | S2: extracted electrons and EL photons per cluster (needs the extraction / EL map of the state) | `<data>/strax/` |
 | `xamssim chain <run> --target photoelectrons` | S1 and S2 photoelectrons per channel per cluster (needs the light maps: `xamssim maps --state <s> --export light`) | `<data>/strax/` |
+| `xamssim chain <run> --target events` | one row per decay: S1, S2 areas after the sensor response, AFT, drift time, position, cS1, cS2 | `<data>/strax/` |
 | `xamssim chain <run> --target drifted_electrons` | electrons drifted to the liquid surface (needs the drift map of the state and its lifetime, e.g. state `sept`; example: `../simulations/2026-10-18_example`) | `<data>/strax/` |
 | `xamssim status config/runs/<run>.yaml` | the resolved run (state, voltages, source), input hashes, which maps exist | (text) |
 | `xamssim maps --state cmb50` | map status of one detector state | (text) |

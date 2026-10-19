@@ -36,7 +36,7 @@ HV_CASES = ROOT / "efield" / "cases.yaml"
 
 # data products of the chain, in order; `stop_after` must be one of them
 PRODUCTS = ("geant4_interactions", "clustered_interactions", "quanta", "drifted_electrons", "extracted_electrons",
-            "s2_photons", "photoelectrons", "raw_records")
+            "s2_photons", "photoelectrons", "events", "raw_records")
 
 NUM = (int, float)
 OPT_NUM = (int, float, type(None))
@@ -101,6 +101,12 @@ def load_geometry(detector: str) -> dict:
     return geo
 
 
+def load_sensors(detector: str) -> dict:
+    """The detector's sensors.yaml (sensor response per channel), {} if it has none."""
+    p = geometry_path(detector).parent / "sensors.yaml"
+    return load_yaml(p) if p.exists() else {}
+
+
 def geometry_hash(geo: dict) -> str:
     """Hash of the physical geometry (what COMSOL, Geant4 and the maps depend on)."""
     return short_hash({k: v for k, v in geo.items() if k not in {"meta", "targets", "sources", "liquid"}})
@@ -162,6 +168,10 @@ class Resolved:
     @property
     def geometry_path(self) -> Path:
         return geometry_path(self.detector)
+
+    @property
+    def sensors(self) -> dict:
+        return load_sensors(self.detector)
 
     def map_inputs(self) -> dict:
         level = self.state["liquid_level_mm"]

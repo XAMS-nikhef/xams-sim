@@ -72,6 +72,10 @@ WHAT = {
                    "state's S1 light map at (x, y, z)",
     "XamsS2Light": "S2 photoelectrons per channel per cluster: S2 photons spread over the channels with the state's S2 "
                    "pattern map at the gate crossing",
+    "XamsSensorResponse": "areas per channel [PE] from the photoelectrons: double-PE (PMTs), crosstalk (SiPMs), single-PE "
+                          "resolution (detector sensors.yaml)",
+    "XamsEvents": "one row per decay: S1, main and alternative S2, AFT, drift time, position, u, v, cS1 and cS2 "
+                  "(light maps, lifetime)",
     "XamsElectronDrift": "electrons at the liquid surface per cluster from the state's drift map (end point: surface, "
                          "bottom, wall, SiPM; survival exp(−t/τ)), drift time and diffusion spread, position at the gate",
 }

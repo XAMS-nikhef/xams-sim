@@ -15,7 +15,8 @@ config/runs/<run>.yaml ─┬─ state ──► config/states/<state>.yaml ─�
 
 ## Detectors — `config/detectors/<detector>/`
 
-One folder per detector: `geometry.yaml` and the files it refers to (`mesh_holes.json`). Now one detector,
+One folder per detector: `geometry.yaml` and the files it refers to (`mesh_holes.json`), and `sensors.yaml` (the
+sensor response per channel; separate, so a change there renews only the sensor step). Now one detector,
 `xams2026` (the current XAMS). A different detector (e.g. a SiPM top array) is a new folder; its states name it, and
 since every key (Geant4, maps, lineage) follows the resolved geometry, runs of one detector never make those of another
 old. Small changes for a study belong in a new detector folder too (copy and edit) — never edit the geometry of a
@@ -112,7 +113,7 @@ Existing: `cs137_raised`, `cs137_r130_cathode`, `cs137_r130_below`,
 | `source` | yes | source |
 | `n_events` | yes | number of primaries (decays or gammas) |
 | `seed` | yes | random seed |
-| `stop_after` | | last product of the chain: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`, `extracted_electrons`, `s2_photons`, `photoelectrons`, `raw_records` (default) |
+| `stop_after` | | last product of the chain: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`, `extracted_electrons`, `s2_photons`, `photoelectrons`, `events`, `raw_records` (default) |
 | `physics` | | options: `clustering`, `source_rate_hz`, lineage / DBSCAN cluster settings, `production_cut_mm` (list and defaults: [Simulation chain](chain.md#physics-options-run-file)) |
 
 Unknown keys are rejected.

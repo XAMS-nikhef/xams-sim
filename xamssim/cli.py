@@ -6,7 +6,7 @@
     xamssim particle config/runs/vis_cs137.yaml --vis      particle viewer: look at a few events
     xamssim optical  <scan>.yaml [--jobs 8]                optical simulation (scan) -> <data>/scans/<scan>/
     xamssim optical  <scan>.yaml --vis [--point N]         optical viewer for a point of the scan (--list: the points)
-    xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to photoelectrons)
+    xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to events)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
     xamssim maps     --state cmb50 --export field          3D field of the state from the solved COMSOL model (licence)
@@ -58,7 +58,7 @@ def cmd_status(a) -> int:
     print(f"detector   {res.detector}: config/detectors/{res.detector}/geometry.yaml (version "
           f"{res.geometry.get('meta', {}).get('version')}), config/materials.yaml")
     print(f"chain      Geant4 particle mode -> {' -> '.join(('clustered_interactions', 'quanta', 'drifted_electrons', 'extracted_electrons', 's2_photons', 'photoelectrons', 'raw_records'))}")
-    print("           (Geant4 particle mode: xamssim particle; up to photoelectrons: xamssim chain; S7-S8 not yet available)")
+    print("           (Geant4 particle mode: xamssim particle; up to events: xamssim chain; S8 (waveforms) not yet available)")
     missing = _print_maps(res, needed(stop))
     print(f"{missing} of {len(needed(stop))} maps needed for '{stop}' missing")
     return 0
@@ -190,7 +190,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("chain", help="simulation chain (strax / fuse) on the Geant4 output of a run")
     p.add_argument("run")
     p.add_argument("--target", choices=["geant4_interactions", "clustered_interactions", "quanta", "drifted_electrons",
-                                        "extracted_electrons", "s2_photons", "photoelectrons"],
+                                        "extracted_electrons", "s2_photons", "photoelectrons", "events"],
                    help="last product (default: the run's stop_after, at most the last implemented one)")
     p.add_argument("--g4", help="Geant4 output folder (default <data>/g4/<run name>)")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] for a state without a measured one "

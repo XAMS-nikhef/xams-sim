@@ -37,3 +37,18 @@ def test_multinomial():
     assert abs(k[2, 0] / 1e6 - 0.5) < 0.005 and abs(k[2, 1] / 1e6 - 0.1) < 0.005
     big = _multinomial(rng, np.array([100]), np.array([[0.8, 0.8, 0, 0, 0, 0, 0]]))   # sum > 1: scaled to all photons
     assert big.sum() == 100
+
+
+def test_sensor_response():
+    """Areas: PMT mean (1 + double-PE) per PE with width spe_resolution * sqrt(PEs); SiPM (1 + crosstalk)."""
+    from xamssim.plugins.sensors import XamsSensorResponse
+    p = XamsSensorResponse.__new__(XamsSensorResponse)
+    p.rng = np.random.default_rng(2)
+    p.res = np.array([0.5, 0.4, 0.4, 0.4, 0.4, 0.1, 0.1])
+    p.p_extra = np.array([0.2] * 5 + [0.05] * 2)
+    n = np.tile(np.array([[1000, 1000, 1000, 1000, 1000, 1000, 1000]]), (4000, 1))
+    a = p.area(n)
+    assert abs(a[:, 0].mean() / 1200 - 1) < 0.005 and abs(a[:, 5].mean() / 1050 - 1) < 0.005
+    want = np.sqrt(1000 * 0.2 * 0.8 + 1200 * 0.5 ** 2)                  # binomial double-PE + Gaussian PE areas
+    assert abs(a[:, 0].std() / want - 1) < 0.05
+    assert p.area(np.zeros((1, 7), int)).sum() == 0
