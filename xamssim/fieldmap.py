@@ -38,8 +38,10 @@ def _find_solution(num, case: dict, level_mm: float, n_max: int = 50) -> int:
     keys = list(ELECTRODES)
     num.setInterpolationCoordinates(jpype.JArray(jpype.JDouble, 2)([[0.0], [0.0], [-25.0]]))
     num.set("expr", ["level"])
+    num.set("unit", ["mm"])                                                     # ask for the level in mm explicitly
     num.set("solnum", jpype.JArray(jpype.JInt)([1]))
-    model_level = float(np.array(num.getReal(), float).ravel()[0]) * 1e3       # COMSOL evaluates in SI (m)
+    model_level = float(np.array(num.getReal(), float).ravel()[0])
+    num.set("unit", ["V"] * len(keys))                                          # the electrode parameters
     if abs(model_level - level_mm) > 1e-6:
         raise LookupError(f"COMSOL model solved for liquid level {model_level} mm, state has {level_mm} mm: "
                           f"efield/comsol/run.sh --states <state>")
@@ -81,6 +83,7 @@ def read_comsol(case_name: str, level_mm: float, geometry: dict, mph_file: Path 
     sol = _find_solution(num, case, level_mm)
     log(f"COMSOL {client.version}, {mph_file.name}: case {case_name} = solution {sol}")
     num.set("expr", ["V", "es.Ex", "es.Ey", "es.Ez"])
+    num.set("unit", ["V", "V/m", "V/m", "V/m"])                                 # converted to V/cm below
     num.set("solnum", jpype.JArray(jpype.JInt)([sol]))
     X, Y = np.meshgrid(x, y, indexing="ij")
     out = np.empty((4, len(x), len(y), len(z)), np.float32)
