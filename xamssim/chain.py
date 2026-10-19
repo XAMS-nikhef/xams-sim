@@ -189,6 +189,9 @@ def g4_dir(res: Resolved) -> Path:
 def context(run_path, g4_out=None, store=STORE, **overrides):
     """(strax context, run id) for a run file. `overrides`: fuse options on top of the configuration (studies)."""
     import strax
+
+    from . import warn_if_stale
+    warn_if_stale()
     warnings.filterwarnings("ignore", module="straxen|utilix|fuse")
     res = resolve(run_path)
     gdir = Path(g4_out) if g4_out else g4_dir(res)

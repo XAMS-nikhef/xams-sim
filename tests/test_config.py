@@ -144,3 +144,15 @@ def test_detectors():
     other = _copy.deepcopy(res.geometry)
     other["mesh_common"]["holes"] = other["mesh_common"]["holes"][:-1]
     assert config.geometry_hash(other) != config.geometry_hash(res.geometry)    # the holes are part of the geometry
+
+
+def test_stale_code_warning(tmp_path, monkeypatch, capsys):
+    """A source file newer than the import time is reported (a kernel still running old code)."""
+    import os
+    import time
+    import xamssim
+    f = xamssim._PKG / "config.py"
+    monkeypatch.setattr(xamssim, "_LOADED", time.time() - 10)
+    os.utime(f, None)                                             # touch: now newer than the (faked) import time
+    assert "xamssim/config.py" in xamssim.changed_since_import()
+    assert xamssim.warn_if_stale() and "Restart the kernel" in capsys.readouterr().out
