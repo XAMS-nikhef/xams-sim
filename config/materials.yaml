@@ -23,6 +23,7 @@ materials:
       drift_velocity: nest       # NEST SetDriftVelocity(T, density, |E|): 1.45 mm/µs at 145 V/cm, 175 K
       diffusion_longitudinal_cm2_s: 25.0   # approximate literature value (D_L ≈ 20–30 cm²/s at 0.1–0.4 kV/cm); tune on the S2 width
       diffusion_transverse_cm2_s: 55.0     # approximate literature value (D_T ≈ 50–60 cm²/s); sub-mm effect in XAMS
+      extraction: nest           # extraction efficiency vs field: NEST (CalculateG2)
   gas_xenon:
     density_g_cm3: 0.018694      # saturated vapour at 2 bar
     state: gas
@@ -30,6 +31,9 @@ materials:
     pressure_bar: 2.0
     geant4: {composition: {Xe: 1}, molar_mass_g_mol: 131.29}
     electrical: {kind: dielectric, relative_permittivity: 1.00}
+    transport:                   # electrons in the gas gap (simulation chain, S5)
+      drift_velocity_mm_us: 3.1  # TUNED: median S2 width50 at the gate of the SR-2026.2 Cs photopeak (605 ns; S5 study 2026-10-19); no measurement found at ~9 Td
+      el_yield: monteiro2007     # photons per electron per cm = 140 E[kV/cm] - 116 p_eq[bar], p_eq = pressure at 293 K with the same density (Monteiro et al. 2007)
   ptfe:                          # inner cylinder, PMT holders, bucket
     density_g_cm3: 2.2
     geant4: {nist: G4_TEFLON}

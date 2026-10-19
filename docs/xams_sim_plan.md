@@ -260,7 +260,19 @@ Original task list:
 `../simulations/2026-10-12_efield_sipm_and_spread/`), apparent lifetime vs radius (SiPM checks, same study) for the
 Sept state; volumes: clusters per medium equal the Geant4 energy per volume, and electron end points per region.
 
-### S5. Extraction and electroluminescence (1–2 days)
+### S5. Extraction and electroluminescence (1–2 days) — **done 2026-10-19**
+
+Result: extraction / EL map per state (`xamssim maps --export el`, `xamssim/elmap.py`) from the gate + anode cell model:
+electrons from the liquid surface over a gate-hole cell tracked to the anode; NEST extraction efficiency, EL photons
+per electron (Monteiro 140 E − 116 p_eq), transit time and emission profile with the gas drift velocity;
+`XamsExtractionEL` (`extracted_electrons`) per cluster at its gate crossing. Check (`../simulations/2026-10-19_s5_extraction/`,
+sept): extraction 0.64, 282 EL photons / e, S2 width at the gate 601 ns vs 605 ns in the data with the gas drift
+velocity tuned to 3.1 mm/µs (no measurement at ~9 Td found); g2 (bottom) 6.5 vs 3.48 ± 0.68 PE/e (S2 light per
+electron ~1.9× too high); width growth with depth faster in the data than D_L = 25 cm²/s gives. Open: a measured gas
+drift velocity, the g2 factor, anode alignment (aligned assumed; shifted cell model exists), single-electron size
+with S6 / S7.
+
+Original task list:
 - Extraction probability vs field below the surface; S2 photons per electron and their timing along the gas path
   (from the mesh-cell model incl. gate–anode alignment); S2 width.
 

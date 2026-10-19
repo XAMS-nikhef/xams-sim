@@ -66,6 +66,8 @@ WHAT = {
     "XamsElectricField": "|E| at the cluster position (x, y, z) from the state's 3D field map",
     "NestYields": "NEST photons / electrons / excitons with the local field and the volume's density",
     "MicroPhysicsSummary": "all of the above in one table per cluster",
+    "XamsExtractionEL": "extraction (NEST efficiency) and EL in the gas per cluster from the state's extraction / EL "
+                        "map at its gate-hole position: extracted electrons, S2 photons, S2 time and width",
     "XamsElectronDrift": "electrons at the liquid surface per cluster from the state's drift map (end point: surface, "
                          "bottom, wall, SiPM; survival exp(−t/τ)), drift time and diffusion spread, position at the gate",
 }
@@ -388,6 +390,10 @@ def main():
                 ["mesh-cell export", "xamssim/cellmap.py (mph)",
                  "gate and cathode quarter-cell fields of the real etched meshes → maps/mesh_cells/&lt;key&gt;/cells.npz",
                  "xamssim maps --state … --export cells"],
+                ["extraction / EL map", "xamssim/elmap.py",
+                 "per gate-hole position: extraction efficiency, EL photons per electron, transit time and emission "
+                 "profile in the gas, tracked through the gate + anode cell",
+                 "xamssim maps --state … --export el"],
                 ["drift map", "xamssim/driftmap.py",
                  "electron end points, drift times, gate crossings on a 1 × 1 × 0.5 mm grid, tracked through the "
                  "composite field (full TPC + mesh cells)",

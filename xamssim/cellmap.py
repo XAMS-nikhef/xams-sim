@@ -25,18 +25,21 @@ from .maps import MAPS, find, register
 
 BUILD = ROOT / "efield" / "comsol" / "build"
 FILE = "cells.npz"
-# electrode -> (case voltage key = parameter Vel of the cell model, z_loc range [mm] used in the composite field)
-ELECTRODES = {"gate": ("G", (-3.2, 3.98)), "cathode": ("C", (-3.6, 3.6))}
+# electrode -> (cell-model parameter -> case voltage key, z_loc range [mm]); gate and cathode: composite field of the
+# drift; stack (gate + liquid surface + anode + top screen, anode aligned): extraction and EL (xamssim.elmap)
+ELECTRODES = {"gate": ({"Vel": "G"}, (-3.2, 3.98)), "cathode": ({"Vel": "C"}, (-3.6, 3.6))}
+STACK = ({"Vel": "G", "Va": "A"}, (3.4, 12.0))
 STEP = 0.02
 
 
-def read_cell(electrode: str, case: dict, geometry: dict, step: float = STEP, cores: int = 4, log=print) -> dict:
+def read_cell(electrode: str, case: dict, geometry: dict, step: float = STEP, cores: int = 4, log=print,
+              spec=None) -> dict:
     import jpype
     import mph
     f = BUILD / f"XAMS_cell_{electrode}.mph"
     if not f.exists():
         raise FileNotFoundError(f"{f} missing: efield/comsol/run_cell.sh {electrode} --states <state>")
-    key, (z0, z1) = ELECTRODES[electrode]
+    params, (z0, z1) = spec or ELECTRODES[electrode]
     h = geometry["mesh_common"]["pitch_mm"] / 2
     u = np.round(np.arange(0.0, h + 1e-9, step), 4)
     z = np.round(np.arange(z0, z1 + 1e-9, step), 4)
@@ -45,19 +48,20 @@ def read_cell(electrode: str, case: dict, geometry: dict, step: float = STEP, co
     model = client.load(str(f))
     num = model.java.result().numerical().create("xamssim_cell", "Interp")
     num.setInterpolationCoordinates(jpype.JArray(jpype.JDouble, 2)([[0.5 * h], [0.5 * h], [z0]]))
-    num.set("expr", ["Vel"])
+    num.set("expr", list(params))
+    want = np.array([case[k] for k in params.values()], float)
     sol = None
     for s in range(1, 30):
         try:
             num.set("solnum", jpype.JArray(jpype.JInt)([s]))
-            v = float(np.array(num.getReal()).ravel()[0])
+            v = np.array(num.getReal(), float).ravel()
         except Exception:
             break
-        if abs(v - case[key]) < 0.5:
+        if np.allclose(v, want, atol=0.5):
             sol = s
             break
     if sol is None:
-        raise LookupError(f"no solution with {electrode} at {case[key]} V in {f.name}: run_cell.sh {electrode} --states <state>")
+        raise LookupError(f"no solution with {dict(zip(params, want))} V in {f.name}: run_cell.sh {electrode} --states <state>")
     num.set("expr", ["es.Ex", "es.Ey", "es.Ez"])
     U, V = np.meshgrid(u, u, indexing="ij")
     out = np.full((3, len(u), len(u), len(z)), np.nan, np.float32)

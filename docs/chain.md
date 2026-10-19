@@ -11,7 +11,8 @@ xamssim maps --state cmb50 --export field                      # once per state:
 xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax/
 ```
 
-`--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta` or `drifted_electrons`. Without it the chain
+`--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons` or
+`extracted_electrons` (= `s2_photons`). Without it the chain
 stops at the run's `stop_after`, or at the last product implemented so far. `--g4 DIR` reads Geant4 output from
 somewhere other than `<data>/g4/<run name>/`.
 
@@ -24,6 +25,7 @@ somewhere other than `<data>/g4/<run name>/`.
 | `volume_properties`, `interactions_in_roi` | `XamsVolumeProperties`, `XamsVolumeSelection` (`xamssim/plugins/volumes.py`), fuse `DefaultSimulation` | volume of each cluster (from the drift map) and its xenon density; clusters outside the volumes are dropped |
 | `electric_field_values` | `XamsElectricField` (`xamssim/plugins/field.py`) | \|E\| at the cluster position (x, y, z) from the state's 3D field map |
 | `drifted_electrons` | `XamsElectronDrift` (`xamssim/plugins/drift.py`) | electrons at the liquid surface (end point and lifetime from the drift map), drift time and its spread, position at the gate |
+| `extracted_electrons` | `XamsExtractionEL` (`xamssim/plugins/extraction.py`) | extracted electrons, S2 (EL) photons, S2 time and width per cluster, from the extraction / EL map at the gate-hole position |
 | `quanta` | fuse `NestYields` | NEST photons / electrons / excitons with the local field and density |
 | `microphysics_summary` | fuse `MicroPhysicsSummary` | all of the above in one table per cluster |
 
@@ -41,6 +43,8 @@ Geant4 11 process name `RadioactiveDecay` → `RadioactiveDecayBase` (the name f
 | `xams_drift_map` | `<data>/maps/drift/<key>/drift_xyz.npz` | map registry, state's drift key |
 | `electron_lifetime_us` | electron lifetime in the liquid | state (`electron_lifetime_us`; needed for `drifted_electrons`) |
 | `diffusion_longitudinal_cm2_s`, `diffusion_transverse_cm2_s` | diffusion of electrons in the liquid | `materials.yaml` (`liquid_xenon.transport`) |
+| `xams_el_map` | `<data>/maps/extraction_el/<key>/el.npz` | map registry, state's extraction / EL key (needed for `extracted_electrons`) |
+| `gate_angle_deg`, `mesh_pitch_mm`, `z_anode_cm` | gate-hole lattice (anode aligned), anode position | `geometry.yaml` |
 | `nest_er_yields_parameters`, `nest_nr_yields_parameters`, `nest_width_parameters` | `-1`, `-1`, `{}` (NEST defaults) | fixed |
 | clustering, `source_rate` | run file `physics` block | below |
 
@@ -81,6 +85,26 @@ lifetime (binomial with exp(−t/τ)) and diffusion (σ_t from D_L, σ_xy from D
 `n_electron_interface`, `drift_time_mean`, `drift_time_spread` [ns], `x_obs`, `y_obs` (at the gate) [cm],
 `xy_spread`, `drift_end`, `survival`. Not in the map: partial losses at the edges of a catchment area (a cluster's
 electrons all end at the same place), time-dependent fields.
+
+## Extraction and electroluminescence
+
+```bash
+xamssim maps --state sept --export el                             # once per state (gate + anode cell model, licence)
+xamssim chain <run> --target extracted_electrons
+```
+
+The extraction / EL map (`xamssim/elmap.py`) comes from the stack cell model of the state (gate, liquid surface,
+anode, top screen; real etched meshes, anode aligned with the gate). Electrons start on a 0.025 mm grid over one
+quarter of a gate-hole cell just above the liquid surface and are tracked through the gas to the anode bars. Per
+start point: the **extraction efficiency** from the field just below the surface (NEST `CalculateG2`, as a function
+of the field just above it), the **EL photons per electron** along the path (140 E[kV/cm] − 116 p_eq[bar] per cm,
+Monteiro et al. 2007; p_eq = the pressure at 293 K with the density of the gas), the **transit time** with the gas
+drift velocity and the **emission-time quantiles** (5 … 95 % of the electron's light). `XamsExtractionEL` takes the
+values at the cluster's gate crossing (`x_obs`, `y_obs` of `drifted_electrons` in the gate-hole lattice):
+extracted = binomial(electrons at the surface, efficiency), S2 photons = Poisson(extracted × photons per electron),
+S2 time = drift time + emission, `s2_width50` = 25–75 % of the cluster's light (EL profile and diffusion). Clusters
+in the gas keep their electrons and emit the part of the path above them. Gas transport in `materials.yaml`
+(`gas_xenon.transport`); the gas drift velocity is tuned on the measured S2 width (no measurement at ~9 Td found).
 
 ## Physics options (run file)
 

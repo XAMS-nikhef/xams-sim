@@ -104,6 +104,32 @@ def test_composite_field(tmp_path):
     assert u[0] == pytest.approx(0.3) and v[0] == pytest.approx(-0.2) and etched[0]
 
 
+def uniform_stack(e_liq=-3920.0, e_gas=-7600.0):
+    """Synthetic gate + anode cell as xamssim.cellmap.read_cell returns it: uniform Ez [V/cm], liquid below z = 4 mm."""
+    u = np.linspace(0, 1.3, 27)
+    z = np.round(np.arange(3.4, 12.0 + 1e-9, 0.02), 4)
+    ez = np.broadcast_to(np.where(z < 4.0, e_liq, e_gas), (len(u), len(u), len(z))).astype(np.float32)
+    zero = np.zeros_like(ez)
+    return dict(u=u, z=z, Ex=zero, Ey=zero, Ez=ez)
+
+
+def test_el_map():
+    from xamssim import elmap
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    d = elmap.compute(res, cell=uniform_stack(), log=lambda *a: None)
+    gm = elmap.gas_model(res)
+    # at the hole centre the electron goes straight up through the anode hole to the top of the cell
+    path = d["path_mm"][0, 0]
+    assert d["end"][0, 0] == 2 and path == pytest.approx(12.0 - 4.01, abs=0.05)
+    assert d["n_el"][0, 0] == pytest.approx((140 * 7.6 - 116 * gm["p_eq"]) * path / 10, rel=0.01)
+    assert d["t_transit_us"][0, 0] == pytest.approx(path / gm["v_gas"], rel=0.01)
+    q = d["t_q_us"][0, 0]
+    assert np.all(np.diff(q) > 0) and q[9] == pytest.approx(0.5 * d["t_transit_us"][0, 0], rel=0.02)   # uniform light
+    et, ee = elmap.extraction_table()
+    assert d["ext_eff"][0, 0] == pytest.approx(np.interp(3.92 * gm["eps_ratio"], et, ee, left=0.0), rel=1e-6)
+    assert d["end"][-1, 0] == 1                                            # under a bar: ends on the anode bar
+
+
 def drift_map(tmp_path, res):
     """Coarse drift map of the synthetic field (drift region field 145 V/cm, reversed below the cathode)."""
     from xamssim import driftmap
@@ -200,6 +226,18 @@ def test_chain_end_to_end(tmp_path):
     assert dr["survival"][i] == pytest.approx(np.exp(-dr["drift_time_mean"][i] / 1e3 / tau), rel=1e-3)
     assert 0 < dr["n_electron_interface"][i] <= s["electrons"][i]
     assert dr["drift_time_spread"][i] > 0
+    # extraction and EL with a synthetic EL map
+    from xamssim import elmap
+    elp = tmp_path / "el.npz"
+    np.savez(elp, **elmap.compute(config.resolve(run), cell=uniform_stack(), log=lambda *a: None))
+    st3, _ = chain.context(run, g4_out=tmp_path / "g4", store=tmp_path / "strax",
+                           xams_efield_map=str(flat_map(tmp_path / "f.npz")), xams_drift_map=str(dpath),
+                           electron_lifetime_us=300.0, xams_el_map=str(elp))
+    ex = st3.get_array(rid, "extracted_electrons")
+    dr3 = st3.get_array(rid, "drifted_electrons")
+    assert np.all(ex["n_electron_extracted"] <= dr3["n_electron_interface"])
+    k = np.flatnonzero(dr3["n_electron_interface"] > 100)
+    assert np.all(ex["n_s2_photons"][k] > 0) and np.all(ex["s2_width50"][k] > 0)
     # new Geant4 output for the same run file -> new lineage of everything downstream (not reused)
     key = st.key_for(rid, "clustered_interactions").lineage_hash
     write_g4(tmp_path / "g4", ROWS[:-1], 6)

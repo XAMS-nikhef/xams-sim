@@ -70,7 +70,8 @@ def volumes(res: Resolved) -> dict:
 def plugins(clustering: str) -> list:
     import fuse
 
-    from .plugins import XamsElectricField, XamsElectronDrift, XamsG4Input, XamsVolumeProperties, XamsVolumeSelection
+    from .plugins import (XamsElectricField, XamsElectronDrift, XamsExtractionEL, XamsG4Input, XamsVolumeProperties,
+                          XamsVolumeSelection)
     mp = fuse.micro_physics
     clus = ([mp.LineageClustering, mp.MergeLineage] if clustering == "lineage" else [mp.FindCluster, mp.MergeCluster])
     return [XamsG4Input, 
@@ -81,11 +82,26 @@ def plugins(clustering: str) -> list:
             XamsElectricField, 
             mp.NestYields, 
             mp.MicroPhysicsSummary,
-            XamsElectronDrift]
+            XamsElectronDrift,
+            XamsExtractionEL]
+
+
+def _el_settings(res: Resolved, xams_el_map: str | None) -> dict:
+    """Settings of the extraction / EL step; the map only if it exists (it is needed for extracted_electrons only)."""
+    from . import elmap
+    g = res.geometry
+    z = {m["name"]: m for m in g["meshes"]}
+    out = dict(gate_angle_deg=z["gate"].get("angle_to_anodes_deg", 0.0), mesh_pitch_mm=g["mesh_common"]["pitch_mm"],
+               z_anode_cm=z["anode"]["z_mm"] / 10)
+    try:
+        out["xams_el_map"] = str(xams_el_map or elmap.path(res))
+    except FileNotFoundError:
+        pass
+    return out
 
 
 def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4_output_hash: str | None = None,
-             xams_drift_map: str | None = None) -> dict:
+             xams_drift_map: str | None = None, xams_el_map: str | None = None) -> dict:
     from . import driftmap, fieldmap, g4io
     p = physics(res)
     mats = res.materials["materials"]
@@ -111,6 +127,8 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         **({"electron_lifetime_us": res.state["electron_lifetime_us"]} if res.state.get("electron_lifetime_us") else {}),
         diffusion_longitudinal_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_longitudinal_cm2_s"],
         diffusion_transverse_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_transverse_cm2_s"],
+        # extraction and EL (S5)
+        **_el_settings(res, xams_el_map),
     )
 
 
@@ -127,7 +145,7 @@ def context(run_path, g4_out=None, store=STORE, **overrides):
     if not (gdir / "deposits.json").exists():
         raise ConfigError(f"no Geant4 output in {gdir}: xamssim particle {res.run_path}")
     cfg = settings(res, gdir, xams_efield_map=overrides.get("xams_efield_map"),
-                   xams_drift_map=overrides.get("xams_drift_map"))
+                   xams_drift_map=overrides.get("xams_drift_map"), xams_el_map=overrides.get("xams_el_map"))
     cfg.update(overrides)
     st = strax.Context(storage=[strax.DataDirectory(str(store))], register=plugins(physics(res)["clustering"]),
                        config=cfg)
@@ -152,7 +170,8 @@ def _check_g4(res: Resolved, gdir: Path) -> None:
 
 # chain products (config.PRODUCTS) implemented so far -> strax data type
 TARGETS = {"geant4_interactions": "geant4_interactions", "clustered_interactions": "clustered_interactions",
-           "quanta": "microphysics_summary", "drifted_electrons": "drifted_electrons"}
+           "quanta": "microphysics_summary", "drifted_electrons": "drifted_electrons",
+           "extracted_electrons": "extracted_electrons", "s2_photons": "extracted_electrons"}
 
 
 def run(run_path, target: str | None = None, g4_out=None) -> int:
@@ -178,8 +197,9 @@ def run(run_path, target: str | None = None, g4_out=None) -> int:
     t0 = time.time()
     # store the clusters and their volumes too (all clusters, also the dropped ones), then the target; fuse saves a
     # product only when it is the single target of a request (SaveWhen.TARGET), hence one make per product
-    if target in ("quanta", "drifted_electrons"):
-        keep = ["clustered_interactions", "volume_properties"] + (["microphysics_summary"] if target != "quanta" else [])
+    if target in ("quanta", "drifted_electrons", "extracted_electrons", "s2_photons"):
+        keep = ["clustered_interactions", "volume_properties"] + (["microphysics_summary"] if target != "quanta" else []) \
+            + (["drifted_electrons"] if target in ("extracted_electrons", "s2_photons") else [])
         for t in keep:                                   # NEST stored too: every later step reads the same draw
             st.make(run_id, t)
     d = st.get_array(run_id, TARGETS[target])
@@ -191,6 +211,13 @@ def run(run_path, target: str | None = None, g4_out=None) -> int:
         for v, name in VOLUME_NAMES.items():
             m = d["vol_id"] == v
             print(f"  {name:<14} {m.sum():8d} clusters, mean {d['ed'][m].mean() if m.any() else 0:6.1f} keV")
+    if "n_s2_photons" in (d.dtype.names or ()):
+        dr = st.get_array(run_id, "drifted_electrons", progress_bar=False)
+        m = dr["n_electron_interface"] > 0
+        print(f"  electrons at the surface {dr['n_electron_interface'].sum():12d}, extracted {d['n_electron_extracted'].sum():12d} "
+              f"({d['n_electron_extracted'].sum() / max(1, dr['n_electron_interface'].sum()):.3f}); S2 photons "
+              f"{d['n_s2_photons'].sum():.3e}, {np.median(d['el_photons_per_electron'][m]):.0f} per electron (median), "
+              f"S2 width50 {np.median(d['s2_width50'][m]):.0f} ns (median of the clusters)")
     if "drift_end" in (d.dtype.names or ()):
         from .driftmap import CODES
         q = st.get_array(run_id, "microphysics_summary", progress_bar=False)

@@ -141,13 +141,20 @@ class Resolved:
                  "model": "quarter cell, gate and cathode (efield/comsol/make_cell.py)"}
         return {
             "field": field,
-            "drift": {**field, "liquid": {k: mats["liquid_xenon"].get(k) for k in ("temperature_k", "density_g_cm3", "transport")},
+            "drift": {**field, "liquid": {"temperature_k": mats["liquid_xenon"].get("temperature_k"),
+                                          "density_g_cm3": mats["liquid_xenon"].get("density_g_cm3"),
+                                          "transport": {k: v for k, v in (mats["liquid_xenon"].get("transport") or {}).items()
+                                                        if k in ("drift_velocity", "diffusion_longitudinal_cm2_s",
+                                                                 "diffusion_transverse_cm2_s")}},
                       "mesh_cells": cells, "tracking": "driftmap v2: composite field (full TPC + mesh cells), against E, "
                                                       "NEST v(E), step 0.1 / 0.02 mm, grid 1 x 1 x 0.5 mm"},
             "mesh_cells": cells,
             "extraction_el": {"mesh_common": self.geometry.get("mesh_common"), "meshes": self.geometry.get("meshes"),
                               "hv": {k: hv[k] for k in ("A", "G", "C", "TS")}, "liquid_level_mm": level,
-                              "pressure_bar": self.state.get("pressure_bar"), "permittivity": eps},
+                              "pressure_bar": self.state.get("pressure_bar"), "permittivity": eps,
+                              "gas": {k: mats["gas_xenon"].get(k) for k in ("density_g_cm3", "transport")},
+                              "liquid_extraction": (mats["liquid_xenon"].get("transport") or {}).get("extraction"),
+                              "model": "elmap v1: stack cell, anode aligned"},
             "s1_light": light,
             "s2_pattern": light,
         }
