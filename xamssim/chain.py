@@ -174,7 +174,7 @@ TARGETS = {"geant4_interactions": "geant4_interactions", "clustered_interactions
            "extracted_electrons": "extracted_electrons", "s2_photons": "extracted_electrons"}
 
 
-def run(run_path, target: str | None = None, g4_out=None) -> int:
+def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | None = None) -> int:
     """Process a run up to `target` (default: the run's stop_after, at most the last implemented product)."""
     import time
 
@@ -190,10 +190,13 @@ def run(run_path, target: str | None = None, g4_out=None) -> int:
             print(f"stop_after '{stop}' not implemented yet; processing up to '{target}'")
     if target not in TARGETS:
         raise ConfigError(f"target '{target}' not implemented (available: {list(TARGETS)})")
-    if PRODUCTS.index(target if target != "quanta" else "quanta") >= PRODUCTS.index("drifted_electrons") and \
-            not res.state.get("electron_lifetime_us"):
-        raise ConfigError(f"state '{res.state_name}' has no electron_lifetime_us (needed for the drift)")
-    st, run_id = context(run_path, g4_out=g4_out)
+    if PRODUCTS.index(target) >= PRODUCTS.index("drifted_electrons") and not (lifetime_us or res.state.get("electron_lifetime_us")):
+        raise ConfigError(f"state '{res.state_name}' has no electron_lifetime_us (needed for the drift): set it in the "
+                          f"state or give --lifetime-us")
+    over = {"electron_lifetime_us": float(lifetime_us)} if lifetime_us else {}
+    if over:
+        print(f"electron lifetime {lifetime_us} µs (given on the command line; state: {res.state.get('electron_lifetime_us')})")
+    st, run_id = context(run_path, g4_out=g4_out, **over)
     t0 = time.time()
     # store the clusters and their volumes too (all clusters, also the dropped ones), then the target; fuse saves a
     # product only when it is the single target of a request (SaveWhen.TARGET), hence one make per product

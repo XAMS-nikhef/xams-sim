@@ -95,7 +95,7 @@ def cmd_particle(a) -> int:
 
 def cmd_chain(a) -> int:
     from .chain import run
-    return run(a.run, target=a.target, g4_out=a.g4)
+    return run(a.run, target=a.target, g4_out=a.g4, lifetime_us=a.lifetime_us)
 
 
 def cmd_optical(a) -> int:
@@ -141,6 +141,8 @@ def main(argv=None) -> int:
                                         "extracted_electrons", "s2_photons"],
                    help="last product (default: the run's stop_after, at most the last implemented one)")
     p.add_argument("--g4", help="Geant4 output folder (default <data>/g4/<run name>)")
+    p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] for a state without a measured one "
+                                                     "(overrides the state; tracked in the lineage)")
     p.set_defaults(func=cmd_chain)
     p = sub.add_parser("optical", help="optical simulation from a scan file: production, or --vis viewer")
     p.add_argument("scan", help="scan file, e.g. config/scans/example_s2.yaml")

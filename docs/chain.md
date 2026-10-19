@@ -14,7 +14,9 @@ xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax
 `--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons` or
 `extracted_electrons` (= `s2_photons`). Without it the chain
 stops at the run's `stop_after`, or at the last product implemented so far. `--g4 DIR` reads Geant4 output from
-somewhere other than `<data>/g4/<run name>/`.
+somewhere other than `<data>/g4/<run name>/` (e.g. the output of another run file with the same Geant4 settings).
+`--lifetime-us T` sets the electron lifetime for a state without a measured one (it overrides the state and is part
+of the lineage).
 
 ## Plugins
 
