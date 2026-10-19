@@ -7,11 +7,16 @@ Per run (run id = run file name; run files in `<simulations>/*/runs/` and `confi
 Per state: the maps (present / missing); maps in the registry that no state uses any more are listed as old.
 `--prune` lists what is old with its size; `--delete` deletes it after a confirmation (`--yes`: without).
 
-    xamssim list [filter] [--prune | --delete [--yes]]
+    xamssim list [--run PATTERN] [--prune | --delete [--all] [--yes]]
+
+--run: only the runs whose run id matches PATTERN (shell wildcards * and ?, the whole id: 'example*',
+'*_sept', 'example_cs137_sept'); then no maps. Quote a pattern with wildcards, or the shell expands it.
+--all (with --delete and --run): all Geant4 output and strax products of the selected runs, current ones too.
 """
 from __future__ import annotations
 
 import contextlib
+import fnmatch
 import io
 import json
 import warnings
@@ -92,7 +97,7 @@ def collect(flt: str = "") -> dict:
     ids = sorted(set(sp) | {d.name for d in G4.iterdir() if d.is_dir()} if G4.exists() else set(sp))
     runs = []
     for rid in ids:
-        if flt and flt not in rid:
+        if flt and not fnmatch.fnmatchcase(rid, flt):
             continue
         r = dict(id=rid, files=rf.get(rid, []), g4=None, products=[], note="")
         g = G4 / rid
@@ -149,18 +154,20 @@ def map_overview(runs) -> dict:
     return dict(states=per_state, old=old, kinds=list(KINDS))
 
 
-def old_items(d) -> list:
+def old_items(d, maps: bool = True, everything: bool = False) -> list:
     """Everything old in a collect() result: Geant4 output made for another Geant4 key, strax products whose lineage
     the chain no longer gives, maps no state has the key of. Products that could not be checked ('?') and runs without
-    a run file are never included."""
+    a run file are never included. everything=True: all Geant4 output and strax products of the runs in d (current
+    ones too), no maps."""
     from .maps import MAPS
     items = []
     for r in d["runs"]:
         g = r["g4"]
-        if g and r.get("g4_key_now") and g["key"] != r["g4_key_now"]:
+        if g and (everything or (r.get("g4_key_now") and g["key"] != r["g4_key_now"])):
             items.append(dict(kind="g4", path=g["dir"], size=g["size"]))
-        items += [dict(kind="strax", path=p["dir"], size=p["size"]) for p in r["products"] if p["state"] == "old"]
-    for m in d["maps"]["old"]:
+        items += [dict(kind="strax", path=p["dir"], size=p["size"]) for p in r["products"]
+                  if everything or p["state"] == "old"]
+    for m in (d["maps"]["old"] if maps else []):
         items.append(dict(kind="map", path=MAPS / m["files"][0].rsplit("/", 1)[0], size=m["size"], map=(m["kind"], m["key"]),
                           note=f"{m['kind']} {m['key']}, state {m['state']}, {m['created']}; and its manifest entry"))
     return items
@@ -181,7 +188,7 @@ def remove(items) -> None:
         save_manifest(man)
 
 
-def show(flt: str = "", prune: bool = False, delete: bool = False, yes: bool = False) -> int:
+def show(flt: str = "", prune: bool = False, delete: bool = False, yes: bool = False, everything: bool = False) -> int:
     d = collect(flt)
     print(f"data folder {DATA}")
     for r in d["runs"]:
@@ -213,8 +220,9 @@ def show(flt: str = "", prune: bool = False, delete: bool = False, yes: bool = F
     old_maps = d["maps"]["old"]
     print(f"  old maps (no state has their key now): {len(old_maps)}, {_mb(sum(m['size'] for m in old_maps))}")
     if prune or delete:
-        items = old_items(d)
-        print(f"\nold data ({'to delete' if delete else 'not deleted; xamssim list --delete removes it'}):")
+        items = old_items(d, maps=not flt and not everything, everything=everything)
+        what = "all data of the selected runs, current included" if everything else "old data"
+        print(f"\n{what} ({'to delete' if delete else 'not deleted; xamssim list --delete removes it'}):")
         for it in items:
             print(f"  {_mb(it['size']):>7}  {it['path']}" + (f"   ({it['note']})" if it.get("note") else ""))
         tot = sum(it["size"] for it in items)

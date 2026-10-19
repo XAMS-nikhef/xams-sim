@@ -95,3 +95,38 @@ def test_list_remove(tmp_path, monkeypatch):
     assert not old.exists()
     with pytest.raises(RuntimeError):
         listing.remove([dict(kind="strax", path=tmp_path.parent / "elsewhere", size=1)])
+
+
+def test_particle_is_current(tmp_path):
+    """xamssim particle skips Geant4 only for complete output with the same Geant4 key, events and seed."""
+    import json
+    from xamssim import particle
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    assert not particle.is_current(res, tmp_path, 10, 1)                    # nothing there
+    (tmp_path / "config.json").write_text(json.dumps({"xamssim": {"g4_key": res.g4_key(), "n_events": 10, "seed": 1}}))
+    assert not particle.is_current(res, tmp_path, 10, 1)                    # incomplete: no deposits.json
+    (tmp_path / "deposits.json").write_text(json.dumps({"counts": {"events": 10}}))
+    assert particle.is_current(res, tmp_path, 10, 1)
+    assert not particle.is_current(res, tmp_path, 20, 1) and not particle.is_current(res, tmp_path, 10, 2)
+
+
+def test_list_run_pattern(monkeypatch):
+    """--run: shell wildcards against the whole run id."""
+    from xamssim import listing
+    monkeypatch.setattr(listing, "strax_products", lambda: {"example_a": [], "example_b": [], "s4_x": []})
+    monkeypatch.setattr(listing, "G4", config.DATA / "no-such-folder")
+    ids = lambda p: [r["id"] for r in listing.collect(p)["runs"]]          # noqa: E731
+    assert ids("example*") == ["example_a", "example_b"]
+    assert ids("example") == [] and ids("example_a") == ["example_a"] and ids("*_?") == ["example_a", "example_b", "s4_x"]
+
+
+def test_list_old_items_all():
+    """--delete: only old data; --delete --all: everything of the selected runs, never maps."""
+    from xamssim import listing
+    d = {"runs": [{"g4": {"key": "a", "size": 1, "dir": "g"}, "g4_key_now": "a",
+                   "products": [{"state": "current", "dir": "c", "size": 1}, {"state": "old", "dir": "o", "size": 1},
+                                {"state": "?", "dir": "q", "size": 1}]}],
+         "maps": {"old": [{"kind": "drift", "key": "k", "state": "s", "created": "", "size": 1, "files": ["drift/k/f"]}]}}
+    assert sorted(str(i["path"]) for i in listing.old_items(d, maps=False)) == ["o"]
+    assert sorted(str(i["path"]) for i in listing.old_items(d, maps=False, everything=True)) == ["c", "g", "o", "q"]
+    assert any(i["kind"] == "map" for i in listing.old_items(d))

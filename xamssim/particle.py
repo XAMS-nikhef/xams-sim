@@ -99,18 +99,34 @@ def vis(run_path, out_dir=None) -> None:
     g4bin.run(args)
 
 
-def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=None, dry_run: bool = False) -> Path:
+def is_current(res: Resolved, out: Path, n: int, seed: int) -> bool:
+    """The output in `out` was made for this Geant4 configuration (Geant4 key, events, seed) and is complete."""
+    try:
+        x = json.loads((out / "config.json").read_text())["xamssim"]
+        json.loads((out / "deposits.json").read_text())["counts"]
+    except (OSError, ValueError, KeyError):
+        return False
+    return x.get("g4_key") == res.g4_key() and x.get("n_events") == n and x.get("seed") == seed
+
+
+def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=None, dry_run: bool = False,
+        force: bool = False) -> Path:
     res = resolve(run_path)
     n = int(n_events or res.run["n_events"])
     sd = int(res.run["seed"] if seed is None else seed)
     out = (Path(out_dir) if out_dir else DATA / "g4" / Path(run_path).stem).resolve()
+    if not force and not dry_run and is_current(res, out, n, sd):
+        print(f"Geant4 output current (Geant4 key {res.g4_key()}, {n} events, seed {sd}): {out} — not rerun "
+              f"(--force reruns)")
+        return out
     cfg, mac = build(res, out, n, sd)
     cmd = g4bin.command(["-m", "particle", "-c", cfg, "-o", out / "deposits.bin", "-s", sd, mac])
     print("run:", " ".join(cmd))
     if dry_run:
         return out
     t0 = time.time()
-    with open(out / "g4.log", "w") as log:
+    from .runlock import run_lock
+    with run_lock(Path(run_path).stem), open(out / "g4.log", "w") as log:
         p = subprocess.run(cmd, cwd=out, stdout=log, stderr=subprocess.STDOUT)
     if p.returncode != 0:
         raise RuntimeError(f"xamsg4 failed (exit {p.returncode}); see {out / 'g4.log'}")

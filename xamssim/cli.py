@@ -15,8 +15,9 @@
     xamssim maps     --state cmb50 --export el             extraction / EL map from the gate + anode cell (licence)
     xamssim maps     --state cmb50 --export light          S1 / S2 light maps per channel (Geant4 optical, ~5 min)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
-    xamssim list     [filter] [--prune | --delete]         runs, Geant4 output, strax products (current / old), maps;
-                                                          --delete removes the old data after a confirmation
+    xamssim list     [--run PAT] [--prune | --delete]      runs, Geant4 output, strax products (current / old), maps;
+                                                          --delete removes the old data after a confirmation,
+                                                          --delete --all --run PAT: all data of those runs
 """
 from __future__ import annotations
 
@@ -95,18 +96,25 @@ def cmd_particle(a) -> int:
     if a.vis:
         vis(a.run, out_dir=a.out)
     else:
-        run(a.run, n_events=a.events, seed=a.seed, out_dir=a.out, dry_run=a.dry_run)
+        run(a.run, n_events=a.events, seed=a.seed, out_dir=a.out, dry_run=a.dry_run, force=a.force)
     return 0
 
 
 def cmd_chain(a) -> int:
     from .chain import run
-    return run(a.run, target=a.target, g4_out=a.g4, lifetime_us=a.lifetime_us)
+    from pathlib import Path
+
+    from .runlock import run_lock
+    with run_lock(Path(a.run).stem):
+        return run(a.run, target=a.target, g4_out=a.g4, lifetime_us=a.lifetime_us)
 
 
 def cmd_list(a) -> int:
     from .listing import show
-    return show(a.filter or "", prune=a.prune, delete=a.delete, yes=a.yes)
+    if a.all and not (a.delete and a.run):
+        print("--all goes with --delete and --run PATTERN (--run '*' for every run)", file=sys.stderr)
+        return 2
+    return show(a.run, prune=a.prune, delete=a.delete, yes=a.yes, everything=a.all)
 
 
 def cmd_optical(a) -> int:
@@ -141,11 +149,15 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_maps)
     p = sub.add_parser("list", help="what is in the data folder: runs, Geant4 output, strax products (current or "
                                     "old for the run file as it is now), maps per state")
-    p.add_argument("filter", nargs="?", help="only run ids containing this text")
+    p.add_argument("--run", default="", metavar="PATTERN",
+                   help="only the runs whose run id (= run file name) matches PATTERN: the whole id, with shell wildcards "
+                        "* and ? (quote them: --run 'example*'); old maps are then left out")
     p.add_argument("--prune", action="store_true", help="also list the old data with its size (never deletes)")
     p.add_argument("--delete", action="store_true", help="delete the old data (Geant4 output for another Geant4 key, "
                                                          "strax products with an old lineage, unused maps) after a "
                                                          "confirmation")
+    p.add_argument("--all", action="store_true", help="with --delete and --run: delete all Geant4 output and strax "
+                                                      "products of the selected runs, current ones too (not the maps)")
     p.add_argument("--yes", action="store_true", help="with --delete: no confirmation")
     p.set_defaults(func=cmd_list)
     p = sub.add_parser("validate", help="check run configuration files")
@@ -157,6 +169,7 @@ def main(argv=None) -> int:
     p.add_argument("--seed", type=int)
     p.add_argument("--out", help="output folder (default <data>/g4/<run name>)")
     p.add_argument("--dry-run", action="store_true", help="write config.json and run.mac, do not run Geant4")
+    p.add_argument("--force", action="store_true", help="rerun Geant4 even if its output is current for the run file")
     p.add_argument("--vis", action="store_true", help="interactive Qt viewer (then /run/beamOn N in the window)")
     p.set_defaults(func=cmd_particle)
     p = sub.add_parser("chain", help="simulation chain (strax / fuse) on the Geant4 output of a run")
@@ -182,6 +195,12 @@ def main(argv=None) -> int:
     except ConfigError as e:
         print(f"configuration error: {e}", file=sys.stderr)
         return 2
+    except RuntimeError as e:
+        from .runlock import RunLocked
+        if not isinstance(e, RunLocked):
+            raise
+        print(f"busy: {e}", file=sys.stderr)
+        return 3
 
 
 if __name__ == "__main__":

@@ -174,9 +174,11 @@ permittivities), so states with the same inputs share it and any change of an in
 
 strax data in `<data>/strax/`, run id = the name of the run file. Each product is stored under its lineage hash:
 plugin versions and tracked settings, including `g4_output_hash` (a content hash of the Geant4 output: the config it
-ran with incl. the xams-sim version, seed, counts; not file paths), the map files (their paths hold the map keys), the
-lifetime and the transport constants. Changing an option or a map, or rerunning Geant4, makes new data for exactly the
-steps it affects; the clustering is redone only when the Geant4 output or the clustering settings change. Keep run
+ran with: geometry, materials, source, seed, Geant4 key; the counts; not file paths, run key, state name or
+xams-sim version), the map files (their paths hold the map keys), the
+lifetime and the transport constants. Changing an option or a map, or Geant4 output of another configuration, makes new data
+for exactly the steps it affects; running the same run file again only loads (and `xamssim particle` skips Geant4
+when its output is current); the clustering is redone only when the Geant4 output or the clustering settings change. Keep run
 file names unique (they also name the Geant4 output folder). When the run file now asks for another Geant4
 configuration than the output was made with (`g4_key`: geometry, materials, level, source, events, seed), the chain
 warns.
@@ -184,7 +186,8 @@ warns.
 `xamssim list` shows per run which Geant4 output and strax products exist and whether each is current (the lineage
 hash the chain gives now for the run file, its state, maps and settings); `xamssim list --prune` lists the old ones
 with their size, `xamssim list --delete` removes them after a confirmation (products that cannot be checked and
-runs without a run file are never removed).
+runs without a run file are never removed); `xamssim list --delete --all --run PATTERN` removes all Geant4 output and
+strax products of the matching runs, current ones too (to start a run fresh).
 
 Pre-selection: only decays with a deposit inside the field-cage radius go to the clustering (`preselect_r_max_cm`);
 nothing outside it can reach a volume.
@@ -199,6 +202,9 @@ st2, _ = chain.context("config/runs/cs137_cmb50_001.yaml", time_threshold=100, e
 
 ## Notes
 
+- One xamssim process per run id: `xamssim particle` and `xamssim chain` take a lock (`<data>/locks/<run id>.lock`);
+  a second one on the same run stops with "busy". Two processes writing the same strax folder left a product marked
+  complete with chunks missing (2026-10-19). A notebook that recomputes (old kernel) does not take the lock.
 - fuse 1.6.3 calls `np.in1d`, removed in numpy 2.4. `xamssim.plugins` puts it back as `np.isin` when it is missing.
 - fuse reads a whole Geant4 file into memory before it makes chunks (2 × 10⁶ Cs-137 decays, 6 × 10⁶ deposits: fine on
   a laptop). For much larger productions split the Geant4 run (`--events`, `--seed`, `--out`).

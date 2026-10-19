@@ -58,15 +58,23 @@ def _drop_paths(obj):
     return obj
 
 
+NOT_HASHED = ("run", "run_key", "state", "code_version")      # xamssim bookkeeping in the Geant4 config
+
+
 def output_hash(path) -> str:
     """Content hash of a particle-mode output: the full config Geant4 ran with (geometry, materials, source, physics,
-    seed, xams-sim version), the event and deposit counts, the code tables and record layout — not file paths.
-    The chain's input plugin tracks it, so new Geant4 output never reuses old strax data."""
+    seed, Geant4 key), the event and deposit counts, the code tables and record layout — not file paths and not the
+    bookkeeping that does not change the deposits (run file path, run key with the map keys, state name, xams-sim
+    version), so a rerun with the same Geant4 configuration keeps the chain's strax data. The chain's input plugin
+    tracks it, so new Geant4 output never reuses old strax data."""
     from .config import short_hash
     h = json.loads(_stem(path).with_suffix(".json").read_text())
     h = {k: v for k, v in h.items() if k != "files"}
     info = dict(h.get("info", {}))
     if "config_json" in info:
         info["config_json"] = json.loads(info["config_json"])
+        x = info["config_json"].get("xamssim")
+        if isinstance(x, dict):
+            info["config_json"]["xamssim"] = {k: v for k, v in x.items() if k not in NOT_HASHED}
     h["info"] = info
     return short_hash(_drop_paths(h))
