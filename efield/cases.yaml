@@ -40,3 +40,5 @@ cases:
   cmb_m300: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: -300, export: [planes], note: "CM-B, SiPM −300 V off"}
   cmb50: {A: 2503, G: 303, C: -215, BS: -65, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
           note: "CM-B with margin: SiPM ≈ 50 V below its surroundings (short-fill plan, 2026-10-12)"}
+  cmb50_a36: {A: 3600, G: 303, C: -215, BS: -65, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
+          note: "cmb50 with the anode at +3.6 kV (anode-gate 3.3 kV: g2 about as in the Flierman thesis, 2026-10-19)"}

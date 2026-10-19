@@ -110,7 +110,9 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         path=str(g4_dir), file_name="deposits", g4_output_hash=g4_output_hash or g4io.output_hash(g4_dir),
         preselect_r_max_cm=volumes(res)["r_field_cage_cm"],
         source_rate=p["source_rate_hz"], n_interactions_per_chunk=1e5,
-        first_chunk_left=0,                      # fuse default 1 ms: negative chunk start if the first event is earlier
+        first_chunk_left=10,                     # ns before the first event; fuse default 1 ms gives a negative chunk start
+                                                 # if the first event is earlier, 0 fails when MergeLineage's energy-
+                                                 # weighted time rounds 1 ns below the first deposit
         # clustering
         **(dict(time_threshold=p["time_threshold_ns"], gamma_distance_threshold=p["gamma_distance_threshold_cm"],
                 brem_distance_threshold=p["brem_distance_threshold_cm"]) if p["clustering"] == "lineage" else

@@ -66,6 +66,13 @@ def main():
     else:
         z0, z1 = -7.8, 4.0
         rows = {n: (cases[n]["BS"], cases[n]["C"] + (cases[n]["G"] - cases[n]["C"]) / L * 4.0, cases[n]["C"]) for n in names}
+    # cases with the same cell potentials give one solution (COMSOL merges them in the sweep): solve each once
+    uniq = {}
+    for n in names:
+        uniq.setdefault(tuple(rows[n]) + (cases[n]["G"] - cases[n]["C"],), n)
+    if len(uniq) < len(names):
+        print(f"same cell potentials, solved once: {sorted(set(names) - set(uniq.values()))}")
+    names = list(uniq.values())
     cls = f"XAMS_cell_{a.electrode}"
     L_ = []
     j = lambda s: L_.append("    " + s)  # noqa: E731

@@ -25,9 +25,10 @@ from .maps import MAPS, find, register
 
 BUILD = ROOT / "efield" / "comsol" / "build"
 FILE = "cells.npz"
-# electrode -> (cell-model parameter -> case voltage key, z_loc range [mm]); gate and cathode: composite field of the
+# electrode -> (cell-model parameters that identify the case's solution -> case voltage key, z_loc range [mm]); the gate
+# cell ends on the anode plane (Vtop), the cathode cell on the bottom screen (Vbot); gate and cathode: composite field of the
 # drift; stack (gate + liquid surface + anode + top screen, anode aligned): extraction and EL (xamssim.elmap)
-ELECTRODES = {"gate": ({"Vel": "G"}, (-3.2, 3.98)), "cathode": ({"Vel": "C"}, (-3.6, 3.6))}
+ELECTRODES = {"gate": ({"Vel": "G", "Vtop": "A"}, (-3.2, 3.98)), "cathode": ({"Vel": "C", "Vbot": "BS"}, (-3.6, 3.6))}
 STACK = ({"Vel": "G", "Va": "A"}, (3.4, 12.0))
 STEP = 0.02
 
