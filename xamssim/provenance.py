@@ -160,6 +160,19 @@ def show(run: str, product: str | None = None, lineage_hash: str | None = None, 
     print(f"  optics     PTFE R {o.get('ptfe_in_liquid', {}).get('reflectivity')}, steel R "
           f"{o.get('stainless_steel_reflectivity')}, Rayleigh {o.get('lxe', {}).get('rayleigh_length_cm')} cm")
     print(f"  geant4     output hash {r['geant4'].get('output_hash')}, counts {r['geant4'].get('counts')}")
+    ph = r.get("physics", {})
+    print("  physics    " + ", ".join(f"{k} {v}" for k, v in ph.items()))
+    cs = ph.get("cloud_samples")
+    print("  splitting  " + ("not in this version (made before cloud splitting, 2026-10-19)" if cs is None else
+                             f"on: {cs} points per cluster, track sigma {ph.get('cloud_track_sigma_mm')} mm" if cs > 1 else
+                             "off (cloud_samples 1)"))
+    vers = {}
+    for p in r["products"].values():
+        for t, lin in (p.get("lineage") or {}).items():
+            if isinstance(lin, (list, tuple)) and len(lin) >= 2 and str(lin[0]).startswith("Xams"):
+                vers[lin[0]] = lin[1]
+    if vers:
+        print("  plugins    " + ", ".join(f"{k} {v}" for k, v in sorted(vers.items())))
     print("  maps       " + ", ".join(f"{k} {v['key']}{'' if v['present'] else ' (missing)'}" for k, v in r["maps"].items()))
     print("  products   " + ", ".join(f"{t} {p.get('lineage_hash')}" for t, p in r["products"].items()))
     if with_diff:
