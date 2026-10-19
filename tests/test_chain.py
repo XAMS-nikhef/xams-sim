@@ -261,3 +261,24 @@ def test_drift_lookup_keeps_focusing(tmp_path):
     m = driftmap.DriftMap(tmp_path / "d.npz")
     r = m.at(np.array([0.25, 1.4, 1.6]), np.zeros(3), np.full(3, -10.0))
     assert np.allclose(r["x_gate"], [0.125, 0.2, 2.7])     # same hole: 0.1 + 0.25 x 0.1; boundary: no shift
+
+
+def test_cloud_splitting(tmp_path):
+    """A cloud centred on a boundary between field lines to the surface (x < 0) and to the wall (x > 0) is split
+    about half / half; far from the boundary it is not; cloud_samples = 1 gives 0 or 1."""
+    from xamssim import driftmap
+    from xamssim.plugins.drift import XamsElectronDrift
+    x = np.arange(-5.0, 5.1, 1.0)
+    z = np.array([-20.0, -19.5])
+    shape = (len(x), len(x), 2)
+    end = np.where((x[:, None, None] + 0 * x[None, :, None] + 0 * z) < 0, driftmap.SURFACE, driftmap.WALL).astype(np.int8)
+    np.savez(tmp_path / "d.npz", x=x, y=x, z=z, end=end, t_us=np.where(end == driftmap.SURFACE, 30.0, np.nan).astype(np.float32),
+             x_gate=np.zeros(shape, np.float32), y_gate=np.zeros(shape, np.float32), crossed=np.ones(shape, bool),
+             path_mm=np.full(shape, 20.0, np.float32), pitch_mm=np.float32(2.6))
+    from types import SimpleNamespace
+    p = SimpleNamespace(drift=driftmap.DriftMap(tmp_path / "d.npz"), rng=np.random.default_rng(3), diffusion_transverse_cm2_s=55.0,
+                        diffusion_longitudinal_cm2_s=25.0, cloud_track_sigma_mm=0.2, z_liquid_cm=0.4, cloud_samples=4000)
+    f = XamsElectronDrift._cloud(p, np.array([-0.5, -4.0, 3.0]), np.zeros(3), np.full(3, -20.0))[0]
+    assert abs(f[0] - 0.5) < 0.1 and f[1] == 1.0 and f[2] == 0.0       # -0.5 mm: on the boundary (grid spacing 1 mm)
+    p.cloud_samples = 1
+    assert set(XamsElectronDrift._cloud(p, np.array([-0.5, 3.0]), np.zeros(2), np.full(2, -20.0))[0]) <= {0.0, 1.0}

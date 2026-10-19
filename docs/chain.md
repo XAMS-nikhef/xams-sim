@@ -71,6 +71,13 @@ cage is in no volume: those clusters are dropped.
 
 ## Drift map and drift
 
+**Cloud splitting:** a cluster's electrons follow their own field lines and diffuse sideways, so a cloud across a
+boundary between field lines that reach the surface and field lines that end on a SiPM or the wall is split.
+`XamsElectronDrift` reads the map at `cloud_samples` points around the cluster (Gaussian, σ = √(track² + 2Dt), D_T in
+x, y, D_L in z, t = the cluster's drift time); the fraction f that reaches the surface multiplies the survival
+(`surface_fraction`), and drift time and gate crossing are averaged over those points. Sept: 8.5 % of the clusters are
+split; photopeak cS2 0.30 → 0.375.
+
 ```bash
 xamssim maps --state sept --export cells                          # once per state: gate and cathode cell fields (licence)
 xamssim maps --state sept --export drift                          # once per state, ~30 s, composite field
@@ -174,6 +181,8 @@ physics:
   micro_separation_cm: 0.005     # dbscan: cluster size
   micro_separation_time_ns: 10   # dbscan: time window
   production_cut_mm: 0.1         # Geant4 particle mode
+  cloud_samples: 16              # drift: points per cluster for the cloud splitting (1: one fate per cluster)
+  cloud_track_sigma_mm: 0.2      # drift: ionization-track size for the cloud splitting
 ```
 
 Unknown keys are rejected. The values above are the defaults (`xamssim.chain.PHYSICS_DEFAULTS`).

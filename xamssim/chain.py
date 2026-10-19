@@ -48,6 +48,8 @@ PHYSICS_DEFAULTS = {
     "micro_separation_cm": 0.005,      # dbscan: cluster size
     "micro_separation_time_ns": 10.0,  # dbscan: time window
     "production_cut_mm": 0.1,          # Geant4 (particle mode), not used here
+    "cloud_samples": 16,               # drift: points per cluster for the cloud splitting (1: whole cluster one fate)
+    "cloud_track_sigma_mm": 0.2,       # drift: size of the ionization track (Gaussian sigma) for the cloud splitting
 }
 
 STORE = DATA / "strax"
@@ -170,6 +172,7 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         **({"electron_lifetime_us": res.state["electron_lifetime_us"]} if res.state.get("electron_lifetime_us") else {}),
         diffusion_longitudinal_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_longitudinal_cm2_s"],
         diffusion_transverse_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_transverse_cm2_s"],
+        cloud_samples=int(p["cloud_samples"]), cloud_track_sigma_mm=float(p["cloud_track_sigma_mm"]),
         # extraction and EL (S5)
         **_el_settings(res, xams_el_map),
         # light (S6)
