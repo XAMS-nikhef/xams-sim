@@ -51,7 +51,7 @@ volume at every grid point (exact cross sections; `xamssim/section.py` draws the
 | `geometry_mode` | `xams` (default) or a test geometry: `test_box`, `test_interface`, `test_mesh`, `test_surface` (used by the checks) |
 | geometry sections | as in `geometry.yaml` (copied by `xamssim/g4config.py`), plus `liquid.surface_z_mm` |
 | `materials` | densities, temperatures, pressures, NIST names, compositions (from `materials.yaml`) |
-| `optics` | one value per optical parameter (from `materials.yaml`, free ones at mid-range unless set) |
+| `optics` | one value per optical parameter (from `materials.yaml`, or `--set` in a scan) |
 | `surfaces` | `0`: PTFE, steel and copper black (a check) |
 | `source` | particle mode: `type`, `Z`, `A`, `energy_keV`, `position_mm`, `direction`, `half_angle_deg`, `z_target_mm`, `capsule` |
 | `world_half_mm` | `[x, y, z]` half sizes of the world |

@@ -63,20 +63,20 @@ materials:
 # (moved here from geometry.yaml on 2026-10-18, unchanged.) Values with a range are free parameters, fitted to the data
 # (targets in geometry.yaml). Read by optical/make_config.py into config.json `optics` (same keys as before, so scans and
 # fits that set e.g. optics.ptfe_in_liquid.reflectivity are unaffected).
-optics:
+optics:                    # one value each; scans vary them with --set (xamssim optical, scan files `grid:`)
   wavelength_nm: 178
   lxe:
     refractive_index: 1.69
-    rayleigh_length_cm: [30, 60]   # literature range; free
-    absorption_length_cm: [100, 1000]   # purity-dependent; free (large)
+    rayleigh_length_cm: 45     # optical fit 2026-10-11 (clean joint fit; grid 30 / 45 / 60); literature 30-60
+    absorption_length_cm: 550  # not fitted (purity); plausible 100-1000
   gxe:
     refractive_index: 1.00
   ptfe_in_liquid:
-    reflectivity: [0.90, 0.99]  # free
-    specular_fraction: [0.0, 0.2]
+    reflectivity: 0.95         # optical fit 2026-10-11 (grid 0.90 / 0.95 / 0.99)
+    specular_fraction: 0.1     # optical fit 2026-10-11 (grid 0 / 0.1 / 0.2)
   ptfe_in_gas:
-    reflectivity: [0.60, 0.90]  # free; lower than in liquid
-    specular_fraction: [0.0, 0.3]
-  stainless_steel_reflectivity: [0.2, 0.5]   # meshes, free
-  copper_reflectivity: [0.2, 0.4]            # field-shaping rings at 178 nm, free (Lambertian)
-  pmt_window_refractive_index: 1.60          # fused silica at 178 nm (check with the window material)
+    reflectivity: 0.75         # not fitted (no PTFE in the gas in the current geometry); plausible 0.60-0.90
+    specular_fraction: 0.15    # not fitted; plausible 0-0.3
+  stainless_steel_reflectivity: 0.2   # meshes, rings, foil rims; optical fit 2026-10-11 (grid 0.2 / 0.35 / 0.5, low preferred)
+  copper_reflectivity: 0.3            # field-shaping rings at 178 nm (Lambertian); not fitted, plausible 0.2-0.4
+  pmt_window_refractive_index: 1.60   # fused silica at 178 nm (check with the window material)

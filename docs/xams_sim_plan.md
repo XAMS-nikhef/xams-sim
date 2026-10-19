@@ -283,7 +283,17 @@ Original task list:
 
 **Check:** S2 width (gate-corrected) and single-electron size against data.
 
-### S6. Light maps (2 days)
+### S6. Light maps (2 days) — **chain step done 2026-10-19**, check against data open
+
+Result: light maps per light key (`xamssim maps --export light`, `xamssim/lightmap.py`) from Geant4 optical runs with
+the optics of `materials.yaml` (the fitted values of 2026-10-11, single values since 2026-10-19): S1 on a 2 mm (x, y, z) grid
+in the liquid, S2 on a 1 mm (x, y) grid from the gas gap, per channel (bottom, top ch1–ch4, two SiPMs), QE included.
+`XamsS1Light` / `XamsS2Light` → `s1_photoelectrons`, `s2_photoelectrons` (target `photoelectrons`). sept maps:
+detection 7.8 % (S1) / 7.5 % (S2) on average; cmb50_a36 example: S1 AFT 0.11 → 0.25 from cathode to gate, S2 AFT
+0.63 (centre) → 0.53 (r 26–30 mm); photopeak S1 2020 PE, S2 4.9·10⁴ PE (all channels). Open: statistics, the check
+below.
+
+Original task list:
 - optical: S1 map (x, y, z → expected photons per channel) and S2 pattern map (x, y → per channel) from the fitted
   optical model; loader + photon → channel plugin.
 
@@ -306,7 +316,8 @@ from detector effects.
 ### S9. Validation suite, overview and docs (2–3 days)
 - Validation: one command per comparison with data (targets from analysis_SR2026.2), report per state; the comparisons
   themselves are studies in `../simulations/`.
-- `xamssim list`: overview of everything in the data folder — per run (study, run file, state, source, run key): the
+- `xamssim list` (**first version 2026-10-19**: runs, Geant4 output, strax products current / old, maps per
+  state, `--prune` listing old data, `--delete` removing it after a confirmation; to do: study summary, map staleness per run): overview of everything in the data folder — per run (study, run file, state, source, run key): the
   Geant4 output (events, output hash, xams-sim version), the strax products made with their lineage hashes and whether
   they are current for the run file as it is now (state, maps, settings, Geant4 output), and the maps per state
   (present / missing / stale). Optional: `--prune` lists outdated data that can be removed (never deletes by itself).

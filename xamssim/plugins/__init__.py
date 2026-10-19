@@ -10,6 +10,7 @@ from .drift import XamsElectronDrift  # noqa: E402
 from .extraction import XamsExtractionEL  # noqa: E402
 from .field import XamsElectricField  # noqa: E402
 from .input import XamsG4Input, XamsG4Loader  # noqa: E402
+from .light import XamsS1Light, XamsS2Light  # noqa: E402
 from .volumes import VOLUME_NAMES, XAMS_VOLUME_IDS, XamsVolumeProperties, XamsVolumeSelection  # noqa: E402
 
-__all__ = ["XamsElectronDrift", "XamsExtractionEL", "XamsElectricField", "XamsG4Input", "XamsG4Loader", "XamsVolumeProperties", "XamsVolumeSelection", "XAMS_VOLUME_IDS", "VOLUME_NAMES"]
+__all__ = ["XamsElectronDrift", "XamsExtractionEL", "XamsElectricField", "XamsG4Input", "XamsG4Loader", "XamsS1Light", "XamsS2Light", "XamsVolumeProperties", "XamsVolumeSelection", "XAMS_VOLUME_IDS", "VOLUME_NAMES"]

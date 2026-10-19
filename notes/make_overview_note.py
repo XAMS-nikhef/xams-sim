@@ -68,6 +68,10 @@ WHAT = {
     "MicroPhysicsSummary": "all of the above in one table per cluster",
     "XamsExtractionEL": "extraction (NEST efficiency) and EL in the gas per cluster from the state's extraction / EL "
                         "map at its gate-hole position: extracted electrons, S2 photons, S2 time and width",
+    "XamsS1Light": "S1 photoelectrons per channel per cluster: NEST photons spread over the channels with the "
+                   "state's S1 light map at (x, y, z)",
+    "XamsS2Light": "S2 photoelectrons per channel per cluster: S2 photons spread over the channels with the state's S2 "
+                   "pattern map at the gate crossing",
     "XamsElectronDrift": "electrons at the liquid surface per cluster from the state's drift map (end point: surface, "
                          "bottom, wall, SiPM; survival exp(−t/τ)), drift time and diffusion spread, position at the gate",
 }
@@ -379,8 +383,12 @@ def main():
                  "one 46-byte record per energy deposit in xenon + one per event, JSON header (code tables, units, config)",
                  "xamssim particle &lt;run&gt;"],
                 ["Geant4 optical mode", "g4/src/PhotonActions.cc, Output.cc, XamsGeometry.cc",
-                 "one record per photon (start, end, sensor); scans over optical parameters and levels → light maps (S6)",
+                 "one record per photon (start, end, sensor); scans over optical parameters and levels",
                  "xamssim optical &lt;scan&gt;"],
+                ["light maps", "xamssim/lightmap.py (Geant4 optical mode)",
+                 "per channel the detection probability (QE included) of S1 light on a 2 mm (x, y, z) grid and of S2 "
+                 "light on a 1 mm (x, y) grid → maps/s1_light, s2_pattern/&lt;key&gt;/",
+                 "xamssim maps --state … --export light"],
                 ["COMSOL full TPC", "efield/comsol/make_model.py → Java → comsol batch",
                  "3D electrostatic field of all electrodes, field cage, PTFE and SiPMs (meshes as solid discs); .mph",
                  "efield/comsol/run.sh --states …"],

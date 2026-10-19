@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """geometry.yaml + materials.yaml -> config.json for the Geant4 application (which reads JSON only).
 
-Picks one liquid-level scenario and one value for every free optical parameter (a range [lo, hi] in the YAML means
-"free": the midpoint is used unless overridden with --set), checks that every value the simulation needs is present,
-and adds derived quantities (liquid surface z, mesh list sorted by z).
+Picks one liquid-level scenario, applies --set overrides (scans), checks that every value the simulation needs is
+present and that every optical parameter is a single value, and adds derived quantities (liquid surface z, mesh list
+sorted by z).
 
     python -m xamssim.g4config --level 4.0 --out <data>/config.json
     python -m xamssim.g4config --level 2.0 --set optics.ptfe_in_gas.reflectivity=0.75 --out /tmp/scan_01.json
@@ -44,14 +44,13 @@ def put(d, path, value):
         d[last] = value
 
 
-def pick_free(x):
-    """[lo, hi] -> midpoint (free parameter); recurse into dicts / lists of dicts"""
+def check_single(x, path="optics"):
+    """Every optical parameter one number (materials.yaml has one value each; scans vary them with --set)."""
     if isinstance(x, dict):
-        return {k: pick_free(v) for k, v in x.items()}
-    if isinstance(x, list) and len(x) == 2 and all(isinstance(v, (int, float)) for v in x):
-        return 0.5 * (x[0] + x[1])
-    if isinstance(x, list):
-        return [pick_free(v) for v in x]
+        for k, v in x.items():
+            check_single(v, f"{path}.{k}")
+    elif isinstance(x, list):
+        raise SystemExit(f"g4config: {path} = {x}: give one value in materials.yaml (scan it with --set)")
     return x
 
 
@@ -93,7 +92,7 @@ def main():
     hp = g["mesh_common"].get("hole_pattern_file")
     if hp:
         cfg["mesh_common"]["holes"] = json.load(open(Path(args.geometry).parent / hp))["holes"]
-    cfg["optics"] = pick_free(g["optics"])
+    cfg["optics"] = check_single(g["optics"])
     # material properties for Geant4: density, NIST name or composition, state / temperature / pressure
     cfg["materials"] = {k: {kk: vv for kk, vv in v.items() if kk != "electrical"} for k, v in mat["materials"].items()}
     used = {g[k]["material"] for k in g if isinstance(g[k], dict) and "material" in g[k]}

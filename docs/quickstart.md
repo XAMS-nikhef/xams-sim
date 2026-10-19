@@ -14,9 +14,11 @@ conda activate xamssim && cd ~/Documents/XAMS/xams-sim
 | `xamssim optical config/scans/example_s2.yaml --vis` | optical viewer for that scan (point 0; `--point N`, numbers from `--list`); type `/run/beamOn 20` | (window) |
 | `xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta` | clusters, local field and NEST quanta for those deposits | `<data>/strax/` |
 | `xamssim chain <run> --target extracted_electrons` | S2: extracted electrons and EL photons per cluster (needs the extraction / EL map of the state) | `<data>/strax/` |
+| `xamssim chain <run> --target photoelectrons` | S1 and S2 photoelectrons per channel per cluster (needs the light maps: `xamssim maps --state <s> --export light`) | `<data>/strax/` |
 | `xamssim chain <run> --target drifted_electrons` | electrons drifted to the liquid surface (needs the drift map of the state and its lifetime, e.g. state `sept`; example: `../simulations/2026-10-18_example`) | `<data>/strax/` |
 | `xamssim status config/runs/<run>.yaml` | the resolved run (state, voltages, source), input hashes, which maps exist | (text) |
 | `xamssim maps --state cmb50` | map status of one detector state | (text) |
+| `xamssim list [filter] [--prune \| --delete]` | what is in the data folder: per run the Geant4 output and strax products, current or old for the run file as it is now; maps per state; `--prune` lists old data with sizes, `--delete` removes it after a confirmation | (text) |
 | `xamssim validate config/runs/*.yaml` | check run files and everything they refer to | (text) |
 | `efield/comsol/run.sh --states cmb50` | COMSOL field model of the TPC for a state (HV case + liquid level) | `efield/comsol/build/`, `<data>/efield/comsol/` |
 | `xamssim maps --state cmb50 --export field` | field map of a state for the chain | `<data>/maps/field/<key>/` |

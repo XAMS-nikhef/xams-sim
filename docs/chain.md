@@ -11,8 +11,8 @@ xamssim maps --state cmb50 --export field                      # once per state:
 xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax/
 ```
 
-`--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons` or
-`extracted_electrons` (= `s2_photons`). Without it the chain
+`--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`,
+`extracted_electrons` (= `s2_photons`) or `photoelectrons` (S1 and S2 per channel). Without it the chain
 stops at the run's `stop_after`, or at the last product implemented so far. `--g4 DIR` reads Geant4 output from
 somewhere other than `<data>/g4/<run name>/` (e.g. the output of another run file with the same Geant4 settings).
 `--lifetime-us T` sets the electron lifetime for a state without a measured one (it overrides the state and is part
@@ -28,6 +28,8 @@ of the lineage).
 | `electric_field_values` | `XamsElectricField` (`xamssim/plugins/field.py`) | \|E\| at the cluster position (x, y, z) from the state's 3D field map |
 | `drifted_electrons` | `XamsElectronDrift` (`xamssim/plugins/drift.py`) | electrons at the liquid surface (end point and lifetime from the drift map), drift time and its spread, position at the gate |
 | `extracted_electrons` | `XamsExtractionEL` (`xamssim/plugins/extraction.py`) | extracted electrons, S2 (EL) photons, S2 time and width per cluster, from the extraction / EL map at the gate-hole position |
+| `s1_photoelectrons` | `XamsS1Light` (`xamssim/plugins/light.py`) | S1 photoelectrons per channel per cluster: NEST photons spread over the channels with the S1 light map at (x, y, z) |
+| `s2_photoelectrons` | `XamsS2Light` (`xamssim/plugins/light.py`) | S2 photoelectrons per channel per cluster: S2 photons spread over the channels with the S2 pattern map at the gate crossing |
 | `quanta` | fuse `NestYields` | NEST photons / electrons / excitons with the local field and density |
 | `microphysics_summary` | fuse `MicroPhysicsSummary` | all of the above in one table per cluster |
 
@@ -46,6 +48,7 @@ Geant4 11 process name `RadioactiveDecay` → `RadioactiveDecayBase` (the name f
 | `electron_lifetime_us` | electron lifetime in the liquid | state (`electron_lifetime_us`; needed for `drifted_electrons`) |
 | `diffusion_longitudinal_cm2_s`, `diffusion_transverse_cm2_s` | diffusion of electrons in the liquid | `materials.yaml` (`liquid_xenon.transport`) |
 | `xams_el_map` | `<data>/maps/extraction_el/<key>/el.npz` | map registry, state's extraction / EL key (needed for `extracted_electrons`) |
+| `xams_s1_map`, `xams_s2_map` | `<data>/maps/s1_light/<key>/s1.npz`, `s2_pattern/<key>/s2.npz` | map registry, state's light key (needed for `photoelectrons`) |
 | `gate_angle_deg`, `mesh_pitch_mm`, `z_anode_cm` | gate-hole lattice (anode aligned), anode position | `geometry.yaml` |
 | `nest_er_yields_parameters`, `nest_nr_yields_parameters`, `nest_width_parameters` | `-1`, `-1`, `{}` (NEST defaults) | fixed |
 | clustering, `source_rate` | run file `physics` block | below |
@@ -108,6 +111,32 @@ S2 time = drift time + emission, `s2_width50` = 25–75 % of the cluster's light
 in the gas keep their electrons and emit the part of the path above them. Gas transport in `materials.yaml`
 (`gas_xenon.transport`); the gas drift velocity is tuned on the measured S2 width (no measurement at ~9 Td found).
 
+## Light: photoelectrons per channel
+
+```bash
+xamssim maps --state sept --export light                          # once per light key (Geant4 optical, ~5 min, 8 cores)
+xamssim chain <run> --target photoelectrons
+```
+
+The light maps (`xamssim/lightmap.py`) come from the Geant4 optical mode with the geometry, the optics of
+`materials.yaml` (one value per parameter) and the liquid level of the state. Photons start
+uniform in a cylinder of the field-cage radius, isotropic at 178 nm; a photon counts when a sensor detects it (QE of
+the PMTs, PDE of the SiPMs, so the map includes the QE). Per bin and channel: detected / emitted.
+
+| map | source | grid |
+|---|---|---|
+| `s1_light` (`s1.npz`) | the liquid, bottom screen to liquid surface | 2 × 2 × 2 mm (x, y, z) |
+| `s2_pattern` (`s2.npz`) | the gas gap, liquid surface to anode, uniform in z | 1 × 1 mm (x, y) |
+
+Channels (`lightmap.CHANNEL_NAMES`): bottom PMT, top-PMT sectors ch1–ch4, the two SiPMs. Bins mostly outside the
+cylinder take the value of the nearest bin inside. Default statistics (5·10⁷ S1, 2·10⁷ S2 photons) give ~10 % per
+voxel for the bottom PMT and ~2 % per bin for a top sector; `--photons-s1`, `--photons-s2` for more. Both maps share
+one key (geometry, optics, level): states that differ only in voltages share them.
+
+`XamsS1Light` and `XamsS2Light` interpolate the map linearly at the cluster (S1: its position; S2: its gate crossing
+`x_obs`, `y_obs`) and draw the photoelectrons per channel from a multinomial (the rest undetected). No sensor response
+yet (gain, SPE spectrum, double PE: S7) and no photon times (S8).
+
 ## Physics options (run file)
 
 ```yaml
@@ -151,6 +180,11 @@ steps it affects; the clustering is redone only when the Geant4 output or the cl
 file names unique (they also name the Geant4 output folder). When the run file now asks for another Geant4
 configuration than the output was made with (`g4_key`: geometry, materials, level, source, events, seed), the chain
 warns.
+
+`xamssim list` shows per run which Geant4 output and strax products exist and whether each is current (the lineage
+hash the chain gives now for the run file, its state, maps and settings); `xamssim list --prune` lists the old ones
+with their size, `xamssim list --delete` removes them after a confirmation (products that cannot be checked and
+runs without a run file are never removed).
 
 Pre-selection: only decays with a deposit inside the field-cage radius go to the clustering (`preselect_r_max_cm`);
 nothing outside it can reach a volume.

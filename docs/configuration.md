@@ -50,7 +50,7 @@ materials:
     ...
     transport: {drift_velocity_mm_us: 3.1, el_yield: monteiro2007}       # electrons in the gas gap (S2)
   ...                     # gas_xenon, ptfe, stainless_steel, copper, silica, aluminium, kovar
-optics:                   # refractive indices, Rayleigh / absorption lengths, reflectivities; a range = free parameter
+optics:                   # refractive indices, Rayleigh / absorption lengths, reflectivities; one value each (scans: --set)
   ...
 ```
 
@@ -126,6 +126,6 @@ registry never starts a slow producer (COMSOL, optical scans); for a missing map
 | `mesh_cells` | `efield/comsol/run_cell.sh gate` and `cathode --states <s>` + `--export cells` | `mesh_cells/<key>/cells.npz` | COMSOL licence |
 | `drift` | `xamssim maps --state <s> --export drift` (composite field, ~30 s) | `drift/<key>/drift_xyz.npz` | field + mesh_cells |
 | `extraction_el` | `efield/comsol/run_cell.sh stack --states <s>` + `xamssim maps --state <s> --export el` | `extraction_el/<key>/el.npz` | COMSOL licence |
-| `s1_light`, `s2_pattern` | S6 (optical scans) | | |
+| `s1_light`, `s2_pattern` | `xamssim maps --state <s> --export light` (Geant4 optical, ~5 min) | `s1_light/<key>/s1.npz`, `s2_pattern/<key>/s2.npz` | Geant4 build |
 
 `xamssim maps --state <s>` shows which exist for a state and the command for each missing one.

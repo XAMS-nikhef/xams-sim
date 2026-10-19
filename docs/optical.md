@@ -49,7 +49,7 @@ python -m xamssim.g4config --level 3.0 --set optics.stainless_steel_reflectivity
 ```
 
 `xamssim.g4config` combines `geometry.yaml` and `materials.yaml` into one `config.json`: one liquid level and one value
-for every free optical parameter (the middle of its range unless set). A single run of `xamsg4` with your own macro:
+for every optical parameter (materials.yaml, or --set). A single run of `xamsg4` with your own macro:
 see the [xamsg4 reference](xamsg4.md).
 
 ## Changing the model

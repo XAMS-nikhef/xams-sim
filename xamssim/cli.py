@@ -6,14 +6,17 @@
     xamssim particle config/runs/vis_cs137.yaml --vis      particle viewer: look at a few events
     xamssim optical  <scan>.yaml [--jobs 8]                optical simulation (scan) -> <data>/scans/<scan>/
     xamssim optical  <scan>.yaml --vis [--point N]         optical viewer for a point of the scan (--list: the points)
-    xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to extracted_electrons)
+    xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to photoelectrons)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
     xamssim maps     --state cmb50 --export field          3D field of the state from the solved COMSOL model (licence)
     xamssim maps     --state cmb50 --export cells          gate and cathode mesh-cell fields from the cell models (licence)
     xamssim maps     --state cmb50 --export drift          drift map in the composite field (field + mesh cells)
     xamssim maps     --state cmb50 --export el             extraction / EL map from the gate + anode cell (licence)
+    xamssim maps     --state cmb50 --export light          S1 / S2 light maps per channel (Geant4 optical, ~5 min)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
+    xamssim list     [filter] [--prune | --delete]         runs, Geant4 output, strax products (current / old), maps;
+                                                          --delete removes the old data after a confirmation
 """
 from __future__ import annotations
 
@@ -52,7 +55,7 @@ def cmd_status(a) -> int:
     print(f"source     {res.source_name}: {src.get('isotope')} at {src.get('position_mm')} mm, collimator {src.get('collimator')}")
     print(f"geometry   config/geometry.yaml (version {res.geometry.get('meta', {}).get('version')}), config/materials.yaml")
     print(f"chain      Geant4 particle mode -> {' -> '.join(('clustered_interactions', 'quanta', 'drifted_electrons', 'extracted_electrons', 's2_photons', 'photoelectrons', 'raw_records'))}")
-    print("           (Geant4 particle mode: xamssim particle; up to quanta: xamssim chain; S4-S8 not yet available)")
+    print("           (Geant4 particle mode: xamssim particle; up to photoelectrons: xamssim chain; S7-S8 not yet available)")
     missing = _print_maps(res, needed(stop))
     print(f"{missing} of {len(needed(stop))} maps needed for '{stop}' missing")
     return 0
@@ -62,9 +65,12 @@ def cmd_maps(a) -> int:
     res = resolve_state(a.state)
     if a.export:
         from . import fieldmap
-        from . import cellmap, driftmap, elmap
-        e = {"field": fieldmap.export, "cells": cellmap.export, "drift": driftmap.export, "el": elmap.export}[a.export](res)
-        print(f"registered {e['kind']} {e['key']}: maps/{e['files'][0]}  ({e['producer_version']})")
+        from . import cellmap, driftmap, elmap, lightmap
+        light = lambda r: lightmap.export(r, a.photons_s1, a.photons_s2, a.jobs)  # noqa: E731
+        e = {"field": fieldmap.export, "cells": cellmap.export, "drift": driftmap.export, "el": elmap.export,
+             "light": light}[a.export](res)
+        for x in (e if isinstance(e, list) else [e]):                    # light: s1_light and s2_pattern
+            print(f"registered {x['kind']} {x['key']}: maps/{x['files'][0]}  ({x['producer_version']})")
     print(f"state {a.state} (hv_case {res.state['hv_case']}, level {res.state['liquid_level_mm']} mm)")
     _print_maps(res, list(KINDS))
     return 0
@@ -98,6 +104,11 @@ def cmd_chain(a) -> int:
     return run(a.run, target=a.target, g4_out=a.g4, lifetime_us=a.lifetime_us)
 
 
+def cmd_list(a) -> int:
+    from .listing import show
+    return show(a.filter or "", prune=a.prune, delete=a.delete, yes=a.yes)
+
+
 def cmd_optical(a) -> int:
     from .optical import list_points, scan, vis
     if a.list:
@@ -118,12 +129,25 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_status)
     p = sub.add_parser("maps", help="map status for one detector state")
     p.add_argument("--state", required=True)
-    p.add_argument("--export", choices=["field", "cells", "drift", "el"],
+    p.add_argument("--export", choices=["field", "cells", "drift", "el", "light"],
                    help="make a map and register it (field: 3D field from the solved COMSOL model, needs the licence; "
                         "cells: mesh-cell fields of gate and cathode from the solved cell models, needs the licence; "
                         "drift: electron end points and drift times in the composite field; "
-                        "el: extraction and electroluminescence from the gate + anode cell, needs the licence)")
+                        "el: extraction and electroluminescence from the gate + anode cell, needs the licence; "
+                        "light: S1 and S2 light maps per channel from Geant4 optical runs, ~5 min)")
+    p.add_argument("--photons-s1", type=float, default=5e7, help="light: photons for the S1 map (default 5e7)")
+    p.add_argument("--photons-s2", type=float, default=2e7, help="light: photons for the S2 map (default 2e7)")
+    p.add_argument("--jobs", type=int, default=8, help="light: parallel Geant4 runs (default 8)")
     p.set_defaults(func=cmd_maps)
+    p = sub.add_parser("list", help="what is in the data folder: runs, Geant4 output, strax products (current or "
+                                    "old for the run file as it is now), maps per state")
+    p.add_argument("filter", nargs="?", help="only run ids containing this text")
+    p.add_argument("--prune", action="store_true", help="also list the old data with its size (never deletes)")
+    p.add_argument("--delete", action="store_true", help="delete the old data (Geant4 output for another Geant4 key, "
+                                                         "strax products with an old lineage, unused maps) after a "
+                                                         "confirmation")
+    p.add_argument("--yes", action="store_true", help="with --delete: no confirmation")
+    p.set_defaults(func=cmd_list)
     p = sub.add_parser("validate", help="check run configuration files")
     p.add_argument("runs", nargs="+")
     p.set_defaults(func=cmd_validate)
@@ -138,7 +162,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("chain", help="simulation chain (strax / fuse) on the Geant4 output of a run")
     p.add_argument("run")
     p.add_argument("--target", choices=["geant4_interactions", "clustered_interactions", "quanta", "drifted_electrons",
-                                        "extracted_electrons", "s2_photons"],
+                                        "extracted_electrons", "s2_photons", "photoelectrons"],
                    help="last product (default: the run's stop_after, at most the last implemented one)")
     p.add_argument("--g4", help="Geant4 output folder (default <data>/g4/<run name>)")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] for a state without a measured one "

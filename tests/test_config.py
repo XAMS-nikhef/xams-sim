@@ -74,3 +74,24 @@ def test_materials_single_source():
         assert geo[part]["material"] in mat["materials"]
     lxe = mat["materials"]["liquid_xenon"]
     assert lxe["density_g_cm3"] == pytest.approx(2.8748) and lxe["temperature_k"] == 175.0
+
+
+def test_list_runs():
+    """xamssim list: collects without error; a filter that matches nothing gives no runs, but the map overview."""
+    from xamssim import listing
+    d = listing.collect("no-such-run-id")
+    assert d["runs"] == [] and "sept" in d["maps"]["states"]
+
+
+def test_list_remove(tmp_path, monkeypatch):
+    """xamssim list --delete: removes the old folders, refuses anything outside the data folder."""
+    import pytest
+    from xamssim import listing
+    monkeypatch.setattr(listing, "DATA", tmp_path)
+    old = tmp_path / "strax" / "run-x-abc"
+    old.mkdir(parents=True)
+    (old / "chunk").write_text("x")
+    listing.remove([dict(kind="strax", path=old, size=1)])
+    assert not old.exists()
+    with pytest.raises(RuntimeError):
+        listing.remove([dict(kind="strax", path=tmp_path.parent / "elsewhere", size=1)])

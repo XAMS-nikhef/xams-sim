@@ -36,9 +36,9 @@ KINDS = {
                        export_step="S4", needed_for="quanta"),
     "extraction_el": dict(producer="efield mesh cell (COMSOL)", make="efield/comsol/run_cell.sh stack --states {state} && xamssim maps --state {state} --export el",
                           export_step="S5", needed_for="extracted_electrons"),
-    "s1_light": dict(producer="optical (Geant4 optical scan)", make="(S6: light-map scan, xamssim optical)",
+    "s1_light": dict(producer="optical (Geant4 optical scan)", make="xamssim maps --state {state} --export light",
                      export_step="S6", needed_for="photoelectrons"),
-    "s2_pattern": dict(producer="optical (Geant4 optical scan)", make="(S6: light-map scan, xamssim optical)",
+    "s2_pattern": dict(producer="optical (Geant4 optical scan)", make="xamssim maps --state {state} --export light",
                        export_step="S6", needed_for="photoelectrons"),
 }
 

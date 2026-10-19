@@ -1,4 +1,4 @@
-"""The simulation chain as a strax context: one run file -> every setting (plan S3: up to `quanta`).
+"""The simulation chain as a strax context: one run file -> every setting (plan S3-S6: up to the photoelectrons).
 
     xamssim chain config/runs/cs137_cmb50_001.yaml                 # -> <data>/strax/, prints a summary
     st, run_id = chain.context("config/runs/cs137_cmb50_001.yaml")
@@ -13,6 +13,10 @@ Plugins (fuse 1.6.3 unless noted):
     electric_field_values    XamsElectricField (xamssim.plugins) — |E| at (x, y, z) from the state's 3D field map
     quanta                   NestYields — NEST with the local field and the xenon density of the volume
     microphysics_summary     MicroPhysicsSummary
+    drifted_electrons        XamsElectronDrift (xamssim.plugins) — the state's drift map, lifetime, diffusion
+    extracted_electrons      XamsExtractionEL — extraction and EL from the state's extraction / EL map
+    s1_photoelectrons        XamsS1Light — S1 photons -> photoelectrons per channel (S1 light map)
+    s2_photoelectrons        XamsS2Light — S2 photons -> photoelectrons per channel (S2 pattern map)
 
 All settings come from the configuration (fuse plugin defaults are XENONnT values; every one that matters is set):
     volumes (cm)   drift region  gate mesh z .. cathode z, r < PTFE cylinder inner radius          (geometry.yaml)
@@ -70,8 +74,8 @@ def volumes(res: Resolved) -> dict:
 def plugins(clustering: str) -> list:
     import fuse
 
-    from .plugins import (XamsElectricField, XamsElectronDrift, XamsExtractionEL, XamsG4Input, XamsVolumeProperties,
-                          XamsVolumeSelection)
+    from .plugins import (XamsElectricField, XamsElectronDrift, XamsExtractionEL, XamsG4Input, XamsS1Light,
+                          XamsS2Light, XamsVolumeProperties, XamsVolumeSelection)
     mp = fuse.micro_physics
     clus = ([mp.LineageClustering, mp.MergeLineage] if clustering == "lineage" else [mp.FindCluster, mp.MergeCluster])
     return [XamsG4Input, 
@@ -83,7 +87,9 @@ def plugins(clustering: str) -> list:
             mp.NestYields, 
             mp.MicroPhysicsSummary,
             XamsElectronDrift,
-            XamsExtractionEL]
+            XamsExtractionEL,
+            XamsS1Light,
+            XamsS2Light]
 
 
 def _el_settings(res: Resolved, xams_el_map: str | None) -> dict:
@@ -97,6 +103,18 @@ def _el_settings(res: Resolved, xams_el_map: str | None) -> dict:
         out["xams_el_map"] = str(xams_el_map or elmap.path(res))
     except FileNotFoundError:
         pass
+    return out
+
+
+def _light_settings(res: Resolved) -> dict:
+    """Light maps of the state, if they exist (needed for photoelectrons only)."""
+    from . import lightmap
+    out = {}
+    for opt, kind in (("xams_s1_map", "s1_light"), ("xams_s2_map", "s2_pattern")):
+        try:
+            out[opt] = str(lightmap.path(res, kind))
+        except FileNotFoundError:
+            pass
     return out
 
 
@@ -131,6 +149,8 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         diffusion_transverse_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_transverse_cm2_s"],
         # extraction and EL (S5)
         **_el_settings(res, xams_el_map),
+        # light (S6)
+        **_light_settings(res),
     )
 
 
@@ -173,7 +193,8 @@ def _check_g4(res: Resolved, gdir: Path) -> None:
 # chain products (config.PRODUCTS) implemented so far -> strax data type
 TARGETS = {"geant4_interactions": "geant4_interactions", "clustered_interactions": "clustered_interactions",
            "quanta": "microphysics_summary", "drifted_electrons": "drifted_electrons",
-           "extracted_electrons": "extracted_electrons", "s2_photons": "extracted_electrons"}
+           "extracted_electrons": "extracted_electrons", "s2_photons": "extracted_electrons",
+           "photoelectrons": ("s1_photoelectrons", "s2_photoelectrons")}
 
 
 def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | None = None) -> int:
@@ -202,13 +223,14 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
     t0 = time.time()
     # store the clusters and their volumes too (all clusters, also the dropped ones), then the target; fuse saves a
     # product only when it is the single target of a request (SaveWhen.TARGET), hence one make per product
-    if target in ("quanta", "drifted_electrons", "extracted_electrons", "s2_photons"):
+    if target in ("quanta", "drifted_electrons", "extracted_electrons", "s2_photons", "photoelectrons"):
         keep = ["clustered_interactions", "volume_properties"] + (["microphysics_summary"] if target != "quanta" else []) \
-            + (["drifted_electrons"] if target in ("extracted_electrons", "s2_photons") else [])
+            + (["drifted_electrons"] if target in ("extracted_electrons", "s2_photons", "photoelectrons") else []) \
+            + (["extracted_electrons", "s1_photoelectrons", "s2_photoelectrons"] if target == "photoelectrons" else [])
         for t in keep:                                   # NEST stored too: every later step reads the same draw
             st.make(run_id, t)
     d = st.get_array(run_id, TARGETS[target])
-    print(f"run {res.run_path.name} (run id {run_id}): {TARGETS[target]} — {len(d)} rows, "
+    print(f"run {res.run_path.name} (run id {run_id}): {target} — {len(d)} rows, "
           f"{len(np.unique(d['eventid'])) if len(d) and 'eventid' in d.dtype.names else '-'} events, "
           f"{time.time() - t0:.0f} s; stored in {STORE}")
     from .plugins import VOLUME_NAMES
@@ -223,6 +245,12 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
               f"({d['n_electron_extracted'].sum() / max(1, dr['n_electron_interface'].sum()):.3f}); S2 photons "
               f"{d['n_s2_photons'].sum():.3e}, {np.median(d['el_photons_per_electron'][m]):.0f} per electron (median), "
               f"S2 width50 {np.median(d['s2_width50'][m]):.0f} ns (median of the clusters)")
+    if "s1_pe" in (d.dtype.names or ()):
+        from .lightmap import CHANNEL_NAMES
+        for w in ("s1", "s2"):
+            tot = d[f"{w}_pe"].sum(axis=0)
+            print(f"  {w.upper()} photoelectrons {tot.sum():.4g}: " + ", ".join(f"{n} {t / max(tot.sum(), 1):.3f}"
+                                                                         for n, t in zip(CHANNEL_NAMES, tot)))
     if "drift_end" in (d.dtype.names or ()):
         from .driftmap import CODES
         q = st.get_array(run_id, "microphysics_summary", progress_bar=False)
