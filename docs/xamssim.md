@@ -10,7 +10,7 @@ The Python package (`xamssim/`, installed editable in the `xamssim` env) and its
 | `xamssim optical <scan.yaml> [--jobs N] [--dry]` | [optical scan](optical.md) |
 | `xamssim optical <scan.yaml> --vis [--point N]` | optical [viewer](viewers.md) for point N of the scan |
 | `xamssim optical <scan.yaml> --list` | the scan points: number and parameter values |
-| `xamssim chain <run> [--target T] [--g4 DIR]` | [simulation chain](chain.md) on the Geant4 output: clusters, field, NEST quanta → `<data>/strax/` |
+| `xamssim chain <run> [--target T] [--g4 DIR]` | [simulation chain](chain.md) on the Geant4 output: clusters, field, NEST quanta, drift to the surface → `<data>/strax/` |
 | `xamssim status <run>` | resolved run: state, voltages, level, pressure, lifetime, source, geometry version, map keys and status |
 | `xamssim maps --state <state>` | map keys and status of a state |
 | `xamssim maps --state <state> --export field` | COMSOL field of the state's HV case → `<data>/maps/field/<key>/` (registered) |

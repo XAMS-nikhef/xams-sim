@@ -2,15 +2,16 @@
 `g4` env automatically; `g4` only has to be activated to compile). <data> = xamssim.config.DATA
 (default ../simulations/data, or $XAMSSIM_DATA).
 
-    xamssim particle config/runs/<run>.yaml [--events N]   Geant4 particle mode -> <data>/g4/<run>/deposits.*  (plan S2)
+    xamssim particle config/runs/<run>.yaml [--events N]   Geant4 particle mode -> <data>/g4/<run>/deposits.*
     xamssim particle config/runs/vis_cs137.yaml --vis      particle viewer: look at a few events
-    xamssim optical  <scan>.yaml           [--jobs 8]  optical simulation (scan) -> <data>/scans/<scan>/
-    xamssim optical  <scan>.yaml           --vis       optical viewer for that scan (--point N; --list)
-    xamssim chain    config/runs/<run>.yaml [--target quanta]  fuse micro-physics on <data>/g4/<run> -> <data>/strax/ (S3)
+    xamssim optical  <scan>.yaml [--jobs 8]                optical simulation (scan) -> <data>/scans/<scan>/
+    xamssim optical  <scan>.yaml --vis [--point N]         optical viewer for a point of the scan (--list: the points)
+    xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to drifted_electrons)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
-    xamssim maps     --state cmb50 --export field          3D COMSOL field of the state -> <data>/maps/ (registered)
-    xamssim maps     --state cmb50 --export drift          drift map (end points, drift times) from the field map
+    xamssim maps     --state cmb50 --export field          3D field of the state from the solved COMSOL model (licence)
+    xamssim maps     --state cmb50 --export cells          gate and cathode mesh-cell fields from the cell models (licence)
+    xamssim maps     --state cmb50 --export drift          drift map in the composite field (field + mesh cells)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
 """
 from __future__ import annotations

@@ -27,10 +27,11 @@ source ──xamsg4 particle──► energy deposits ──► clusters ──�
                                               PMT / SiPM response ──► raw_records ──► amstrax (unchanged)
 ```
 
-Available now: the optical mode (with fitted optics), the particle mode, the field models, configuration and map
-registry. The event chain from deposits onwards (strax plugins, partly from XENONnT's fuse) is being built — see the
-[roadmap](xams_sim_plan.md). Studies made with xams-sim (run files, analysis, results, PDF notes) are not in this
-repository: they live in `../simulations/` (own repository), their outputs in `../simulations/data/`.
+Available now: the optical mode (with fitted optics), the particle mode, the field models (full TPC in 3D and the mesh
+cells), configuration and map registry, and the event chain from Geant4 deposits through clustering, local field and
+NEST quanta to the electrons at the liquid surface (drift in the composite field). Extraction, light and waveforms
+follow — see the [roadmap](xams_sim_plan.md). Studies made with xams-sim (run files, analysis, results, PDF notes) are
+not in this repository: they live in `../simulations/` (own repository), their outputs in `../simulations/data/`.
 
 ## Where to start
 

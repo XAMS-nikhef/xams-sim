@@ -104,14 +104,23 @@ Unknown keys are rejected.
 
 ## Hashes and provenance
 
-- **Map keys:** per kind of map (field, drift, extraction / EL, S1 light, S2 pattern) a 12-character hash of exactly
+- **Map keys:** per kind of map (field, mesh cells, drift, extraction / EL, S1 light, S2 pattern) a 12-character hash of exactly
   the inputs that map depends on. Light maps do not depend on voltages, so all HV states share them; field maps differ
   per HV case. `xamssim maps --state <name>` lists them.
 - **Run key:** a hash of the run, state, source and map keys, printed by `status` / `validate` and stored in the
   output (`config.json` → `xamssim.run_key`).
 
-## The map registry — `maps/`
+## The map registry — `<data>/maps/`
 
 Generated maps (not in git) are listed in `<data>/maps/manifest.json` with their key, files, producer and version. The
-registry never starts a slow producer (COMSOL, optical scans); for a missing map it prints the command. The export
-of maps into the registry comes with the chain steps (field and drift S4, extraction S5, light S6).
+registry never starts a slow producer (COMSOL, optical scans); for a missing map it prints the command.
+
+| kind | made by | file | needs |
+|---|---|---|---|
+| `field` | `efield/comsol/run.sh --states <s>` + `xamssim maps --state <s> --export field` | `field/<key>/efield_xyz.npz` | COMSOL licence |
+| `mesh_cells` | `efield/comsol/run_cell.sh gate` and `cathode --states <s>` + `--export cells` | `mesh_cells/<key>/cells.npz` | COMSOL licence |
+| `drift` | `xamssim maps --state <s> --export drift` (composite field, ~30 s) | `drift/<key>/drift_xyz.npz` | field + mesh_cells |
+| `extraction_el` | S5 | | |
+| `s1_light`, `s2_pattern` | S6 (optical scans) | | |
+
+`xamssim maps --state <s>` shows which exist for a state and the command for each missing one.

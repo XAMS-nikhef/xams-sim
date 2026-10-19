@@ -121,9 +121,9 @@ def plugin_info(cls):
 def plan_status():
     out = []
     for line in (ROOT / "docs" / "xams_sim_plan.md").read_text().splitlines():
-        m = re.match(r"### (S\d)\. (.*?)(?: — \*\*(.*)\*\*)?$", line)
+        m = re.match(r"### (S\d)\. (.*?)(?: — \*\*(.*?)\*\*(.*))?$", line)
         if m:
-            out.append((m.group(1), re.sub(r"\s*\(.*?\)$", "", m.group(2)), m.group(3) or "open"))
+            out.append((m.group(1), re.sub(r"\s*\(.*?\)$", "", m.group(2)), ((m.group(3) or "open") + (m.group(4) or "")).strip()))
     return out
 
 
@@ -258,6 +258,9 @@ def fmt(v):
         return "maps/field/&lt;key&gt;/efield_xyz.npz"
     if isinstance(v, str) and "/maps/drift/" in v:
         return "maps/drift/&lt;key&gt;/drift_xyz.npz"
+    if isinstance(v, str) and v.startswith(str(config.DATA)):
+        s = "&lt;data&gt;" + v[len(str(config.DATA)):]
+        return s if len(s) <= 46 else s[:44] + "…"
     if isinstance(v, str) and v.startswith(str(ROOT)):
         s = v[len(str(ROOT)) + 1:]
     return esc(s if len(s) <= 34 else s[:32] + "…")
@@ -289,9 +292,10 @@ def main():
         r = config.resolve_state(f.stem)
         hv = r.hv_case
         st = {row["kind"]: row["present"] for row in maps.status(r)}
+        present = ", ".join(k for k in ("field", "mesh_cells", "drift") if st.get(k)) or "–"
         states.append([f"<b>{f.stem}</b>", esc(s.get("description", "")), s["hv_case"],
                        f"A {hv['A']:+g}, G {hv['G']:+g}, C {hv['C']:+g}, SiPM {hv['SIPM']:+g}",
-                       f"{s['liquid_level_mm']}", "yes" if st.get("field") else "–"])
+                       f"{s['liquid_level_mm']}", present])
     sources = []
     for f in sorted((ROOT / "config" / "sources").glob("*.yaml")):
         s = load_yaml(f)
@@ -360,7 +364,7 @@ def main():
          P("3. The definition: configuration files", h2),
          table(cfg_rows, [36 * mm, 58 * mm, 36 * mm, W - 130 * mm]),
          P("Detector states", h2),
-         table([["state", "description", "HV case", "voltages (V)", "level (mm)", "field map"]] + states,
+         table([["state", "description", "HV case", "voltages (V)", "level (mm)", "maps present"]] + states,
                [16 * mm, 62 * mm, 15 * mm, 50 * mm, 15 * mm, W - 158 * mm]),
          P("Sources and runs", h2),
          table([["source", "isotope / type", "position (mm)", "description"]] + sources, [30 * mm, 22 * mm, 30 * mm, W - 82 * mm]),
@@ -399,7 +403,7 @@ def main():
          P("6. The simulation chain", h2),
          P("A strax context (xamssim/chain.py: context, settings, plugins) with fuse's micro-physics plugins and the XAMS "
            "plugins in xamssim/plugins/. strax computes only what is missing and stores each product under a hash of the "
-           f"plugin versions and settings (<data>/strax/). Settings below are those of {esc(EXAMPLE_RUN.name)}."),
+           f"plugin versions and settings (&lt;data&gt;/strax/; run id = run file name). Settings below are those of {esc(EXAMPLE_RUN.name)}."),
          img("chain.png", "Figure 2. The chain as implemented (lineage clustering). Purple: XAMS plugins, blue: fuse. Read "
              "from the plugin classes.", width=0.82 * W),
          table(plug_rows, [6 * mm, 26 * mm, 40 * mm, 26 * mm, 42 * mm, W - 140 * mm]),
