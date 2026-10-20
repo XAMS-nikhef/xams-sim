@@ -334,7 +334,46 @@ Original task list:
 **Check:** amstrax processes simulated runs unchanged; the same analysis cuts give the same distributions as data
 (cS1, cS2, widths, AFT, drift time) within the known differences.
 
-### S9. Validation suite, overview and docs (2–3 days)
+### S9. MC runs as runs: run database, central storage, STBC, dashboard (1–2 weeks) — **planned 2026-10-20**
+
+Goal: one process flow for data and MC. A simulated run is a run like a data run: a number (900000–999999), a run
+document in MongoDB, raw records in a central place, processed by amstrax and the analysis in the same way, visible in
+the dashboard. **Order: first a full shakedown of the chain (S8) with the file-based bookkeeping of today; database,
+central storage and dashboard only after that.**
+
+Now (S8, 2026-10-20): `xamssim amstrax <run>` copies the raw records into `measurements/strax_data` (Mac) with
+`<n>-metadata.json` (run document as a file, incl. the `xamssim` section with the truth, not applied) and
+`<n>-truth.npz`; amstrax reads the run document from the file (local amstrax branch `rundoc-file-fallback`);
+corrections from amstrax_files (global v5: v4 + the true values of the MC runs).
+
+Plan:
+1. **Run database:** collection `run.runs_mc` in the XAMS MongoDB (on xams), never `runs_gas`: the dispatcher takes
+   the next data run number as max(number) + 1 over `runs_gas`, and auto-processing / copy_live / dashboard read it.
+   A run enters `runs_mc` at export (`xamssim amstrax`), when its raw records exist (as a data run enters at run
+   start): number, mode, start / end, tags, comments, daq_config, `data[]`, and the `xamssim` section (run file, run
+   key, state, source, detector, truth). Numbers handed out by the database (no collisions). Rerun = same number, doc
+   updated, old processed data removed; a deleted simulation keeps its doc with tag `deleted` (numbers never reused).
+   Writes to production MongoDB: user's OK and a database user that can only write `runs_mc`. Without access the
+   export writes the file as now.
+2. **amstrax:** run docs of numbers ≥ 900000 from `runs_mc` (rundb.py, `get_rundoc_value`), file fallback kept.
+   PR; the STBC production checkout only with the user's OK.
+3. **Central MC storage on STBC:** MC raw records (and the truth files) in one central place that everyone in XAMS
+   can read, next to the data, e.g. `/data/xenon/xams_v2/mc/strax_data` (location and ownership, e.g. `xamsdata`,
+   to be decided with the user; never inside the data areas). The run doc's `data[]` lists the copies (host, path,
+   type), as for data. strax finds data through its storage folders, so contexts on STBC get this folder as a
+   read-only frontend; processed MC goes where the user's processing goes (e.g. the personal
+   `measurements/strax_data`, as for private data processing). The Mac copy is a working copy.
+4. **MC on STBC:** xams-sim installed on stbc-i2 (environment like `xamssim`: Geant4 build, fuse / strax, amstrax),
+   productions in the background on stbc-i2 (no condor); the maps (registry) and COMSOL field maps made on the Mac
+   and copied (COMSOL only on the Mac). Output straight into the central MC folder.
+5. **Dashboard:** a patch to xams-dashboard (stbc-i1) to list `runs_mc` next to the data runs: the simulation inputs
+   (state, source, detector, run key, events, `xamssim show`) and the processing status; new MC runs show up as
+   unprocessed (raw records only) and can be processed from there like data. Deployment only with the user's OK.
+
+**Check:** a data run and an MC run go through the same commands (context, step scripts, EventDisplay) with only the
+run number different; another user on STBC can process and read an MC run; the dashboard lists it.
+
+### S10. Validation suite, overview and docs (2–3 days)
 - Validation: one command per comparison with data (targets from analysis_SR2026.2), report per state; the comparisons
   themselves are studies in `../simulations/`.
 - **Detectors (2026-10-19):** `config/detectors/<detector>/geometry.yaml`, `detector:` in every state; keys follow
@@ -360,7 +399,8 @@ Original task list:
 | S2–S4 (Geant4 particle, yields, drift) | ~6–8 days |
 | S5–S7 (extraction/EL, light maps, sensors, fast output) | ~5–7 days |
 | S8 (waveforms → amstrax) | 1–2 weeks |
-| S9 | ~2 days |
+| S9 (MC runs as runs: database, central storage, STBC, dashboard) | 1–2 weeks |
+| S10 | ~2 days |
 
 After S7 the chain already answers the physics questions (resolution per state, SiPM and cathode effects, gamma-X);
 S8 adds the like-for-like comparison through amstrax.
