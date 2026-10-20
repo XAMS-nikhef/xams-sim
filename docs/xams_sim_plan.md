@@ -371,6 +371,18 @@ Plan:
    (state, source, detector, run key, events, `xamssim show`) and the processing status; new MC runs show up as
    unprocessed (raw records only) and can be processed from there like data. Deployment only with the user's OK.
 
+6. **Live data instead of raw_records (decided 2026-10-20):** xams-sim writes the simulated waveforms in redax's
+   live-data format (`live_data/<run>/` chunks of compressed fragments, as redax writes them), and the standard amstrax
+   environment converts them to raw_records with its `DAQReader`, exactly as for data. Then xams-sim needs no amstrax
+   at all (today it is only used to name the raw_records folder: the lineage hash of amstrax's raw_records), there is
+   no amstrax version to keep in sync, and the MC tests the whole data flow from the first step. To do: the exact
+   redax format (fragment layout, compression, chunk files and overlap), tested against a real live-data chunk of
+   xams; the run document gives what `DAQReader` reads from it. Until it works, the current export (raw_records
+   directly, with amstrax in the xamssim environment) stays as the shortcut.
+7. **Environments on STBC:** xamssim in a `.venv` (pip) on the py312 base, like the other STBC projects; Geant4 in
+   one conda env (miniforge, only to build and run `xamsg4`, started by xamssim itself). Processing and analysis of
+   MC in the standard amstrax environment, the same as for data. On the Mac the same pattern later.
+
 **Check:** a data run and an MC run go through the same commands (context, step scripts, EventDisplay) with only the
 run number different; another user on STBC can process and read an MC run; the dashboard lists it.
 
