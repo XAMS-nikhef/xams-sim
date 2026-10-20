@@ -46,7 +46,8 @@ def _data_folder() -> Path:
     if not studies.is_dir():
         raise DataFolderError(
             f"XAMSSIM_DATA is not set and there is no simulations folder next to {ROOT}: set XAMSSIM_DATA to your "
-            "simulation data folder (on STBC: source setup_xamssim.sh, or use the Jupyter kernel 'XAMS sim')")
+            "simulation data folder: in ~/.config/xamssim/env (a line XAMSSIM_DATA=/path; used by every terminal, "
+            "Jupyter kernel and condor job), or in the environment (on STBC: source setup_xamssim.sh)")
     return (studies / "data").resolve()
 
 

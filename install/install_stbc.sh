@@ -39,12 +39,18 @@ printf "%s\n%s\n" $X/software/amstrax $X/software/amstrax_files > $SP/xams_check
 
 cat > $X/setup_xamssim.sh <<'EOS'
 # XAMS simulation (xams-sim) on STBC. Source, do not execute.
-#   XAMSSIM_DATA            where the simulation output goes (Geant4, strax, maps registry): must be set before sourcing
+#   XAMSSIM_DATA            where the simulation output goes (Geant4, strax, maps registry): from the environment or
+#                           from your ~/.config/xamssim/env (a line XAMSSIM_DATA=/path; also read by xamssim itself, so
+#                           Jupyter kernels and condor jobs find it too)
 #   XAMSSIM_AMSTRAX_STORE   where `xamssim amstrax` puts runs for amstrax (default: strax_data next to XAMSSIM_DATA)
 _xams_base=/data/xenon/xams_v2/anaconda/miniforge
 _xams_env=/data/xenon/xams_v2/anaconda/xamssim
+if [ -z "${XAMSSIM_DATA:-}" ] && [ -r "$HOME/.config/xamssim/env" ]; then
+    eval "$(grep -E '^[[:space:]]*XAMSSIM_[A-Z_]+=' "$HOME/.config/xamssim/env" | sed 's/^[[:space:]]*/export /')"
+fi
 if [ -z "${XAMSSIM_DATA:-}" ]; then
-    echo "ERROR: set XAMSSIM_DATA (your simulation data folder, e.g. /data/xenon/xams_v2/users/<you>/xamssim/data)" >&2
+    echo "ERROR: set XAMSSIM_DATA (your simulation data folder, e.g. /data/xenon/xams_v2/users/<you>/xamssim/data)," >&2
+    echo "       best as a line XAMSSIM_DATA=/path in ~/.config/xamssim/env" >&2
     return 1
 fi
 . "$_xams_base/etc/profile.d/conda.sh" || { echo "ERROR: cannot load conda from $_xams_base" >&2; return 1; }
