@@ -1,0 +1,29 @@
+# Digitizer and readout of xams2026 for the waveform simulation (plan S8), as in SR-2026.2 (Science_Rev2.4, run 7719).
+# Sources: R = run doc 7719 daq_config (read-only, 2026-10-20); M = measured from raw_records of 7719 (seconds 30-33) and
+# the LED runs 7682 / 7723 (analysis_SR2026.2/scratch/measure_daq.py; simulations/2026-10-20_s8_waveforms);
+# G = analysis_SR2026.2 config/gains.csv, gain period P4.
+digitizer:
+  model: V1725              # R
+  dt_ns: 4                  # R
+  bits: 14                  # R: 2 V range (0x8028 = 0)
+  record_length: 110        # R: strax_fragment_payload_bytes 220 -> 110 samples per raw_record
+  pre_trigger_samples: 32   # M: samples kept before the first threshold crossing (0x8038 = 8)
+  min_pulse_samples: 80     # M: shortest pulse (0x8020 = 8)
+  spe_templates: spe_templates.npz   # M: single-PE pulse shapes per channel (area 1), 4 ns samples
+channels:                   # data channel number -> simulated light channel (xamssim.lightmap.CHANNEL_NAMES)
+  # threshold ADC (R), polarity (R: 0x1n80), baseline ADC and noise rms ADC (M), samples after the last crossing (M),
+  # single-PE gain in ADC·samples (G; SiPMs: 1 / to_pe)
+  0: {light: bottom,  raw: raw_records,      threshold: 60, polarity: negative, baseline: 15896, noise: 2.92, post_samples: 30, gain: 12.46}
+  1: {light: top_ch1, raw: raw_records,      threshold: 20, polarity: negative, baseline: 15905, noise: 2.47, post_samples: 47, gain: 54.8}
+  2: {light: top_ch2, raw: raw_records,      threshold: 20, polarity: negative, baseline: 15780, noise: 2.53, post_samples: 47, gain: 48.9}
+  3: {light: top_ch3, raw: raw_records,      threshold: 20, polarity: negative, baseline: 15931, noise: 2.49, post_samples: 47, gain: 52.2}
+  4: {light: top_ch4, raw: raw_records,      threshold: 20, polarity: negative, baseline: 15890, noise: 2.36, post_samples: 46, gain: 42.4}
+  # SiPMs: ch6 at 90°, ch7 at 180° (user 2026-10-20, not fully certain); positive pulses (M: raw_records_sipm of 7719)
+  6: {light: sipm_1,  raw: raw_records_sipm, threshold: 35, polarity: positive, baseline: 803,   noise: 2.61, post_samples: 26, gain: 1979}
+  7: {light: sipm_2,  raw: raw_records_sipm, threshold: 35, polarity: positive, baseline: 869,   noise: 2.53, post_samples: 30, gain: 2086}
+channel_map: {bottom: [0, 0], top: [1, 4], external: [5, 5], sipm: [6, 7]}   # R
+scintillation:              # S1 photon emission times (liquid xenon, electronic recoils; literature values, not fitted)
+  singlet_ns: 3.1
+  triplet_ns: 24.0
+  singlet_fraction: 0.25
+pmt_transit_spread_ns: 2.0  # assumed

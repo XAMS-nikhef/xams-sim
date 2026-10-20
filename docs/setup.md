@@ -74,7 +74,7 @@ ls g4/build/xamsg4 g4/build/*.mac       # the program and its macros
 ```bash
 conda create -n xamssim python=3.12
 conda activate xamssim
-pip install "strax==2.2.3" "nestpy==2.0.6" "xenon-fuse==1.6.3" matplotlib plotly
+pip install "strax==2.2.3" "nestpy==2.0.6" "xenon-fuse==1.6.3" matplotlib plotly ipywidgets
 pip install ~/Documents/XAMS/amstrax_files ~/Documents/XAMS/amstrax
 cd ~/Documents/XAMS/xams-sim && pip install -e ".[test]" && pip install -r requirements-docs.txt
 xamssim --version

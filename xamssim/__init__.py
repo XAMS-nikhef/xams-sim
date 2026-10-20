@@ -1,6 +1,11 @@
 """xams-sim: simulation chain of the XAMS TPC (plan: docs/xams_sim_plan.md)."""
+import logging as _logging
 import time as _time
 from pathlib import Path as _Path
+
+# utilix (comes with straxen / fuse) looks for ~/.xenon_config with XENONnT database credentials at import and warns
+# when there is none; XAMS uses none of those databases
+_logging.getLogger("utilix").setLevel(_logging.ERROR)
 
 __version__ = "0.1.0"
 

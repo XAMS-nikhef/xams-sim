@@ -76,6 +76,8 @@ WHAT = {
                           "resolution (detector sensors.yaml)",
     "XamsEvents": "one row per decay: S1, main and alternative S2, AFT, drift time, position, u, v, cS1 and cS2 "
                   "(light maps, lifetime)",
+    "XamsRawRecords": "simulated digitizer output per channel (waveforms, self-trigger, 110-sample records) for "
+                      "amstrax (detector daq.yaml)",
     "XamsElectronDrift": "electrons at the liquid surface per cluster from the state's drift map (end point: surface, "
                          "bottom, wall, SiPM; survival exp(−t/τ)), drift time and diffusion spread, position at the gate",
 }

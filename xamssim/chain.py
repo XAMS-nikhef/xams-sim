@@ -1,4 +1,4 @@
-"""The simulation chain as a strax context: one run file -> every setting (plan S3-S7: up to the events).
+"""The simulation chain as a strax context: one run file -> every setting (plan S3-S8: up to the raw records for amstrax).
 
     xamssim chain config/runs/cs137_cmb50_001.yaml                 # -> <data>/strax/, prints a summary
     st, run_id = chain.context("config/runs/cs137_cmb50_001.yaml")
@@ -19,6 +19,7 @@ Plugins (fuse 1.6.3 unless noted):
     s2_photoelectrons        XamsS2Light — S2 photons -> photoelectrons per channel (S2 pattern map)
     peak_areas               XamsSensorResponse — areas per channel [PE] (detector sensors.yaml)
     xams_events              XamsEvents — one row per decay: S1, S2, cS1, cS2, position (target `events`)
+    xams_raw_records(_sipm)  XamsRawRecords — digitizer output for amstrax (target `raw_records`; xamssim.amstrax_io)
 
 All settings come from the configuration (fuse plugin defaults are XENONnT values; every one that matters is set):
     volumes (cm)   drift region  gate mesh z .. cathode z, r < PTFE cylinder inner radius          (geometry.yaml)
@@ -78,8 +79,9 @@ def volumes(res: Resolved) -> dict:
 def plugins(clustering: str) -> list:
     import fuse
 
-    from .plugins import (XamsElectricField, XamsElectronDrift, XamsEvents, XamsExtractionEL, XamsG4Input, XamsS1Light,
-                          XamsS2Light, XamsSensorResponse, XamsVolumeProperties, XamsVolumeSelection)
+    from .plugins import (XamsElectricField, XamsElectronDrift, XamsEvents, XamsExtractionEL, XamsG4Input,
+                          XamsRawRecords, XamsS1Light, XamsS2Light, XamsSensorResponse, XamsVolumeProperties,
+                          XamsVolumeSelection)
     mp = fuse.micro_physics
     clus = ([mp.LineageClustering, mp.MergeLineage] if clustering == "lineage" else [mp.FindCluster, mp.MergeCluster])
     return [XamsG4Input, 
@@ -95,7 +97,8 @@ def plugins(clustering: str) -> list:
             XamsS1Light,
             XamsS2Light,
             XamsSensorResponse,
-            XamsEvents]
+            XamsEvents,
+            XamsRawRecords]
 
 
 def _el_settings(res: Resolved, xams_el_map: str | None) -> dict:
@@ -130,6 +133,10 @@ def _sensor_settings(res: Resolved) -> dict:
     from .lightmap import CHANNEL_NAMES
     g = {m["name"]: m["z_mm"] for m in res.geometry["meshes"]}
     out = dict(z_gate_cm=g["gate"] / 10, z_cathode_cm=g["cathode"] / 10)
+    from .config import geometry_path
+    if (geometry_path(res.detector).parent / "daq.yaml").exists():
+        from .waveforms import load_daq
+        out["xams_daq"] = load_daq(res)                                    # waveforms (S8)
     s = res.sensors
     if s:
         ch = s["channels"]
@@ -225,7 +232,8 @@ def _check_g4(res: Resolved, gdir: Path) -> None:
 TARGETS = {"geant4_interactions": "geant4_interactions", "clustered_interactions": "clustered_interactions",
            "quanta": "microphysics_summary", "drifted_electrons": "drifted_electrons",
            "extracted_electrons": "extracted_electrons", "s2_photons": "extracted_electrons",
-           "photoelectrons": ("s1_photoelectrons", "s2_photoelectrons"), "events": "xams_events"}
+           "photoelectrons": ("s1_photoelectrons", "s2_photoelectrons"), "events": "xams_events",
+           "raw_records": "xams_raw_records"}
 
 
 def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | None = None) -> int:
@@ -254,11 +262,15 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
     t0 = time.time()
     # store the clusters and their volumes too (all clusters, also the dropped ones), then the target; fuse saves a
     # product only when it is the single target of a request (SaveWhen.TARGET), hence one make per product
-    if target in ("quanta", "drifted_electrons", "extracted_electrons", "s2_photons", "photoelectrons", "events"):
+    if target in ("quanta", "drifted_electrons", "extracted_electrons", "s2_photons", "photoelectrons", "events",
+                  "raw_records"):
         keep = ["clustered_interactions", "volume_properties"] + (["microphysics_summary"] if target != "quanta" else []) \
-            + (["drifted_electrons"] if target in ("extracted_electrons", "s2_photons", "photoelectrons", "events") else []) \
-            + (["extracted_electrons", "s1_photoelectrons", "s2_photoelectrons"] if target in ("photoelectrons", "events") else []) \
-            + (["peak_areas"] if target == "events" else [])
+            + (["drifted_electrons"] if target in ("extracted_electrons", "s2_photons", "photoelectrons", "events",
+                                                   "raw_records") else []) \
+            + (["extracted_electrons", "s1_photoelectrons", "s2_photoelectrons"]
+               if target in ("photoelectrons", "events", "raw_records") else []) \
+            + (["peak_areas"] if target in ("events", "raw_records") else []) \
+            + (["xams_events", "xams_raw_records_sipm"] if target == "raw_records" else [])
         for t in keep:                                   # NEST stored too: every later step reads the same draw
             st.make(run_id, t)
     else:

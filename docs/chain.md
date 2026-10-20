@@ -12,7 +12,8 @@ xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax
 ```
 
 `--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`,
-`extracted_electrons` (= `s2_photons`), `photoelectrons` (S1 and S2 per channel) or `events` (one row per decay). Without it the chain
+`extracted_electrons` (= `s2_photons`), `photoelectrons` (S1 and S2 per channel), `events` (one row per decay) or
+`raw_records` (digitizer output, for amstrax). Without it the chain
 stops at the run's `stop_after`, or at the last product implemented so far. `--g4 DIR` reads Geant4 output from
 somewhere other than `<data>/g4/<run name>/` (e.g. the output of another run file with the same Geant4 settings).
 `--lifetime-us T` sets the electron lifetime for a state without a measured one (it overrides the state and is part
@@ -32,6 +33,7 @@ of the lineage).
 | `s2_photoelectrons` | `XamsS2Light` (`xamssim/plugins/light.py`) | S2 photoelectrons per channel per cluster: S2 photons spread over the channels with the S2 pattern map at the gate crossing |
 | `peak_areas` | `XamsSensorResponse` (`xamssim/plugins/sensors.py`) | S1 and S2 area per channel [PE]: double-PE (PMTs), crosstalk (SiPMs), single-PE area resolution (detector `sensors.yaml`) |
 | `xams_events` | `XamsEvents` (`xamssim/plugins/sensors.py`) | one row per decay: S1, main and alternative S2, AFT, drift time, position, u, v, cS1, cS2 |
+| `xams_raw_records`, `xams_raw_records_sipm` | `XamsRawRecords` (`xamssim/plugins/rawrecords.py`, `xamssim/waveforms.py`) | simulated V1725 / redax records: waveforms per channel, self-trigger, 110-sample records (PMTs; SiPMs) |
 | `quanta` | fuse `NestYields` | NEST photons / electrons / excitons with the local field and density |
 | `microphysics_summary` | fuse `MicroPhysicsSummary` | all of the above in one table per cluster |
 
@@ -168,6 +170,33 @@ only), drift time, position at the gate and true z, the top-PMT pattern u, v; cS
 yield at the clusters (S1 map, mean over the drift region = 1), cS2 = S2 divided by the relative S2 light collection
 at the gate crossings (S2 map, mean over the gate area = 1), times exp(t/τ). Example cmb50_a36 (2·10⁷ decays):
 photopeak cS1 2220 PE (σ/mean 10.7 %), cS2 6.2·10⁴ PE (12.8 %).
+
+## Waveforms and amstrax (S8)
+
+```bash
+xamssim chain <run> --target raw_records
+```
+```python
+from xamssim import amstrax_io
+st, run_id = amstrax_io.context("<run file>", processing="<analysis>/config/processing.json")
+e = st.get_array(run_id, "event_info")          # amstrax, as for data
+```
+
+`XamsRawRecords` (`xamssim/waveforms.py`) turns the photoelectrons of every cluster into waveforms per data channel:
+S1 photoelectrons one by one (scintillation singlet / triplet, transit-time spread), S2 photoelectrons over 4 ns bins
+(drift time with diffusion folded with the EL emission profile); per photoelectron double-PE / crosstalk and the
+single-PE area resolution (`sensors.yaml`); area × single-PE gain convolved with the measured single-PE pulse shape,
+Gaussian noise, baseline, polarity, 14-bit range. Self-trigger as the DAW firmware: samples above the threshold, 32
+samples before the first and `post_samples` after the last crossing, at least 80 samples, overlapping pulses merged;
+cut into 110-sample records. PMTs → `xams_raw_records`, SiPMs → `xams_raw_records_sipm`. The DAQ description is the
+detector's `daq.yaml` and `spe_templates.npz` (xams2026: run 7719 / Science_Rev2.4; baselines, noise, pre / post samples
+and pulse shapes measured from raw records of 7719 and the LED runs 7682 / 7723; gains of period P4).
+
+`xamssim.amstrax_io` copies them under amstrax's `raw_records` / `raw_records_sipm` keys into `<data>/amstrax/` and
+gives an amstrax context without a run database: channel map, gains, lifetime, drift velocity and gate / cathode drift
+times from the simulation, the processing settings (classification, event windows) from the analysis' `processing.json`.
+When the simulated records change, all amstrax data of that run are removed first (amstrax's lineage does not see the
+raw data). Not modelled: dark counts, afterpulses, baseline drifts, PMT non-linearity.
 
 ## Physics options (run file)
 

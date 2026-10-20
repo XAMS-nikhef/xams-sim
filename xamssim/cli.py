@@ -6,7 +6,7 @@
     xamssim particle config/runs/vis_cs137.yaml --vis      particle viewer: look at a few events
     xamssim optical  <scan>.yaml [--jobs 8]                optical simulation (scan) -> <data>/scans/<scan>/
     xamssim optical  <scan>.yaml --vis [--point N]         optical viewer for a point of the scan (--list: the points)
-    xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to events)
+    xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to raw_records)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
     xamssim maps     --state cmb50                         map status for one detector state
     xamssim maps     --state cmb50 --export field          3D field of the state from the solved COMSOL model (licence)
@@ -16,6 +16,7 @@
     xamssim maps     --state cmb50 --export light          S1 / S2 light maps per channel (Geant4 optical, ~5 min)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
     xamssim show     <run> [--hash H] [--diff] [--full]    with which parameters the run's data were made
+    xamssim amstrax  <run> [--lifetime-us T]               simulated raw records -> amstrax store (process like data)
     xamssim list     [--run PAT] [--prune | --delete]      runs, Geant4 output, strax products (current / old), maps;
                                                           --delete removes the old data after a confirmation,
                                                           --delete --all --run PAT: all data of those runs
@@ -58,7 +59,7 @@ def cmd_status(a) -> int:
     print(f"detector   {res.detector}: config/detectors/{res.detector}/geometry.yaml (version "
           f"{res.geometry.get('meta', {}).get('version')}), config/materials.yaml")
     print(f"chain      Geant4 particle mode -> {' -> '.join(('clustered_interactions', 'quanta', 'drifted_electrons', 'extracted_electrons', 's2_photons', 'photoelectrons', 'raw_records'))}")
-    print("           (Geant4 particle mode: xamssim particle; up to events: xamssim chain; S8 (waveforms) not yet available)")
+    print("           (Geant4 particle mode: xamssim particle; up to raw_records: xamssim chain; amstrax: xamssim.amstrax_io)")
     missing = _print_maps(res, needed(stop))
     print(f"{missing} of {len(needed(stop))} maps needed for '{stop}' missing")
     return 0
@@ -109,6 +110,19 @@ def cmd_chain(a) -> int:
     from .runlock import run_lock
     with run_lock(Path(a.run).stem):
         return run(a.run, target=a.target, g4_out=a.g4, lifetime_us=a.lifetime_us)
+
+
+def cmd_amstrax(a) -> int:
+    from . import amstrax_io
+    from pathlib import Path
+    from .runlock import run_lock
+    with run_lock(Path(a.run).stem):
+        st, run_id = amstrax_io.export(a.run, lifetime_us=a.lifetime_us)
+    print(f"amstrax data of {run_id} in {amstrax_io.STORE}; load with\n"
+          f"  from xamssim import amstrax_io\n  st, run_id = amstrax_io.context('{a.run}'"
+          + (f", lifetime_us={a.lifetime_us}" if a.lifetime_us else "") + ", processing=<analysis processing.json>)\n"
+          f"  st.get_array(run_id, 'event_info')")
+    return 0
 
 
 def cmd_show(a) -> int:
@@ -167,6 +181,11 @@ def main(argv=None) -> int:
                                                       "products of the selected runs, current ones too (not the maps)")
     p.add_argument("--yes", action="store_true", help="with --delete: no confirmation")
     p.set_defaults(func=cmd_list)
+    p = sub.add_parser("amstrax", help="copy a run's simulated raw records into the amstrax store (S8); amstrax then "
+                                       "processes them like data (xamssim.amstrax_io)")
+    p.add_argument("run")
+    p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
+    p.set_defaults(func=cmd_amstrax)
     p = sub.add_parser("show", help="with which parameters a run's data were made (provenance written by xamssim chain)")
     p.add_argument("run", help="run id or run file")
     p.add_argument("--product", help="the entry that made this product (data type), e.g. s2_photoelectrons")
@@ -190,7 +209,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("chain", help="simulation chain (strax / fuse) on the Geant4 output of a run")
     p.add_argument("run")
     p.add_argument("--target", choices=["geant4_interactions", "clustered_interactions", "quanta", "drifted_electrons",
-                                        "extracted_electrons", "s2_photons", "photoelectrons", "events"],
+                                        "extracted_electrons", "s2_photons", "photoelectrons", "events", "raw_records"],
                    help="last product (default: the run's stop_after, at most the last implemented one)")
     p.add_argument("--g4", help="Geant4 output folder (default <data>/g4/<run name>)")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] for a state without a measured one "

@@ -314,7 +314,17 @@ Original task list:
 **Check:** Cs-137 cS1, cS2 spectra and resolution per state (Sept vs CM-B), AFT; separate intrinsic (recombination)
 from detector effects.
 
-### S8. Waveforms → amstrax (1–2 weeks)
+### S8. Waveforms → amstrax (1–2 weeks) — **first version 2026-10-20**, calibration and comparison open
+
+Result: `XamsRawRecords` (`xamssim/waveforms.py`; target `raw_records`) and `xamssim.amstrax_io` (simulated records under
+amstrax's keys, context without run database, the analysis' processing settings). DAQ description `daq.yaml` +
+`spe_templates.npz` measured from run 7719 and the LED runs 7682 / 7723 (`../simulations/2026-10-20_s8_waveforms/`).
+Test run (sept, 2·10⁵ Cs-137 decays at r 130 mm, z −82 mm): 821 decays with S1 and S2 in the sim, amstrax finds 812
+events; S2 width50 ~715 ns, S2 AFT 0.56; 591 S1s stay unclassified (S1 AFT > 0.2, amstrax's limit): the sim's S1
+top fraction is higher than in the data (ε_S1 0.74). Open: light calibration (top / bottom, g2, S1 scale), dark counts,
+afterpulses, PMT non-linearity, the comparison of event_info with the data.
+
+Original task list:
 - Waveforms per channel (V1725, 4 ns, baseline, noise, thresholds, pre-trigger) → `raw_records` with simulated run
   metadata (DAQ config, gains) given from the config instead of MongoDB.
 
