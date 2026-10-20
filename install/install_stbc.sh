@@ -43,6 +43,8 @@ cat > $X/setup_xamssim.sh <<'EOS'
 #                           from your ~/.config/xamssim/env (a line XAMSSIM_DATA=/path; also read by xamssim itself, so
 #                           Jupyter kernels and condor jobs find it too)
 #   XAMSSIM_AMSTRAX_STORE   where `xamssim amstrax` puts runs for amstrax (default: strax_data next to XAMSSIM_DATA)
+#   XAMSSIM_STUDIES         your checkout of the simulations repository (studies with runs/*.yaml; default: the folder
+#                           holding XAMSSIM_DATA)
 _xams_base=/data/xenon/xams_v2/anaconda/miniforge
 _xams_env=/data/xenon/xams_v2/anaconda/xamssim
 if [ -z "${XAMSSIM_DATA:-}" ] && [ -r "$HOME/.config/xamssim/env" ]; then

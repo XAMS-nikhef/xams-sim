@@ -52,6 +52,9 @@ def _data_folder() -> Path:
 
 
 DATA = _data_folder()
+# the studies (simulations repository: <study>/runs/*.yaml), for `xamssim list` and the run-number check:
+# $XAMSSIM_STUDIES, else the folder that holds the data folder (as ../simulations/data on the Mac)
+STUDIES = Path(os.environ.get("XAMSSIM_STUDIES", DATA.parent)).resolve()
 HV_CASES = ROOT / "efield" / "cases.yaml"
 
 # data products of the chain, in order; `stop_after` must be one of them

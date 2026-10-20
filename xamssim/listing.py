@@ -22,7 +22,7 @@ import json
 import warnings
 from pathlib import Path
 
-from .config import DATA, ROOT, ConfigError, resolve, resolve_state
+from .config import DATA, ROOT, STUDIES, ConfigError, resolve, resolve_state
 
 STRAX = DATA / "strax"
 G4 = DATA / "g4"
@@ -39,7 +39,7 @@ def _mb(n: int) -> str:
 def run_files() -> dict:
     """run id -> run file paths (studies in the simulations folder, examples in xams-sim/config/runs)."""
     out: dict = {}
-    for f in sorted(list(DATA.parent.glob("*/runs/*.yaml")) + list((ROOT / "config" / "runs").glob("*.yaml"))):
+    for f in sorted(list(STUDIES.glob("*/runs/*.yaml")) + list((ROOT / "config" / "runs").glob("*.yaml"))):
         out.setdefault(f.stem, []).append(f)
     return out
 
@@ -120,7 +120,7 @@ def collect(flt: str = "") -> dict:
             except ConfigError as e:
                 r["note"] = f"run file invalid: {str(e)[:120]}"
         elif len(r["files"]) > 1:
-            r["note"] = "run id in several run files: " + ", ".join(str(f.relative_to(DATA.parent.parent)) for f in r["files"])
+            r["note"] = "run id in several run files: " + ", ".join(str(f.relative_to(STUDIES.parent)) for f in r["files"])
         else:
             r["note"] = "no run file with this name"
         for dtype, h, d in prods:
