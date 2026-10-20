@@ -1,9 +1,10 @@
 """Start the XAMS Geant4 program `xamsg4` from any conda environment.
 
 There is one compiled program, g4/build/xamsg4 (optical mode by default, particle mode with -m particle). It needs the
-Geant4 libraries and data files of the conda env `g4` (override with $XAMSSIM_G4_ENV). `command()` returns the command
-line: the program itself when the Geant4 env is active, otherwise wrapped in `conda run -n g4`. So everything can be run
-from the `xamssim` env; the `g4` env only has to be activated to compile (cmake --build g4/build -j8).
+Geant4 libraries and data files of the conda env `g4` (override with $XAMSSIM_G4_ENV: a name, or the path of the env as
+on STBC). `command()` returns the command line: the program itself when the Geant4 env is active, otherwise wrapped in
+`conda run -n g4` (`-p <path>`). So everything can be run from the `xamssim` env; the `g4` env only has to be
+activated to compile (cmake --build g4/build -j8).
 
 Standard library only: imported by the xamssim package and by the optical tools (which may run in either env).
 """
@@ -32,7 +33,8 @@ def command(args) -> list:
     if in_g4_env():
         return cmd
     conda = os.environ.get("CONDA_EXE") or shutil.which("conda") or "conda"
-    return [conda, "run", "-n", G4_ENV, "--no-capture-output"] + cmd
+    where = ["-p", G4_ENV] if "/" in G4_ENV else ["-n", G4_ENV]          # a name, or the path of the env (STBC)
+    return [conda, "run", *where, "--no-capture-output"] + cmd
 
 
 def run(args, **kwargs) -> subprocess.CompletedProcess:
