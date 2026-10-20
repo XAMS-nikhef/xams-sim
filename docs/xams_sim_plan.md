@@ -323,6 +323,9 @@ Test run (sept, 2·10⁵ Cs-137 decays at r 130 mm, z −82 mm): 821 decays with
 events; S2 width50 ~715 ns, S2 AFT 0.56; 591 S1s stay unclassified (S1 AFT > 0.2, amstrax's limit): the sim's S1
 top fraction is higher than in the data (ε_S1 0.74). Open: light calibration (top / bottom, g2, S1 scale), dark counts,
 afterpulses, PMT non-linearity, the comparison of event_info with the data.
+Gains: the MC is processed with the gains it was simulated with (gains.csv P4; double-PE only for VUV photoelectrons,
+as in the data's LED calibration). Optional later: a simulated LED run type (externally triggered, no double-PE) to
+run the analysis' LED fit on MC as a closure test of the gain calibration.
 
 Original task list:
 - Waveforms per channel (V1725, 4 ns, baseline, noise, thresholds, pre-trigger) → `raw_records` with simulated run

@@ -32,7 +32,9 @@ materials:
     geant4: {composition: {Xe: 1}, molar_mass_g_mol: 131.29}
     electrical: {kind: dielectric, relative_permittivity: 1.00}
     transport:                   # electrons in the gas gap (simulation chain, S5)
-      drift_velocity_mm_us: 3.1  # TUNED: median S2 width50 at the gate of the SR-2026.2 Cs photopeak (605 ns; S5 study 2026-10-19); no measurement found at ~9 Td
+      drift_velocity_mm_us: 4.15 # TUNED: S2 width50 of main S2s at drift 2-8 µs (no diffusion correction), runs 7687 / 7719,
+                                 # 2-8e4 PE: 529 / 542 ns (2026-10-20); the S5 value 3.1 used a diffusion-corrected 605 ns that
+                                 # left diffusion in; no measurement found at ~9 Td
       el_yield: monteiro2007     # photons per electron per cm = 140 E[kV/cm] - 116 p_eq[bar], p_eq = pressure at 293 K with the same density (Monteiro et al. 2007)
   ptfe:                          # inner cylinder, PMT holders, bucket
     density_g_cm3: 2.2

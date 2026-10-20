@@ -8,7 +8,7 @@ XamsEvents (per decay, `xams_events`, the fast output at peak level): S1 = all c
 clusters within S2_MERGE_NS (drift time) of the brightest S2 (deeper / shallower scatters are separate S2s in the
 data), the alternative S2 = the brightest one outside it. Area fraction top (top PMT / both PMTs, no SiPMs), drift
 time, position (gate crossing, true z), top-PMT pattern u, v, and the corrected areas: cS1 = S1 divided by the
-relative S1 light yield at each cluster (S1 light map, mean over the drift region = 1), cS2 = main S2 divided by the
+relative S1 light yield of the PMTs at each cluster (S1 light map, mean over the drift region = 1), cS2 = main S2 divided by the
 relative S2 light collection at the gate crossings (S2 pattern map, mean over the gate area = 1) x exp(t / tau).
 """
 from __future__ import annotations
@@ -75,7 +75,7 @@ class XamsSensorResponse(FuseBasePlugin):
 class XamsEvents(FuseBasePlugin):
     """One row per decay: S1, main and alternative S2, corrected areas, position."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     depends_on = ("peak_areas", "microphysics_summary", "drifted_electrons", "s1_photoelectrons", "s2_photoelectrons")
     provides = "xams_events"
     data_kind = "xams_events"
@@ -113,12 +113,12 @@ class XamsEvents(FuseBasePlugin):
     def setup(self):
         super().setup()
         m = np.load(self.xams_s1_map)
-        tot = m["p"].sum(axis=0)                                           # (x, y, z) all channels
+        tot = m["p"][PMT].sum(axis=0)                                      # (x, y, z) PMT channels
         zsel = (m["z"] > self.z_cathode_cm * 10) & (m["z"] < self.z_gate_cm * 10)
         w = m["inside"][:, :, None] * zsel[None, None, :]
         self.ly_ref = float((tot * w).sum() / w.sum())                    # mean detection over the drift region
         m2 = np.load(self.xams_s2_map)
-        self.s2_ref = float((m2["p"].sum(axis=0) * m2["inside"]).sum() / m2["inside"].sum())   # mean over the gate area
+        self.s2_ref = float((m2["p"][PMT].sum(axis=0) * m2["inside"]).sum() / m2["inside"].sum())   # PMTs, mean over the gate area
 
     def compute(self, interactions_in_roi):
         d = interactions_in_roi
@@ -138,7 +138,7 @@ class XamsEvents(FuseBasePlugin):
         out["s1_area"] = np.bincount(inv, weights=d["s1_area"])
         for c in range(N_CHANNELS):
             out["s1_area_ch"][:, c] = np.bincount(inv, weights=d["s1_area_ch"][:, c])
-        rel = d["s1_p"].sum(axis=1) / self.ly_ref
+        rel = d["s1_p"][:, PMT].sum(axis=1) / self.ly_ref
         out["cs1"] = np.bincount(inv, weights=np.where(rel > 0, d["s1_area"] / np.where(rel > 0, rel, 1), 0.0))
         pm = out["s1_area_ch"][:, PMT].sum(axis=1)
         out["s1_aft"] = np.where(pm > 0, out["s1_area_ch"][:, TOP].sum(axis=1) / np.where(pm > 0, pm, 1), np.nan)
@@ -164,7 +164,7 @@ class XamsEvents(FuseBasePlugin):
             w = d["s2_area"][main]
             out["n_s2"][e] = len(groups)
             out["s2_area"][e] = w.sum()
-            rel2 = d["s2_p"][main].sum(axis=1) / self.s2_ref
+            rel2 = d["s2_p"][main][:, PMT].sum(axis=1) / self.s2_ref
             out["cs2"][e] = np.sum(np.where(rel2 > 0, w / np.where(rel2 > 0, rel2, 1), 0.0)) * \
                 np.exp(np.average(tdrift[main], weights=w) / 1e3 / tau)
             out["s2_area_ch"][e] = d["s2_area_ch"][main].sum(axis=0)

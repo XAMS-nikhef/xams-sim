@@ -144,6 +144,7 @@ def _sensor_settings(res: Resolved) -> dict:
         if missing:
             raise ConfigError(f"{res.geometry_path.parent / 'sensors.yaml'}: channels {missing} missing")
         out.update(spe_resolution=[float(ch[n]["spe_resolution"]) for n in CHANNEL_NAMES],
+                   detection_efficiency=[float(ch[n].get("efficiency", 1.0)) for n in CHANNEL_NAMES],
                    channel_kind=[ch[n]["kind"] for n in CHANNEL_NAMES],
                    double_pe_probability=float(s["pmt"]["double_pe_probability"]),
                    crosstalk_probability=float(s["sipm"]["crosstalk_probability"]))

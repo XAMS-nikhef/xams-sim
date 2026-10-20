@@ -187,6 +187,7 @@ sipms:
   recess_mm: 1.0             # sensor 1 mm deep in a square hole in the PTFE wall (user, 2026-10-12)
   electrical: grounded 3 x 3 mm conducting plane (field model); no package, PCB, cables or foil (user, 2026-10-12)
   filter: not modelled in v1 (user, 2026-10-05)
+  # the VUV-blocking filter's effect is the SiPM detection efficiency in sensors.yaml (one value, fitted, 2026-10-20)
 
 # ------------------------------------------------------------------------------------------------ optical properties
 # Moved to materials.yaml (`optics`) on 2026-10-18: materials.yaml is the single source for material properties.

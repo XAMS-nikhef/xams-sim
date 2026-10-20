@@ -209,11 +209,19 @@ class Resolved:
     def map_keys(self) -> dict:
         return {kind: short_hash(inp) for kind, inp in self.map_inputs().items()}
 
+    def g4_materials(self) -> dict:
+        """What Geant4 uses of materials.yaml: densities, compositions, state and the optics, not the electrical or
+        transport properties (those belong to COMSOL and the chain)."""
+        m = self.materials
+        return {"materials": {n: {k: v for k, v in d.items() if k not in ("electrical", "transport")}
+                              for n, d in m["materials"].items()}, "optics": m.get("optics")}
+
     def g4_key(self) -> str:
-        """Hash of what the Geant4 particle run depends on: geometry, materials, liquid level, source, events, seed,
-        production cut (not the HV, the maps or the chain settings)."""
-        return short_hash({"geometry": self._geometry_physical(), "materials": self.materials,
-                           "liquid_level_mm": self.state["liquid_level_mm"], "source": self.source,
+        """Hash of what the Geant4 particle run depends on: geometry, the materials as Geant4 uses them, liquid level,
+        source (not its description), events, seed, production cut (not the HV, the maps or the chain settings)."""
+        return short_hash({"geometry": self._geometry_physical(), "materials": self.g4_materials(),
+                           "liquid_level_mm": self.state["liquid_level_mm"],
+                           "source": {k: v for k, v in self.source.items() if k not in ("description", "activity_bq")},
                            "n_events": self.run["n_events"], "seed": self.run["seed"],
                            "production_cut_mm": (self.run.get("physics") or {}).get("production_cut_mm")})
 

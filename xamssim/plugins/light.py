@@ -1,6 +1,7 @@
 """XamsS1Light, XamsS2Light: photons -> photoelectrons per channel, per cluster (plan S6).
 
-From the light maps of the state (xamssim.lightmap; detection probability per channel incl. the QE):
+From the light maps of the state (xamssim.lightmap; detection probability per channel incl. the QE), times the channel's
+detection efficiency (detector sensors.yaml, one value per channel for all light; e.g. the SiPMs' VUV filter):
     S1   NEST photons of the cluster at its position (x, y, z)            -> multinomial over the channels
     S2   S2 (EL) photons of the cluster at its gate crossing (x_obs, y_obs) -> multinomial over the channels
 Channels: xamssim.lightmap.CHANNEL_NAMES (bottom PMT, top-PMT sectors ch1-ch4, the two SiPMs). No sensor response yet
@@ -40,7 +41,7 @@ def _dtype(what):
 class XamsS1Light(FuseBasePlugin):
     """S1 photoelectrons per channel per cluster."""
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     depends_on = "microphysics_summary"
     provides = "s1_photoelectrons"
     data_kind = "interactions_in_roi"
@@ -48,6 +49,7 @@ class XamsS1Light(FuseBasePlugin):
     dtype = _dtype("S1")
 
     xams_s1_map = straxen.URLConfig(type=str, help="S1 light map of the state (<data>/maps/s1_light/<key>/s1.npz)")
+    detection_efficiency = straxen.URLConfig(type=(list, tuple), help="detection efficiency relative to the map, per channel (sensors.yaml)")
 
     def setup(self):
         super().setup()
@@ -59,7 +61,7 @@ class XamsS1Light(FuseBasePlugin):
         out["time"], out["endtime"] = d["time"], d["endtime"]
         if not len(d):
             return out
-        p = self.map(d["x"] * 10.0, d["y"] * 10.0, d["z"] * 10.0)
+        p = self.map(d["x"] * 10.0, d["y"] * 10.0, d["z"] * 10.0) * np.asarray(self.detection_efficiency, float)
         out["s1_p"] = p
         out["s1_pe"] = _multinomial(self.rng, d["photons"], p)
         out["s1_pe_total"] = out["s1_pe"].sum(axis=1)
@@ -70,7 +72,7 @@ class XamsS1Light(FuseBasePlugin):
 class XamsS2Light(FuseBasePlugin):
     """S2 photoelectrons per channel per cluster."""
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     depends_on = ("extracted_electrons", "drifted_electrons")
     provides = "s2_photoelectrons"
     data_kind = "interactions_in_roi"
@@ -78,6 +80,7 @@ class XamsS2Light(FuseBasePlugin):
     dtype = _dtype("S2")
 
     xams_s2_map = straxen.URLConfig(type=str, help="S2 pattern map of the state (<data>/maps/s2_pattern/<key>/s2.npz)")
+    detection_efficiency = straxen.URLConfig(type=(list, tuple), help="detection efficiency relative to the map, per channel (sensors.yaml)")
 
     def setup(self):
         super().setup()
@@ -89,7 +92,7 @@ class XamsS2Light(FuseBasePlugin):
         out["time"], out["endtime"] = d["time"], d["endtime"]
         if not len(d):
             return out
-        p = self.map(d["x_obs"] * 10.0, d["y_obs"] * 10.0)
+        p = self.map(d["x_obs"] * 10.0, d["y_obs"] * 10.0) * np.asarray(self.detection_efficiency, float)
         out["s2_p"] = p
         out["s2_pe"] = _multinomial(self.rng, d["n_s2_photons"], p)
         out["s2_pe_total"] = out["s2_pe"].sum(axis=1)

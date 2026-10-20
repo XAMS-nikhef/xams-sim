@@ -1,6 +1,7 @@
 # Sensor response of the xams2026 readout channels (plan S7): photoelectrons -> areas per channel [PE], as the analysis
 # calibrates them (LED single-PE gains, visible light: no double-PE in the calibration).
 # Channel names: xamssim.lightmap.CHANNEL_NAMES. Separate from geometry.yaml: changing it renews only the sensor step.
+# efficiency (default 1): detection efficiency relative to the light maps, per channel, for all light (light step).
 # Sources: A = analysis_SR2026.2 outputs/step1_led.json (LED fits, median of the fits with chi2/ndf < 3, runs 7603 ...)
 channels:
   bottom:  {kind: pmt,  spe_resolution: 0.51}   # A: 10 fits, 0.24-0.59
@@ -8,8 +9,12 @@ channels:
   top_ch2: {kind: pmt,  spe_resolution: 0.44}   # A: 4 fits, 0.36-0.59
   top_ch3: {kind: pmt,  spe_resolution: 0.40}   # A: 4 fits, 0.35-0.45
   top_ch4: {kind: pmt,  spe_resolution: 0.37}   # A: 4 fits, 0.34-0.49
-  sipm_1:  {kind: sipm, spe_resolution: 0.10}   # assumed (SiPM PE peaks are narrow); not measured here
-  sipm_2:  {kind: sipm, spe_resolution: 0.10}   # assumed
+  # SiPMs: VUV-blocking filter (not in the optical model) -> detection efficiency relative to the light maps (which count
+  # every photon reaching the SiPM, PDE 1), one value for all light, fitted 2026-10-20 to SR-2026.2 (paper_data/sipm.npz)
+  # on S2: (SiPMs / bottom PMT) data 1.8e-4 / MC 3.5e-2. S1 then gives SiPMs / PMTs 2.5e-4 vs 1.7e-3 in the data (7x low;
+  # S1 SiPM signal ~1 PE in the data): open.
+  sipm_1:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.0051}   # spe_resolution assumed
+  sipm_2:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.0051}
 pmt:
   double_pe_probability: 0.2    # assumed: VUV photons on R11410-type photocathodes (literature ~0.2); not measured in XAMS
 sipm:

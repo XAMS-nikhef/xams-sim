@@ -16,6 +16,7 @@ Registry file `<data>/maps/extraction_el/<key>/el.npz`.
 """
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 
@@ -133,7 +134,40 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
                 v_gas_mm_us=gm["v_gas"], p_eq_bar=gm["p_eq"])
 
 
+def _rescaled_from_other_velocity(res: Resolved, log=print) -> dict | None:
+    """The EL map of the same inputs except the gas drift velocity, with its times scaled (the paths, the extraction
+    and the EL photons do not depend on it, every time is path / v): no COMSOL needed."""
+    from .maps import load_manifest
+    want = json.loads(json.dumps(res.map_inputs()["extraction_el"], default=str))
+    v_new = float(want["gas"]["transport"]["drift_velocity_mm_us"])
+    for e in load_manifest()["maps"]:
+        if e["kind"] != "extraction_el":
+            continue
+        inp = json.loads(json.dumps(e.get("inputs", {}), default=str))
+        try:
+            v_old = float(inp["gas"]["transport"]["drift_velocity_mm_us"])
+            inp["gas"]["transport"]["drift_velocity_mm_us"] = v_new
+        except (KeyError, TypeError):
+            continue
+        if inp == want and all((MAPS / f).exists() for f in e["files"]):
+            d = dict(np.load(MAPS / e["files"][0]))
+            for k in ("t_transit_us", "t_q_us"):
+                d[k] = d[k] * (v_old / v_new)
+            d["v_gas_mm_us"] = np.float64(v_new)
+            log(f"  EL map from {e['key']} (gas drift velocity {v_old} -> {v_new} mm/µs, times scaled)")
+            return d
+    return None
+
+
 def export(res: Resolved) -> dict:
+    d = _rescaled_from_other_velocity(res)
+    if d is not None:
+        key = res.map_keys()["extraction_el"]
+        rel = f"extraction_el/{key}/{FILE}"
+        (MAPS / rel).parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(MAPS / rel, **d)
+        return register(res, "extraction_el", [rel], producer_version="xamssim elmap v1, times scaled from another "
+                                                                       "gas drift velocity (no COMSOL)")
     d = compute(res)
     key = res.map_keys()["extraction_el"]
     rel = f"extraction_el/{key}/{FILE}"

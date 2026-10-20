@@ -52,6 +52,10 @@ def _new_context(cfg: dict):
     from immutabledict import immutabledict
     STORE.mkdir(parents=True, exist_ok=True)
     st = amstrax.contexts.xams(output_folder=str(STORE), init_rundb=False)
+    import strax
+    for f in st.storage:                     # the run documents of simulated runs are files in the store
+        if isinstance(f, strax.DataDirectory) and Path(f.path).resolve() == STORE.resolve():
+            f.provide_run_metadata = True
     cfg = dict(cfg, channel_map=immutabledict(cfg["channel_map"]))
     st.set_config(cfg)
     return st
@@ -108,7 +112,32 @@ def export(run_path, lifetime_us: float | None = None, processing=None, log=prin
         saver.close()
         log(f"  {ax_type}: {n} records -> {STORE / str(key)}")
     tag.write_text(json.dumps(src))
+    _write_run_metadata(sf, res, run_id, sim)
     return ax, run_id
+
+
+def _write_run_metadata(sf, res: Resolved, run_id: str, sim) -> None:
+    """A run document for the simulated run (as the run database has for data): mode, start / end, the DAQ config
+    (thresholds, channel map, pre-trigger register) and a comment with what was simulated, so that tools that read
+    run metadata (e.g. the analysis' event display) work on simulated runs."""
+    import datetime as dt
+    from .waveforms import load_daq
+    daq = load_daq(res)
+    thr = [500] * 16
+    for ch, c in daq["channels"].items():
+        thr[int(ch)] = c["threshold"]
+    md0 = sim.get_metadata(run_id, RAW["raw_records"])
+    t = lambda ns: dt.datetime.fromtimestamp(ns / 1e9, tz=dt.timezone.utc)   # noqa: E731
+    pre = int(daq["digitizer"]["pre_trigger_samples"]) // 4                    # register 0x8038 in units of 4 samples
+    sf.write_run_metadata(run_id, {
+        "name": run_id, "number": run_id, "mode": f"simulation ({res.state_name})", "tags": ["simulation"],
+        "start": t(md0["start"]), "end": t(md0["end"]), "detectors": ["tpc"],
+        "comments": [{"comment": f"xams-sim: state {res.state_name}, source {res.source_name}, {res.run['n_events']:.3g} "
+                                 f"events, detector {res.detector} (xamssim show {run_id})"}],
+        "daq_config": {"name": f"simulated {daq['digitizer']['model']}", "thresholds": {"sim": thr},
+                       "channel_map": daq["channel_map"],
+                       "registers": [{"reg": "8038", "val": f"{pre:x}", "comment": "Pre-trigger (simulated)"}]},
+    })
 
 
 def context(run_path, lifetime_us: float | None = None, processing=None):
