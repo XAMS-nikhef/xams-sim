@@ -364,8 +364,9 @@ Plan:
    read-only frontend; processed MC goes where the user's processing goes (e.g. the personal
    `measurements/strax_data`, as for private data processing). The Mac copy is a working copy.
 4. **MC on STBC:** xams-sim installed on stbc-i2 (environment like `xamssim`: Geant4 build, fuse / strax, amstrax),
-   productions in the background on stbc-i2 (no condor); the maps (registry) and COMSOL field maps made on the Mac
-   and copied (COMSOL only on the Mac). Output straight into the central MC folder.
+   productions as condor jobs (one job per seed / event block; Claude may submit, at most 10 jobs in the queue at
+   once), small tests in the background on stbc-i2; the maps (registry) and COMSOL field maps made on the Mac and
+   copied (COMSOL only on the Mac). Output straight into the central MC folder.
 5. **Dashboard:** a patch to xams-dashboard (stbc-i1) to list `runs_mc` next to the data runs: the simulation inputs
    (state, source, detector, run key, events, `xamssim show`) and the processing status; new MC runs show up as
    unprocessed (raw records only) and can be processed from there like data. Deployment only with the user's OK.
@@ -412,4 +413,4 @@ S8 adds the like-for-like comparison through amstrax.
 3. strax / amstrax versions for the simulation environment (STBC runs strax 1.5.4 on Python 3.8).
 4. Where the field map comes from in production: COMSOL file export (security setting) or the printed-map route.
 5. Delayed-electron model in the drift step: which model (for the paper).
-6. Large productions: the Mac for development; stbc-i2 in the background for big runs (no condor).
+6. Large productions: the Mac for development; condor on Stoomboot for big runs (max 10 jobs at once, S9).
