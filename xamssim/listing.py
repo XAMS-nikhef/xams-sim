@@ -197,7 +197,7 @@ def show(flt: str = "", prune: bool = False, delete: bool = False, yes: bool = F
             head += f"   study {r['study']}, state {r['state']}, source {r['source']}, {r['n_events']:.0e} events"
             if r.get("number") is not None:
                 from .amstrax_io import STORE
-                done = (STORE / f"{int(r['number']):06d}.xamssim.json").exists()
+                done = STORE is not None and (STORE / f"{int(r['number']):06d}.xamssim.json").exists()
                 head += f"\n  run number {int(r['number']):06d}" + (f" (in {STORE})" if done else " (not exported: xamssim amstrax)")
         print(head)
         if r["note"]:

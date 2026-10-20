@@ -30,6 +30,6 @@ xamssim status   config/runs/<run>.yaml                           # resolved run
 python -m pytest tests
 ```
 
-`<data>` = `xamssim.config.DATA`: `../simulations/data` unless `$XAMSSIM_DATA` is set.
+`<data>` = `xamssim.config.DATA`: `$XAMSSIM_DATA`, else `../simulations/data` next to the code (development checkout). A shared installation without a simulations folder next to it (STBC: `software/xams-sim`) refuses to run without `$XAMSSIM_DATA` (`source setup_xamssim.sh`, or the Jupyter kernel "XAMS sim").
 
 Roadmap of the full chain: `docs/xams_sim_plan.md`.

@@ -29,9 +29,28 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config"
 DETECTORS = CONFIG / "detectors"           # one folder per detector: geometry.yaml (+ its hole pattern etc.)
-# where all outputs live (Geant4 runs, strax data, optical scans, maps, COMSOL results, check scratch): next to the
-# code, in the simulations folder (studies), not in this repository; override with $XAMSSIM_DATA
-DATA = Path(os.environ.get("XAMSSIM_DATA", ROOT.parent / "simulations" / "data")).resolve()
+# where all outputs live (Geant4 runs, strax data, optical scans, maps, COMSOL results, check scratch): $XAMSSIM_DATA,
+# else next to the code in the simulations folder (studies; a development checkout, e.g. on the Mac). A shared
+# installation (STBC: software/xams-sim, no simulations folder next to it) refuses to run without $XAMSSIM_DATA, so
+# that nothing is ever written into the software area.
+
+
+class DataFolderError(RuntimeError):
+    pass
+
+
+def _data_folder() -> Path:
+    if os.environ.get("XAMSSIM_DATA"):
+        return Path(os.environ["XAMSSIM_DATA"]).resolve()
+    studies = ROOT.parent / "simulations"
+    if not studies.is_dir():
+        raise DataFolderError(
+            f"XAMSSIM_DATA is not set and there is no simulations folder next to {ROOT}: set XAMSSIM_DATA to your "
+            "simulation data folder (on STBC: source setup_xamssim.sh, or use the Jupyter kernel 'XAMS sim')")
+    return (studies / "data").resolve()
+
+
+DATA = _data_folder()
 HV_CASES = ROOT / "efield" / "cases.yaml"
 
 # data products of the chain, in order; `stop_after` must be one of them

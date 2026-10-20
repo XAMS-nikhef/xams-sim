@@ -29,7 +29,11 @@ import numpy as np
 
 from .config import ROOT, ConfigError, Resolved, resolve
 
-STORE = Path(os.environ.get("XAMSSIM_AMSTRAX_STORE", ROOT.parent / "measurements" / "strax_data")).resolve()
+# $XAMSSIM_AMSTRAX_STORE, else the analysis' data folder next to the code (development checkout); a shared installation
+# without it has no default (None): the export then asks for $XAMSSIM_AMSTRAX_STORE instead of writing into the software
+_default_store = ROOT.parent / "measurements" / "strax_data"
+STORE = (Path(os.environ["XAMSSIM_AMSTRAX_STORE"]).resolve() if os.environ.get("XAMSSIM_AMSTRAX_STORE")
+         else _default_store.resolve() if _default_store.parent.is_dir() else None)
 RAW = {"raw_records": "xams_raw_records", "raw_records_sipm": "xams_raw_records_sipm"}
 EXPORT_FORMAT = 2              # 2: first chunk starts FIRST_MARGIN_NS before the first record
 FIRST_MARGIN_NS = 1_000_000    # amstrax extends hits / peaks to the left: room before the first record (as in data)
@@ -109,6 +113,9 @@ def export(run_path, lifetime_us: float | None = None, store: Path | None = None
     import strax
 
     from . import chain
+    if store is None and STORE is None:
+        raise ConfigError(f"XAMSSIM_AMSTRAX_STORE is not set and there is no measurements folder next to {ROOT}: set "
+                          "XAMSSIM_AMSTRAX_STORE (setup_xamssim.sh does)")
     store = Path(store or STORE)
     store.mkdir(parents=True, exist_ok=True)
     res = resolve(run_path)
