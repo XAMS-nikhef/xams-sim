@@ -41,7 +41,8 @@ PRODUCTS = ("geant4_interactions", "clustered_interactions", "quanta", "drifted_
 NUM = (int, float)
 OPT_NUM = (int, float, type(None))
 SCHEMA = {
-    "run": ({"state": str, "source": str, "n_events": int, "seed": int, "stop_after": str, "physics": dict},
+    "run": ({"state": str, "source": str, "n_events": int, "seed": int, "stop_after": str, "physics": dict,
+             "run_number": int},
             {"state", "source", "n_events", "seed"}),
     "state": ({"description": str, "detector": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
                "electron_lifetime_us": OPT_NUM, "sensors": dict},
@@ -52,6 +53,7 @@ SCHEMA = {
                {"isotope"}),
 }
 HV_KEYS = ("A", "G", "C", "BS", "TS", "PMT_T", "PMT_B", "SIPM")
+MC_RUN_NUMBERS = (900000, 999999)       # run numbers of simulated runs (amstrax / the analysis address runs by number)
 
 
 class ConfigError(ValueError):
@@ -239,6 +241,9 @@ def resolve(run_path) -> Resolved:
         raise ConfigError(f"{run_path}: stop_after '{stop}' is not a chain product {PRODUCTS}")
     if run["n_events"] <= 0:
         raise ConfigError(f"{run_path}: n_events must be > 0")
+    if "run_number" in run and not MC_RUN_NUMBERS[0] <= run["run_number"] <= MC_RUN_NUMBERS[1]:
+        raise ConfigError(f"{run_path}: run_number {run['run_number']} outside the MC range {MC_RUN_NUMBERS} "
+                          f"(6 digits, after all data runs; amstrax compares run numbers as 6-digit strings)")
 
     sp = _named("state", run["state"])
     state = load_yaml(sp)

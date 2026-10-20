@@ -19,5 +19,8 @@ xamssim = "xamssim.cli:main"
 [tool.setuptools]
 packages = ["xamssim", "xamssim.plugins"]
 
+[tool.setuptools.package-data]
+xamssim = ["xenon_config.ini"]
+
 [tool.setuptools.dynamic]
 version = {attr = "xamssim.__version__"}

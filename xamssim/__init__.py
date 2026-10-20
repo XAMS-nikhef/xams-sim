@@ -4,7 +4,9 @@ import time as _time
 from pathlib import Path as _Path
 
 # utilix (comes with straxen / fuse) looks for ~/.xenon_config with XENONnT database credentials at import and warns
-# when there is none; XAMS uses none of those databases
+# when there is none; XAMS uses none of those databases: an empty config file of our own (unless one is set)
+import os as _os
+_os.environ.setdefault("XENON_CONFIG", str(_Path(__file__).resolve().parent / "xenon_config.ini"))
 _logging.getLogger("utilix").setLevel(_logging.ERROR)
 
 __version__ = "0.1.0"

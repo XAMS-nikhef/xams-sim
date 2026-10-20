@@ -115,7 +115,7 @@ def collect(flt: str = "") -> dict:
             try:
                 res = resolve(run_path)
                 r.update(study=run_path.parent.parent.name, state=res.state_name, source=res.source_name,
-                         n_events=res.run["n_events"], g4_key_now=res.g4_key())
+                         n_events=res.run["n_events"], g4_key_now=res.g4_key(), number=res.run.get("run_number"))
                 cur, r["note"] = current_hashes(run_path, prods) if prods else ({}, "")
             except ConfigError as e:
                 r["note"] = f"run file invalid: {str(e)[:120]}"
@@ -195,6 +195,10 @@ def show(flt: str = "", prune: bool = False, delete: bool = False, yes: bool = F
         head = f"\n{r['id']}"
         if "state" in r:
             head += f"   study {r['study']}, state {r['state']}, source {r['source']}, {r['n_events']:.0e} events"
+            if r.get("number") is not None:
+                from .amstrax_io import STORE
+                done = (STORE / f"{int(r['number']):06d}.xamssim.json").exists()
+                head += f"\n  run number {int(r['number']):06d}" + (f" (in {STORE})" if done else " (not exported: xamssim amstrax)")
         print(head)
         if r["note"]:
             print(f"  note: {r['note']}")

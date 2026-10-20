@@ -117,11 +117,9 @@ def cmd_amstrax(a) -> int:
     from pathlib import Path
     from .runlock import run_lock
     with run_lock(Path(a.run).stem):
-        st, run_id = amstrax_io.export(a.run, lifetime_us=a.lifetime_us)
-    print(f"amstrax data of {run_id} in {amstrax_io.STORE}; load with\n"
-          f"  from xamssim import amstrax_io\n  st, run_id = amstrax_io.context('{a.run}'"
-          + (f", lifetime_us={a.lifetime_us}" if a.lifetime_us else "") + ", processing=<analysis processing.json>)\n"
-          f"  st.get_array(run_id, 'event_info')")
+        rid = amstrax_io.export(a.run, lifetime_us=a.lifetime_us)
+    print(f"run {rid} ({Path(a.run).stem}) in {amstrax_io.STORE}: raw records, run document, truth file; process it "
+          f"with the analysis like a data run, e.g. EventDisplay({int(rid)}, ...)")
     return 0
 
 
@@ -181,8 +179,8 @@ def main(argv=None) -> int:
                                                       "products of the selected runs, current ones too (not the maps)")
     p.add_argument("--yes", action="store_true", help="with --delete: no confirmation")
     p.set_defaults(func=cmd_list)
-    p = sub.add_parser("amstrax", help="copy a run's simulated raw records into the amstrax store (S8); amstrax then "
-                                       "processes them like data (xamssim.amstrax_io)")
+    p = sub.add_parser("amstrax", help="a run with run_number as a run for amstrax / the analysis: its simulated raw "
+                                       "records, run document and truth file into the analysis' data folder (S8)")
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_amstrax)

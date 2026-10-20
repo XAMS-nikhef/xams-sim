@@ -150,7 +150,8 @@ def show(run: str, product: str | None = None, lineage_hash: str | None = None, 
     print(f"  code       {c.get('commit', '?')[:10]} ({c.get('describe')})"
           + (f"; uncommitted changes in {len(c['uncommitted'])} files (diff {c.get('uncommitted_diff_sha')})"
              if c.get("uncommitted") else ""))
-    print(f"  run file   {r['run_file']}")
+    print(f"  run file   {r['run_file']}" + (f" (run number {int(r['run']['run_number']):06d})"
+                                              if r["run"].get("run_number") is not None else ""))
     print(f"  detector   {r['detector']} ({r['geometry_file']}, geometry version {g.get('meta', {}).get('version')})")
     print(f"  state      {r['state_name']}: level {s['liquid_level_mm']} mm, lifetime {r['settings'].get('electron_lifetime_us')} µs; "
           f"HV A {hv['A']:+g} G {hv['G']:+g} C {hv['C']:+g} BS {hv['BS']:+g} V")

@@ -34,6 +34,9 @@ Clustering and timeline options come from the run file's `physics` block (PHYSIC
 """
 from __future__ import annotations
 
+import contextlib
+import io
+import sys
 import warnings
 from pathlib import Path
 
@@ -273,7 +276,17 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
             + (["peak_areas"] if target in ("events", "raw_records") else []) \
             + (["xams_events", "xams_raw_records_sipm"] if target == "raw_records" else [])
         for t in keep:                                   # NEST stored too: every later step reads the same draw
-            st.make(run_id, t)
+            t1 = time.time()
+            if st.is_stored(run_id, t):
+                print(f"  {t:<28s} stored", flush=True)
+                continue
+            n = rows = 0
+            with contextlib.redirect_stdout(io.StringIO()):
+                for chunk in st.get_iter(run_id, t, progress_bar=False):      # saves as it goes
+                    n, rows = n + 1, rows + len(chunk.data)
+                    print(f"\r  {t:<28s} making: chunk {n}, {rows} rows, {time.time() - t1:.0f} s",
+                          end="", flush=True, file=sys.__stdout__)
+            print(f"\r  {t:<28s} made: {n} chunks, {rows} rows, {time.time() - t1:.0f} s" + " " * 10, flush=True)
     else:
         keep = []
     d = st.get_array(run_id, TARGETS[target])
