@@ -31,6 +31,8 @@ from .config import ROOT, ConfigError, Resolved, resolve
 
 STORE = Path(os.environ.get("XAMSSIM_AMSTRAX_STORE", ROOT.parent / "measurements" / "strax_data")).resolve()
 RAW = {"raw_records": "xams_raw_records", "raw_records_sipm": "xams_raw_records_sipm"}
+EXPORT_FORMAT = 2              # 2: first chunk starts FIRST_MARGIN_NS before the first record
+FIRST_MARGIN_NS = 1_000_000    # amstrax extends hits / peaks to the left: room before the first record (as in data)
 
 
 def run_number(res: Resolved) -> str:
@@ -118,6 +120,7 @@ def export(run_path, lifetime_us: float | None = None, store: Path | None = None
     # amstrax's lineage does not see the content of the raw records: remember which simulated records were copied, and
     # remove all amstrax data of the run when they change (else records / peaks / events would be reused)
     src = {t: sim.key_for(sim_id, t).lineage_hash for t in RAW.values()}
+    src["export_format"] = EXPORT_FORMAT
     tag = store / f"{rid}.xamssim.json"
     if not tag.exists() or json.loads(tag.read_text()).get("sources") != src:
         for d in store.glob(f"{rid}-*"):
@@ -132,8 +135,10 @@ def export(run_path, lifetime_us: float | None = None, store: Path | None = None
         plugin = ax._get_plugins((ax_type,), rid)[ax_type]
         saver = sf.saver(key, plugin.metadata(rid, ax_type))
         n = 0
+        t_first = _first_time(sim, sim_id)
         for i, c in enumerate(sim.get_iter(sim_id, sim_type, progress_bar=False)):
-            ch = strax.Chunk(start=c.start, end=c.end, data=c.data, data_type=ax_type, data_kind=ax_type,
+            start = max(0, min(c.start, t_first - FIRST_MARGIN_NS)) if i == 0 else c.start
+            ch = strax.Chunk(start=start, end=c.end, data=c.data, data_type=ax_type, data_kind=ax_type,
                              dtype=c.data.dtype, run_id=rid, target_size_mb=c.target_size_mb)
             saver.save(chunk=ch, chunk_i=i)
             n += len(c.data)
@@ -145,6 +150,12 @@ def export(run_path, lifetime_us: float | None = None, store: Path | None = None
     _write_truth(store, res, rid, sim_id, sim)
     tag.write_text(json.dumps({"run_file": str(Path(run_path).resolve()), "sim_run_id": sim_id, "sources": src}))
     return rid
+
+
+def _first_time(sim, sim_id) -> int:
+    """Earliest record time over both raw types (the first chunk of each starts before it)."""
+    return min(sim.get_metadata(sim_id, t)["chunks"][0]["first_time"] for t in RAW.values()
+               if sim.get_metadata(sim_id, t)["chunks"] and sim.get_metadata(sim_id, t)["chunks"][0]["n"])
 
 
 def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_us) -> None:
@@ -160,7 +171,7 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
     pre = int(daq["digitizer"]["pre_trigger_samples"]) // 4                    # register 0x8038 in units of 4 samples
     sf.write_run_metadata(rid, {
         "name": rid, "number": int(rid), "mode": f"simulation ({res.state_name})", "tags": ["simulation"],
-        "start": t(md0["start"]), "end": t(md0["end"]), "detectors": ["tpc"],
+        "start": t(max(0, min(md0["start"], _first_time(sim, sim_id) - FIRST_MARGIN_NS))), "end": t(md0["end"]), "detectors": ["tpc"],
         "comments": [{"comment": f"xams-sim run {sim_id}: state {res.state_name}, source {res.source_name}, "
                                  f"{res.run['n_events']:.3g} decays, detector {res.detector} (xamssim show {sim_id})"}],
         "daq_config": {"name": f"simulated {daq['digitizer']['model']}", "thresholds": {"sim": thr},
