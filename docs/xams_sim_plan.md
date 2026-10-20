@@ -386,7 +386,37 @@ Plan:
 **Check:** a data run and an MC run go through the same commands (context, step scripts, EventDisplay) with only the
 run number different; another user on STBC can process and read an MC run; the dashboard lists it.
 
-### S10. Validation suite, overview and docs (2–3 days)
+### S10. Simulation dashboard (2–3 weeks, in phases) — **planned 2026-10-20**
+
+A web page to browse and compose simulations instead of editing YAML by hand. **The text files stay the source of
+truth:** what is clicked together is written as ordinary run / state / source files in `simulations/<study>/` and
+committed; nothing lives only in the dashboard. All logic stays in xams-sim (resolve, map keys, registry, `xamssim
+list`, `xamssim show`); the dashboard only calls it.
+
+Pages:
+1. **Catalogue:** detectors, states and sources rendered instead of YAML (state: voltages per electrode, liquid
+   level, lifetime, drift / extraction field, which maps exist; source: isotope and position in a TPC cross-section);
+   side-by-side comparison of two states.
+2. **Composer:** choose study, state, source, events, seed, how far (fast events or waveforms). Shown before anything
+   runs: the resolved configuration, the map status (present / missing, with the reason, e.g. "new voltage → new
+   field map, COMSOL on the Mac"), reuse of existing Geant4 output with the same key, an estimate of time, disk and
+   condor jobs, the next free run number (9xxxxx). Changing a value (a voltage, the source position) proposes a new
+   state / source under a new name with its difference to the original; written and committed after confirmation.
+3. **Start:** on stbc-i2 (small runs) or as condor jobs (at most 10 at once, S9); progress per step (Geant4, chain,
+   export).
+4. **Runs:** `xamssim list` as a table (status, current / outdated, size); per run the provenance (`xamssim show`,
+   difference to another run), quick plots from `xams_events` (cS1 / cS2, drift time, positions), the link to the
+   amstrax / event display route; with S9's database the same runs in the xams-dashboard next to the data.
+
+Technology: on STBC in the style of the xams-dashboard (same stack, Python backend importing `xamssim` from
+`software/xams-sim`), own app or a tab, private. COMSOL cannot be started from it (Mac only): the dashboard names the
+missing field map and gives the command.
+
+Phases: (a) read-only: catalogue and runs page; (b) composer as a dry run, writing YAML on request; (c) starting on
+stbc-i2 / condor; (d) integration with S9 (`runs_mc`, xams-dashboard, MC processing like data). (c) and (d) need the
+STBC installation and S9.
+
+### S11. Validation suite, overview and docs (2–3 days)
 - Validation: one command per comparison with data (targets from analysis_SR2026.2), report per state; the comparisons
   themselves are studies in `../simulations/`.
 - **Detectors (2026-10-19):** `config/detectors/<detector>/geometry.yaml`, `detector:` in every state; keys follow
@@ -401,8 +431,7 @@ run number different; another user on STBC can process and read an MC run; the d
   they are current for the run file as it is now (state, maps, settings, Geant4 output), and the maps per state
   (present / missing / stale). Optional: `--prune` lists outdated data that can be removed (never deletes by itself).
 - Docs: config reference, how to run each producer and the chain, how to add a state or a source.
-- Later, when productions run on STBC (after S8): a web page in the style of the xams-dashboard on top of `xamssim
-  list` and the map registry (studies, runs, status, starting productions). Not before the chain is complete.
+- The web page for studies, runs and productions: S10.
 
 ## Effort
 
@@ -413,7 +442,8 @@ run number different; another user on STBC can process and read an MC run; the d
 | S5–S7 (extraction/EL, light maps, sensors, fast output) | ~5–7 days |
 | S8 (waveforms → amstrax) | 1–2 weeks |
 | S9 (MC runs as runs: database, central storage, STBC, dashboard) | 1–2 weeks |
-| S10 | ~2 days |
+| S10 (simulation dashboard) | 2–3 weeks |
+| S11 | ~2 days |
 
 After S7 the chain already answers the physics questions (resolution per state, SiPM and cathode effects, gamma-X);
 S8 adds the like-for-like comparison through amstrax.

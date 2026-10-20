@@ -1,4 +1,4 @@
-"""`xamssim list`: what is in the data folder and whether it is current (plan S10, first version).
+"""`xamssim list`: what is in the data folder and whether it is current (plan S11, first version).
 
 Per run (run id = run file name; run files in `<simulations>/*/runs/` and `config/runs/`):
     the run file (study, state, source, events), the Geant4 output (events, made for the Geant4 key the run file gives
