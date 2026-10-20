@@ -2,5 +2,5 @@
 description: "Cs-137 point source 130 mm from the axis, just outside the outer cryostat vessel (tube r 127 mm), 30 mm below the cathode (S2 check: candidate September height)"
 isotope: Cs-137
 activity_bq: null
-position_mm: [0.0, 130.0, -120.0]
+position_mm: [0.0, 130.0, -82.0]
 collimator: null

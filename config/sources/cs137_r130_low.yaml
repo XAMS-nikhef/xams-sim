@@ -1,0 +1,7 @@
+# Cs-137 point source 130 mm from the axis, just outside the outer cryostat vessel (tube r 127 mm), 68 mm below the cathode
+# (below the bottom PMT window at -64 mm); the lower variant of cs137_r130_below (user, 2026-10-19)
+description: "Cs-137 point source 130 mm from the axis, just outside the outer cryostat vessel (tube r 127 mm), 68 mm below the cathode (below the bottom PMT window)"
+isotope: Cs-137
+activity_bq: null
+position_mm: [0.0, 130.0, -120.0]
+collimator: null
