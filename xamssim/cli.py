@@ -123,6 +123,18 @@ def cmd_amstrax(a) -> int:
     return 0
 
 
+def cmd_live(a) -> int:
+    from pathlib import Path
+
+    from . import live
+    from .runlock import run_lock
+    with run_lock(Path(a.run).stem):
+        rid = live.write(a.run, lifetime_us=a.lifetime_us)
+    print(f"run {rid} ({Path(a.run).stem}): live data, run document, truth file; amstrax makes raw_records from them with "
+          f"its DAQReader (amstrax.contexts.context_for_daq_reader)")
+    return 0
+
+
 def cmd_show(a) -> int:
     from .provenance import show
     return show(a.run, product=a.product, lineage_hash=a.hash, n=a.n, full=a.full, with_diff=a.diff)
@@ -184,6 +196,11 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_amstrax)
+    p = sub.add_parser("live", help="a run with run_number as redax live data (live_mc/<run>/) + run document and truth "
+                                    "file, for amstrax's DAQReader (S9)")
+    p.add_argument("run")
+    p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
+    p.set_defaults(func=cmd_live)
     p = sub.add_parser("show", help="with which parameters a run's data were made (provenance written by xamssim chain)")
     p.add_argument("run", help="run id or run file")
     p.add_argument("--product", help="the entry that made this product (data type), e.g. s2_photoelectrons")

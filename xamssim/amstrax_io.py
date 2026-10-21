@@ -165,8 +165,10 @@ def _first_time(sim, sim_id) -> int:
                if sim.get_metadata(sim_id, t)["chunks"] and sim.get_metadata(sim_id, t)["chunks"][0]["n"])
 
 
-def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_us) -> None:
-    """A run document for the simulated run, as the run database has it for data."""
+def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_us, start_ns: int | None = None,
+                        daq_extra: dict | None = None) -> None:
+    """A run document for the simulated run, as the run database has it for data (start_ns: run start [ns], default
+    just before the first record; daq_extra: more daq_config fields, e.g. those of the live data)."""
     import datetime as dt
     from .waveforms import load_daq
     daq = load_daq(res)
@@ -178,12 +180,14 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
     pre = int(daq["digitizer"]["pre_trigger_samples"]) // 4                    # register 0x8038 in units of 4 samples
     sf.write_run_metadata(rid, {
         "name": rid, "number": int(rid), "mode": f"simulation ({res.state_name})", "tags": ["simulation"],
-        "start": t(max(0, min(md0["start"], _first_time(sim, sim_id) - FIRST_MARGIN_NS))), "end": t(md0["end"]), "detectors": ["tpc"],
+        "start": t(start_ns if start_ns is not None else max(0, min(md0["start"], _first_time(sim, sim_id) - FIRST_MARGIN_NS))),
+        "end": t(md0["end"]), "detectors": ["tpc"],
         "comments": [{"comment": f"xams-sim run {sim_id}: state {res.state_name}, source {res.source_name}, "
                                  f"{res.run['n_events']:.3g} decays, detector {res.detector} (xamssim show {sim_id})"}],
         "daq_config": {"name": f"simulated {daq['digitizer']['model']}", "thresholds": {"sim": thr},
                        "channel_map": daq["channel_map"],
-                       "registers": [{"reg": "8038", "val": f"{pre:x}", "comment": "Pre-trigger (simulated)"}]},
+                       "registers": [{"reg": "8038", "val": f"{pre:x}", "comment": "Pre-trigger (simulated)"}],
+                       **(daq_extra or {})},
         "xamssim": {"run_name": sim_id, "run_file": str(Path(res.run_path).resolve()), "run_key": res.run_key(),
                     "state": res.state_name, "source": res.source_name, "source_position_mm": res.source.get("position_mm"),
                     "detector": res.detector, "n_events": res.run["n_events"], "seed": res.run["seed"],
