@@ -55,3 +55,44 @@ through `xamssim.config.DATA` (`$XAMSSIM_DATA` to put it elsewhere).
 - Free optical parameters sit at the middle of their range unless set (`--set`, scan grid).
 - `notes/make_note.py` needs reportlab (base conda Python).
 - `nestpy` must stay below 2.1 for fuse 1.6.3.
+
+## Publishing the manual
+
+The manual is published at <https://www.nikhef.nl/~xamsdata/xams-sim/>, behind
+Nikhef SSO (Nikhef members), the same way and through the same account as the
+XAMS handbook (handbook: *Publishing the handbook at NIKHEF*).
+
+1. On every PR and push that touches `docs/`, `mkdocs.yml` or
+   `requirements-docs.txt`, the workflow `.github/workflows/docs.yml` builds the
+   manual strictly and scans `docs/` and the built site for secrets.
+2. On `main`, after that, it moves the tag **`docs-deploy-ready`** to the
+   commit and connects to `xamsdata@login.nikhef.nl` with the key in the
+   GitHub secret `XAMS_SIM_DOCS_DEPLOY_KEY`. That key can run only the updater.
+3. The updater (`tools/update-nikhef-docs.sh`, installed as
+   `/user/xamsdata/bin/update-xams-sim-docs`) clones exactly that tag with a
+   read-only GitHub deploy key, builds strictly, checks that anonymous access
+   is refused, and synchronises the site into `~xamsdata/public_html/xams-sim/`.
+
+The subdirectory has no `.htaccess` of its own: it inherits the handbook's SSO
+policy, and the updater refuses to run if one appears. The handbook's own sync
+protects the subdirectory (`--filter='P /xams-sim/'`); without that the next
+handbook deployment would delete the manual.
+
+| | |
+|---|---|
+| Updater source | `tools/update-nikhef-docs.sh` |
+| Installed updater | `/user/xamsdata/bin/update-xams-sim-docs` |
+| Target, marker | `/user/xamsdata/public_html/xams-sim/`, `.xams-sim-docs-root` |
+| State, lock, venv, deployed commit | `/user/xamsdata/.local/share/xams-sim-docs-deploy/` |
+| Read-only GitHub deploy key | `/user/xamsdata/.ssh/xams-sim-deploy` (deploy key on this repo, read only) |
+| CI key | GitHub secret `XAMS_SIM_DOCS_DEPLOY_KEY`; its public half in `xamsdata`'s `authorized_keys` with a forced command and no forwarding, PTY or shell |
+| Pinned host key | `.github/nikhef-login-known_hosts` (same as the handbook's) |
+
+Until the secret exists the deploy job says so and stops; nothing fails.
+
+To publish by hand, or to see why it did not (as `xamsdata`):
+
+```bash
+/user/xamsdata/bin/update-xams-sim-docs
+cat /user/xamsdata/.local/share/xams-sim-docs-deploy/deployed-sha
+```
