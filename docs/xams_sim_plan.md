@@ -355,15 +355,22 @@ Plan:
    updated, old processed data removed; a deleted simulation keeps its doc with tag `deleted` (numbers never reused).
    Writes to production MongoDB: user's OK and a database user that can only write `runs_mc`. Without access the
    export writes the file as now.
+   **Cleaning up (decided 2026-10-21):** the separate collection can always be emptied: all at once (drop) or by filter
+   (study, number range, tag), through xams-sim (`xamssim db --delete ...`: shows what goes, asks for confirmation,
+   removes the database entries and the files in `live_mc` / `mc_*` together), with a dump of `runs_mc` first
+   (`mongodb_backup`). The bookkeeping is first tried in a test collection `runs_mc_test`, dropped once it works, so
+   that `runs_mc` starts clean. Numbers may be reused during the test phase, never once MC results are used.
 2. **amstrax:** run docs of numbers ≥ 900000 from `runs_mc` (rundb.py, `get_rundoc_value`), file fallback kept.
    PR; the STBC production checkout only with the user's OK.
-3. **Central MC storage on STBC:** MC raw records (and the truth files) in one central place that everyone in XAMS
-   can read, next to the data, e.g. `/data/xenon/xams_v2/mc/strax_data` (location and ownership, e.g. `xamsdata`,
-   to be decided with the user; never inside the data areas). The run doc's `data[]` lists the copies (host, path,
+3. **Central MC storage on STBC:** MC in its own folders next to the data folders, readable by everyone in XAMS,
+   owner `xamsdata` (production area: user's OK), never inside the data areas (decided 2026-10-21):
+   `/data/xenon/xams_v2/live_mc` (simulated live data; next to `live_data`, which the DAQ copy / delete scripts and
+   the data auto-processing use), `mc_raw_records` and `mc_processed` (next to `xams_raw_records`, `xams_processed`),
+   truth files with the raw records. Deleting all MC = removing these folders. The run doc's `data[]` lists the copies (host, path,
    type), as for data. strax finds data through its storage folders, so contexts on STBC get this folder as a
    read-only frontend; processed MC goes where the user's processing goes (e.g. the personal
    `measurements/strax_data`, as for private data processing). The Mac copy is a working copy.
-4. **MC on STBC:** xams-sim installed on stbc-i2 (environment like `xamssim`: Geant4 build, fuse / strax, amstrax),
+4. **MC on STBC** (**installed 2026-10-20**, condor test and the sept run 900001 on condor 2026-10-21): xams-sim installed on stbc-i2 (environment like `xamssim`: Geant4 build, fuse / strax, amstrax),
    productions as condor jobs (one job per seed / event block; Claude may submit, at most 10 jobs in the queue at
    once), small tests in the background on stbc-i2; the maps (registry) and COMSOL field maps made on the Mac and
    copied (COMSOL only on the Mac). Output straight into the central MC folder.
@@ -379,9 +386,16 @@ Plan:
    redax format (fragment layout, compression, chunk files and overlap), tested against a real live-data chunk of
    xams; the run document gives what `DAQReader` reads from it. Until it works, the current export (raw_records
    directly, with amstrax in the xamssim environment) stays as the shortcut.
-7. **Environments on STBC:** xamssim in a `.venv` (pip) on the py312 base, like the other STBC projects; Geant4 in
-   one conda env (miniforge, only to build and run `xamsg4`, started by xamssim itself). Processing and analysis of
-   MC in the standard amstrax environment, the same as for data. On the Mac the same pattern later.
+   **Shakedown without the database (started 2026-10-21):** amstrax's `context_for_daq_reader` takes the run document
+   from the stored file when there is one (as `get_rundoc_value` since amstrax #346); xams-sim writes live data only
+   into a folder named `live_mc` (never `live_data`), now `users/acolijn/xamssim/live_mc`; the run document carries the
+   `daq_config` fields `DAQReader` needs (from Science_Rev2.4 / run 7719). Test: 900101 via live data → raw_records →
+   event_info, compared with the direct export; also processing with the database connection on (read-only RunDB:
+   must fall back to the file, not stop). The auto-processing scripts (status in MongoDB) wait for point 1.
+7. **Environments on STBC** (done 2026-10-20): conda envs in the py312 miniforge, as the other XAMS stacks:
+   `anaconda/xamssim` (pip packages) and `anaconda/g4` (Geant4, only to build and run `xamsg4`, started by xamssim
+   itself); `setup_xamssim.sh`; personal settings in `~/.config/xamssim/env`. Processing and analysis of MC in the
+   standard amstrax environment, the same as for data.
 
 **Check:** a data run and an MC run go through the same commands (context, step scripts, EventDisplay) with only the
 run number different; another user on STBC can process and read an MC run; the dashboard lists it.
