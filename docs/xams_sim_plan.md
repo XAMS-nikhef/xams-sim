@@ -400,35 +400,71 @@ Plan:
 **Check:** a data run and an MC run go through the same commands (context, step scripts, EventDisplay) with only the
 run number different; another user on STBC can process and read an MC run; the dashboard lists it.
 
-### S10. Simulation dashboard (2–3 weeks, in phases) — **planned 2026-10-20**
+### S10. Simulation app: overview and composer (2–3 weeks, in phases) — **planned 2026-10-20, worked out 2026-10-21**
 
-A web page to browse and compose simulations instead of editing YAML by hand. **The text files stay the source of
-truth:** what is clicked together is written as ordinary run / state / source files in `simulations/<study>/` and
-committed; nothing lives only in the dashboard. All logic stays in xams-sim (resolve, map keys, registry, `xamssim
-list`, `xamssim show`); the dashboard only calls it.
+A web app to see which simulations exist and how they were made, and to compose new ones, instead of reading and
+editing YAML by hand. No notebook stage (user, 2026-10-21): a web app from the start. **The text files stay the source
+of truth:** what is composed is written as ordinary run / state / source files in `simulations/<study>/` and
+committed; nothing lives only in the app.
+
+**Where the code lives:** the logic in the package, `xamssim/compose.py` (choices, draft → check, derived state /
+source files, writing run files, starting on condor), usable without the app (`xamssim compose`, tests); the app in
+its own folder `web/` in the xams-sim repository, using only `xamssim.compose` and the existing listing / provenance /
+maps code, with its web dependencies as an optional extra (`pip install -e .[web]`; the chain and condor jobs do not
+need them). Same repository so that core and app change together (one PR, one version); `web/` can move to its own
+repository later if it grows or joins the xams-dashboard.
+
+**Where it runs:** for development on the Mac (`xamssim web`); shared on stbc-i1 as xamsdata next to the xams-dashboard
+(own port, reached the same way), from `software/xams-sim` in `anaconda/xamssim`, writing run files into a configured
+simulations checkout; deployment only with the user's OK. Same stack as the xams-dashboard (to be checked first). It
+shows the data folder of the machine it runs on (Mac / STBC); with S9's central MC folder one place for everyone.
+
+**Split with the xams-dashboard:** the app answers which simulations exist and *how* they were made (parameters, maps,
+code, current / outdated); the xams-dashboard which *runs* exist, where their data are and how far they are processed.
+An MC run with a number appears in both, each from its side, linked ("simulation details" ↔ "processing / data");
+simulations without a run number (fast events only, tests, reruns), optical scans and maps only in the app.
 
 Pages:
-1. **Catalogue:** detectors, states and sources rendered instead of YAML (state: voltages per electrode, liquid
-   level, lifetime, drift / extraction field, which maps exist; source: isotope and position in a TPC cross-section);
-   side-by-side comparison of two states.
-2. **Composer:** choose study, state, source, events, seed, how far (fast events or waveforms). Shown before anything
-   runs: the resolved configuration, the map status (present / missing, with the reason, e.g. "new voltage → new
-   field map, COMSOL on the Mac"), reuse of existing Geant4 output with the same key, an estimate of time, disk and
-   condor jobs, the next free run number (9xxxxx). Changing a value (a voltage, the source position) proposes a new
-   state / source under a new name with its difference to the original; written and committed after confirmation.
-3. **Start:** on stbc-i2 (small runs) or as condor jobs (at most 10 at once, S9); progress per step (Geant4, chain,
-   export).
-4. **Runs:** `xamssim list` as a table (status, current / outdated, size); per run the provenance (`xamssim show`,
-   difference to another run), quick plots from `xams_events` (cS1 / cS2, drift time, positions), the link to the
-   amstrax / event display route; with S9's database the same runs in the xams-dashboard next to the data.
+1. **Simulations overview** (first; read-only, from `xamssim list` and the provenance files, no database): all
+   simulations with study, run name, run number, state, source, decays, date, how far (events / waveforms / live
+   data), status (current / outdated against run file and maps), size, location; filters on study, state, source,
+   status.
+2. **Detail page of a simulation:** all parameters as used (voltages per electrode, liquid level, lifetime, source
+   position, physics settings, detector and geometry version), the maps with their keys, the code version (commit,
+   uncommitted changes), the products with lineage (`xamssim show`), links to the xams-dashboard. Fixed figures, made
+   once per simulation and stored next to its provenance file (so a page loads at once), mostly from what exists in
+   `view_results.ipynb` and the map exports:
+   - *configuration (what went in):*
+     1. side cross-section of the TPC (r–z) from `geometry.yaml`: anode, gate, cathode, screens, field cage, PTFE,
+        PMTs, SiPMs, liquid level, source position; each electrode with its voltage;
+     2. field configuration on that cross-section (the state's field map): |E| in colour with field lines; drift lines
+        from the drift map (where electrons end: surface, wall, SiPM, mesh bar; loss regions marked); drift field,
+        extraction field in the liquid, field in the gas gap as numbers;
+     3. top view (x–y): gate and cathode mesh with hole pattern and rotation, top-PMT sectors ch1–ch4, SiPM positions,
+        field-cage radius;
+     4. zoom on the mesh cell (cell / EL map): field around the gate holes, extraction efficiency and EL yield per
+        position in the cell (u, v);
+     5. light maps: S1 detection probability per channel vs depth and radius; S2 pattern on the top sectors in x–y;
+     6. the source: isotope, activity, position, spectrum where relevant;
+   - *results (what came out; the same fixed set for every simulation, fuller analysis stays in notebooks):* energy
+     per decay and where it was deposited (y–z); drift (fraction of electrons arriving, drift time vs depth); cS1 vs
+     cS2 around the photopeak; S2 width and AFT vs depth and radius; photoelectrons per channel incl. SiPMs; with
+     waveforms one example event.
+3. **Compare two simulations:** differing parameters as a table (`xamssim show --diff`), cross-sections side by side
+   and the difference of the fields (e.g. sept vs cmb50).
+4. **Maps:** which maps exist, for which states, which are missing and how to make them.
+5. **Composer:** choose study, state, source, events, seed, how far (fast events, waveforms, live data). Shown before
+   anything runs: the resolved configuration, errors, the map status (present / missing with the reason, e.g. "voltage
+   G changed → new field map, COMSOL on the Mac"), reuse of Geant4 output with the same key, an estimate of time, disk
+   and condor jobs (from measured runs: sept 2·10⁷ decays on condor: Geant4 30 min, chain 53 min), the next free run
+   number. New states / sources are derived from existing ones ("sept with cathode −4 kV", "Cs at z = −50 mm"): a new
+   file under a proposed name with its difference shown; existing files are never changed. The source position is
+   set on the cross-section; the voltages in a table against the state's values.
+6. **Start:** on condor with the existing job scripts (`condor/run_xamssim.sh`, `live_process.sh`; at most 10 jobs),
+   progress per step.
 
-Technology: on STBC in the style of the xams-dashboard (same stack, Python backend importing `xamssim` from
-`software/xams-sim`), own app or a tab, private. COMSOL cannot be started from it (Mac only): the dashboard names the
-missing field map and gives the command.
-
-Phases: (a) read-only: catalogue and runs page; (b) composer as a dry run, writing YAML on request; (c) starting on
-stbc-i2 / condor; (d) integration with S9 (`runs_mc`, xams-dashboard, MC processing like data). (c) and (d) need the
-STBC installation and S9.
+Phases: (a) overview, detail pages with figures, comparison, maps (read-only); (b) composer writing run / state /
+source files; (c) starting on condor; (d) integration with S9 (`runs_mc`, links with the xams-dashboard).
 
 ### S11. Validation suite, overview and docs (2–3 days)
 - Validation: one command per comparison with data (targets from analysis_SR2026.2), report per state; the comparisons
