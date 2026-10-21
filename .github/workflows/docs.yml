@@ -1,0 +1,89 @@
+name: Manual
+
+# Builds the manual strictly on every PR and push, and on main publishes it at
+# https://www.nikhef.nl/~xamsdata/xams-sim/ the way the XAMS handbook is
+# published (see docs/development.md, "Publishing the manual").
+
+on:
+  pull_request:
+    paths: ['docs/**', 'mkdocs.yml', 'requirements-docs.txt', '.github/workflows/docs.yml']
+  push:
+    branches: [main]
+    paths: ['docs/**', 'mkdocs.yml', 'requirements-docs.txt', '.github/workflows/docs.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MkDocs
+        run: pip install -r requirements-docs.txt
+      - name: Build strictly
+        run: mkdocs build --strict
+      - name: Scan what is published for secrets
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_LINUX_X64_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          download="${RUNNER_TEMP}/${archive}"
+          curl --fail --location --silent --show-error \
+            --output "${download}" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          printf '%s  %s\n' "${GITLEAKS_LINUX_X64_SHA256}" "${download}" | sha256sum --check -
+          tar -xzf "${download}" -C "${RUNNER_TEMP}" gitleaks
+          "${RUNNER_TEMP}/gitleaks" dir --redact --verbose docs
+          "${RUNNER_TEMP}/gitleaks" dir --redact --verbose site
+
+  mark-for-deployment:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move docs-deploy-ready tag to the validated commit
+        run: |
+          git tag --force docs-deploy-ready "${GITHUB_SHA}"
+          git push --force origin refs/tags/docs-deploy-ready
+
+  deploy-to-nikhef:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: mark-for-deployment
+    runs-on: ubuntu-latest
+    concurrency:
+      group: xams-sim-docs-nikhef-deployment
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the restricted NIKHEF manual updater
+        env:
+          XAMS_SIM_DOCS_DEPLOY_KEY: ${{ secrets.XAMS_SIM_DOCS_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${XAMS_SIM_DOCS_DEPLOY_KEY}" ]; then
+            echo "No XAMS_SIM_DOCS_DEPLOY_KEY secret yet: not publishing." >&2
+            exit 0
+          fi
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$XAMS_SIM_DOCS_DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          install -m 600 .github/nikhef-login-known_hosts "$HOME/.ssh/known_hosts"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o GlobalKnownHostsFile=/dev/null \
+            -o ClearAllForwardings=yes \
+            -T xamsdata@login.nikhef.nl
