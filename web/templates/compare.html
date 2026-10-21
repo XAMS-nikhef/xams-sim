@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="panel-title">Compare two simulations</div>
+  <form class="controls" method="get">
+    <select name="a">{% for i in ids %}<option {% if i == a %}selected{% endif %}>{{ i }}</option>{% endfor %}</select>
+    <select name="b">{% for i in ids %}<option {% if i == b %}selected{% endif %}>{{ i }}</option>{% endfor %}</select>
+    <button type="submit">compare</button>
+  </form>
+  {% if error %}<div class="note">{{ error }}</div>{% endif %}
+  {% if a and b and not error %}
+  <table class="table">
+    <thead><tr><th>section</th><th>parameter</th><th><a href="{{ url_for('simulation', run_id=a) }}">{{ a }}</a></th><th><a href="{{ url_for('simulation', run_id=b) }}">{{ b }}</a></th></tr></thead>
+    {% for sec, path, va, vb in rows %}
+    <tr><td class="muted">{{ sec }}</td><td class="mono">{{ path }}</td><td class="mono">{{ va|fmt }}</td><td class="mono">{{ vb|fmt }}</td></tr>
+    {% else %}
+    <tr><td colspan="4" class="muted">no differences</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</section>
+{% if a and b and not error %}
+<section class="grid two">
+  {% for r in (a, b) %}
+  <div class="panel"><div class="panel-title">{{ r }}</div>
+    <img class="figure" loading="lazy" src="{{ url_for('figure', run_id=r, name='cross_section') }}" alt="cross-section {{ r }}" /></div>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

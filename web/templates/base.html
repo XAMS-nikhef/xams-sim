@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XAMS Simulations</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="app">
+    <header class="topbar">
+      <div class="title-wrap">
+        <h1>XAMS <span>Simulations</span></h1>
+        <div class="nav-links">
+          <a class="nav-link {% if page == 'overview' %}active{% endif %}" href="{{ url_for('overview') }}">Simulations</a>
+          <a class="nav-link {% if page == 'compare' %}active{% endif %}" href="{{ url_for('compare') }}">Compare</a>
+          <a class="nav-link {% if page == 'maps' %}active{% endif %}" href="{{ url_for('maps') }}">Maps</a>
+          <a class="nav-link muted" title="composer: next phase">Compose</a>
+        </div>
+      </div>
+      <a class="reload" href="{{ url_for('reload') }}" title="read the data folder again">reload</a>
+    </header>
+    <main>{% block content %}{% endblock %}</main>
+  </div>
+</body>
+</html>

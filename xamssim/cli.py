@@ -135,6 +135,21 @@ def cmd_live(a) -> int:
     return 0
 
 
+def cmd_web(a) -> int:
+    import sys
+
+    from .config import ROOT
+    sys.path.insert(0, str(ROOT))                    # the app lives next to the package (web/), not inside it
+    try:
+        from web.app import main
+    except ImportError as e:
+        print(f"the simulation app needs its web extra: pip install -e '{ROOT}[web]' ({e})")
+        return 1
+    print(f"XAMS simulation app on http://{a.host}:{a.port}")
+    main(host=a.host, port=a.port, debug=a.debug)
+    return 0
+
+
 def cmd_show(a) -> int:
     from .provenance import show
     return show(a.run, product=a.product, lineage_hash=a.hash, n=a.n, full=a.full, with_diff=a.diff)
@@ -201,6 +216,11 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_live)
+    p = sub.add_parser("web", help="the simulation app (S10): which simulations exist and how they were made")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8071)
+    p.add_argument("--debug", action="store_true", help="reload on code changes")
+    p.set_defaults(func=cmd_web)
     p = sub.add_parser("show", help="with which parameters a run's data were made (provenance written by xamssim chain)")
     p.add_argument("run", help="run id or run file")
     p.add_argument("--product", help="the entry that made this product (data type), e.g. s2_photoelectrons")

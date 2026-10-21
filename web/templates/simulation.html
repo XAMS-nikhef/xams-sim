@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="panel-title">{{ run_id }}
+    {% if d.row and d.row.number %}<span class="tag">run {{ "%06d"|format(d.row.number) }}</span>{% endif %}
+    {% if d.row %}<span class="status {{ d.row.status }}">{{ d.row.status }}</span> <span class="muted small">{{ d.row.how_far }}</span>{% endif %}
+  </div>
+  <form class="controls" action="{{ url_for('compare') }}" method="get">
+    <input type="hidden" name="a" value="{{ run_id }}" />
+    <span class="muted">compare with</span>
+    <select name="b">{% for o in others %}<option>{{ o }}</option>{% endfor %}</select>
+    <button type="submit">compare</button>
+    {% if dashboard and d.row and d.row.number %}<a class="nav-link" href="{{ dashboard }}">processing / data (xams-dashboard)</a>{% endif %}
+  </form>
+</section>
+
+{% if d.summary %}
+<section class="grid">
+  {% for group, items in d.summary.items() %}
+  <div class="panel">
+    <div class="panel-title">{{ group }}</div>
+    <table class="kv">
+      {% for k, v in items.items() %}<tr><td class="muted">{{ k }}</td><td class="mono">{{ v|fmt }}</td></tr>{% endfor %}
+    </table>
+  </div>
+  {% endfor %}
+</section>
+
+{% for name, (title, _) in figures.items() %}
+<section class="panel">
+  <div class="panel-title">{{ title }}</div>
+  <img class="figure" loading="lazy" src="{{ url_for('figure', run_id=run_id, name=name) }}" alt="{{ title }}" />
+</section>
+{% endfor %}
+{% else %}
+<section class="panel"><span class="muted">no provenance for this simulation (written by xamssim chain since 2026-10-19)</span></section>
+{% endif %}
+
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-title">products</div>
+    <table class="table">
+      <thead><tr><th>data type</th><th>lineage hash</th><th>status</th><th class="num">size</th></tr></thead>
+      {% for p in d.products %}
+      <tr><td>{{ p.type }}</td><td class="mono">{{ p.hash }}</td><td><span class="status {{ 'current' if p.state == 'current' else 'outdated' if p.state == 'old' else 'unknown' }}">{{ p.state }}</span></td>
+          <td class="num">{{ "%.1f"|format(p.size_mb) }} MB</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="panel">
+    <div class="panel-title">provenance records <span class="muted small">xamssim show {{ run_id }}</span></div>
+    <table class="table">
+      <thead><tr><th>made</th><th>run key</th><th>code</th></tr></thead>
+      {% for r in d.records|reverse %}<tr><td class="mono">{{ r.created }}</td><td class="mono">{{ r.run_key }}</td><td class="mono">{{ r.commit }}</td></tr>{% endfor %}
+    </table>
+  </div>
+</section>
+{% endblock %}

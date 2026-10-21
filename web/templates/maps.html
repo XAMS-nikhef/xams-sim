@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="panel-title">Maps per state <span class="muted small">registry &lt;data&gt;/maps/manifest.json</span></div>
+  <table class="table">
+    <thead><tr><th>state</th>{% for k in m.kinds %}<th>{{ k }}</th>{% endfor %}</tr></thead>
+    {% for s, v in m.states.items() %}
+    <tr>
+      <td>{{ s }}{% if v.used %} <span class="tag">in use</span>{% endif %}</td>
+      {% if v.error %}<td colspan="{{ m.kinds|length }}" class="note">{{ v.error }}</td>
+      {% else %}
+        {% set rows = {} %}{% for row in v.rows %}{% set _ = rows.update({row.kind: row}) %}{% endfor %}
+        {% for k in m.kinds %}{% set row = rows.get(k) %}
+          <td>{% if row %}<span class="status {{ 'current' if row.present else 'outdated' }}" title="{{ row.key }}">{{ 'present' if row.present else 'missing' }}</span>
+              <span class="mono small">{{ row.key }}</span>{% endif %}</td>
+        {% endfor %}
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </table>
+  {% if m.old %}
+  <div class="panel-title small-top">Maps no state uses any more</div>
+  <table class="table">
+    <thead><tr><th>kind</th><th>key</th><th>made for</th><th>created</th><th class="num">size</th></tr></thead>
+    {% for o in m.old %}<tr><td>{{ o.kind }}</td><td class="mono">{{ o.key }}</td><td>{{ o.state }}</td><td>{{ o.created }}</td><td class="num">{{ "%.0f"|format(o.size / 1e6) }} MB</td></tr>{% endfor %}
+  </table>
+  {% endif %}
+</section>
+{% endblock %}
