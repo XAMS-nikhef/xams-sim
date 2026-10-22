@@ -6,7 +6,9 @@ Phase (a), read-only: which simulations exist and how they were made, from what 
     detail(run)            one simulation: the summary, its provenance records (`xamssim show`), its products
     compare(a, b)          the differing parameters of two simulations (newest provenance record of each)
     figure(run, name)      a figure of the configuration (FIGURES), made once per provenance record and stored next to it
-Nothing is written except the figure files under <data>/provenance/<run>/figures/.
+    optical_maps()         the light maps (S1 light, S2 pattern) per optical key, with the optical parameters they used
+    map_figure(kind, key)  a figure of a light map (MAP_FIGURES), made once and stored next to the map
+Nothing is written except the figure files under <data>/provenance/<run>/figures/ and <data>/maps/<kind>/<key>/figures/.
 """
 from __future__ import annotations
 
@@ -331,5 +333,181 @@ def figure(run_id: str, name: str) -> Path:
         fig = FIGURES[name][1](rec)
         fig.savefig(out, dpi=110, facecolor=fig.get_facecolor())
         import matplotlib.pyplot as plt
+        plt.close(fig)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ optical maps
+# The light maps (lightmap.py: s1_light, s2_pattern) and the optical parameters they were made with, from the map
+# registry. One optical key covers both maps (both depend on the geometry, the optics and the level only).
+OPTICS_LABELS = {
+    "wavelength_nm": "wavelength [nm]",
+    "lxe.refractive_index": "LXe refractive index",
+    "lxe.rayleigh_length_cm": "LXe Rayleigh length [cm]",
+    "lxe.absorption_length_cm": "LXe absorption length [cm]",
+    "gxe.refractive_index": "GXe refractive index",
+    "ptfe_in_liquid.reflectivity": "PTFE reflectivity, liquid",
+    "ptfe_in_liquid.specular_fraction": "PTFE specular fraction, liquid",
+    "ptfe_in_gas.reflectivity": "PTFE reflectivity, gas",
+    "ptfe_in_gas.specular_fraction": "PTFE specular fraction, gas",
+    "stainless_steel_reflectivity": "stainless-steel reflectivity",
+    "copper_reflectivity": "copper reflectivity",
+    "pmt_window_refractive_index": "PMT window refractive index",
+}
+OPTICAL_KINDS = ("s1_light", "s2_pattern")
+MAP_FIGURE_VERSION = 1
+
+
+def _flatten(d: dict, prefix: str = "") -> dict:
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, dict):
+            out.update(_flatten(v, f"{prefix}{k}."))
+        else:
+            out[f"{prefix}{k}"] = v
+    return out
+
+
+def optics_table(optics: dict) -> dict:
+    """{label: value} for the optical parameters, in OPTICS_LABELS order, anything else after it under its key."""
+    flat = _flatten(optics or {})
+    out = {OPTICS_LABELS[k]: flat[k] for k in OPTICS_LABELS if k in flat}
+    out.update({k: v for k, v in flat.items() if k not in OPTICS_LABELS})
+    return out
+
+
+def optical_maps() -> list:
+    """One row per optical key: which maps exist, for which state, the liquid level and the optical parameters."""
+    from .maps import MAPS, load_manifest
+    in_use = {s: {r["key"] for r in v.get("rows", []) if r["kind"] in OPTICAL_KINDS}
+              for s, v in (_collect()["maps"].get("states") or {}).items()}
+    keys: dict = {}
+    for e in load_manifest()["maps"]:
+        if e["kind"] not in OPTICAL_KINDS:
+            continue
+        row = keys.setdefault(e["key"], dict(key=e["key"], kinds={}, states=set(), created=e.get("created", "")[:16],
+                                             inputs=e.get("inputs", {})))
+        row["kinds"][e["kind"]] = all((MAPS / f).exists() for f in e["files"])
+        row["states"].add(e.get("state", ""))
+    rows = []
+    for key, row in keys.items():
+        inp = row.pop("inputs")
+        row.update(states=sorted(row["states"]), level_mm=inp.get("liquid_level_mm"), model=inp.get("model", ""),
+                   optics=optics_table(inp.get("optics")),
+                   used_by=sorted(s for s, ks in in_use.items() if key in ks))
+        rows.append(row)
+    return sorted(rows, key=lambda r: r["created"], reverse=True)
+
+
+def optical_map(key: str) -> dict | None:
+    return next((r for r in optical_maps() if r["key"] == key), None)
+
+
+def _map_file(kind: str, key: str) -> Path:
+    from .maps import MAPS, find
+    e = find(kind, key)
+    if e is None:
+        raise FileNotFoundError(f"no {kind} map {key}")
+    return MAPS / e["files"][0]
+
+
+def _masked(p, inside):
+    return np.ma.masked_where(~inside.astype(bool), p)
+
+
+def fig_s2_pattern(key: str):
+    """S2: the (x, y) map of the detection probability per channel, and the sum."""
+    import matplotlib.pyplot as plt
+    d = np.load(_map_file("s2_pattern", key))
+    p, x, y, inside = d["p"], d["x"], d["y"], d["inside"]
+    names = [str(n) for n in d["channel_names"]]
+    panels = [("all channels", p.sum(0))] + list(zip(names, p))
+    fig, axs = plt.subplots(2, 4, figsize=(13, 6.6), facecolor="#111b2e",
+                            gridspec_kw=dict(wspace=0.35, hspace=0.35))
+    ext = (x[0], x[-1], y[0], y[-1])
+    for ax, (name, img) in zip(axs.flat, panels):
+        _style(ax)
+        im = ax.imshow(_masked(img, inside).T, origin="lower", extent=ext, cmap="viridis")
+        ax.set_title(name, fontsize=10)
+        ax.set_aspect("equal")
+        ax.tick_params(labelsize=7)
+        cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
+        cb.ax.tick_params(labelsize=7, colors="#9fb4d8")
+    for ax in axs[1]:
+        ax.set_xlabel("x [mm]", fontsize=8)
+    for ax in axs[:, 0]:
+        ax.set_ylabel("y [mm]", fontsize=8)
+    fig.suptitle("S2: probability that a photon from the gas gap gives a photoelectron", color="#dce7ff", fontsize=11)
+    return fig
+
+
+def fig_s1_light(key: str):
+    """S1: total detection probability in x-y at three heights and in x-z through the axis, the fraction seen by
+    the top PMT in x-z, and the mean over the cylinder versus z."""
+    import matplotlib.pyplot as plt
+    d = np.load(_map_file("s1_light", key))
+    p, x, y, z, inside = d["p"], d["x"], d["y"], d["z"], d["inside"].astype(bool)
+    names = [str(n) for n in d["channel_names"]]
+    total = p.sum(0)                                               # (x, y, z)
+    top = p[[i for i, n in enumerate(names) if n.startswith("top")]].sum(0)
+    fig, axs = plt.subplots(2, 3, figsize=(13, 7.6), facecolor="#111b2e",
+                            gridspec_kw=dict(wspace=0.35, hspace=0.38))
+    ext = (x[0], x[-1], y[0], y[-1])
+    vmax = float(total[inside].max())
+    for ax, iz in zip(axs[0], (1, len(z) // 2, len(z) - 2)):
+        _style(ax)
+        im = ax.imshow(_masked(total[:, :, iz], inside).T, origin="lower", extent=ext, cmap="viridis",
+                       vmin=0, vmax=vmax)
+        ax.set_title(f"all channels, z = {z[iz]:.0f} mm", fontsize=10)
+        ax.set_xlabel("x [mm]", fontsize=8)
+        ax.set_ylabel("y [mm]", fontsize=8)
+        ax.tick_params(labelsize=7)
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03).ax.tick_params(labelsize=7, colors="#9fb4d8")
+    iy = len(y) // 2
+    xz_ext = (x[0], x[-1], z[0], z[-1])
+    keep = inside[:, iy][:, None]
+    for ax, img, title, cmap in ((axs[1, 0], total[:, iy, :], "all channels, y = 0", "viridis"),
+                                 (axs[1, 1], np.divide(top[:, iy, :], total[:, iy, :],
+                                                       out=np.zeros_like(top[:, iy, :]), where=total[:, iy, :] > 0),
+                                  "fraction on the top PMT, y = 0", "magma")):
+        _style(ax)
+        im = ax.imshow(np.ma.masked_where(~np.broadcast_to(keep, img.shape), img).T, origin="lower",
+                       extent=xz_ext, cmap=cmap, aspect="auto")
+        ax.set_title(title, fontsize=10)
+        ax.set_xlabel("x [mm]", fontsize=8)
+        ax.set_ylabel("z [mm]", fontsize=8)
+        ax.tick_params(labelsize=7)
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03).ax.tick_params(labelsize=7, colors="#9fb4d8")
+    ax = axs[1, 2]
+    _style(ax)
+    mean = np.array([total[:, :, k][inside].mean() for k in range(len(z))])
+    mtop = np.array([top[:, :, k][inside].mean() for k in range(len(z))])
+    ax.plot(mean, z, color="#4db6ff", label="all channels")
+    ax.plot(mtop, z, color="#f1c40f", label="top PMT")
+    ax.set_xlabel("mean detection probability", fontsize=8)
+    ax.set_ylabel("z [mm]", fontsize=8)
+    ax.set_title("mean over the cylinder", fontsize=10)
+    ax.tick_params(labelsize=7)
+    ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    fig.suptitle("S1: probability that a photon from the liquid gives a photoelectron", color="#dce7ff", fontsize=11)
+    return fig
+
+
+MAP_FIGURES = {"s2_pattern": ("S2 pattern", fig_s2_pattern), "s1_light": ("S1 light", fig_s1_light)}
+
+
+def map_figure(kind: str, key: str) -> Path:
+    """PNG of an optical map, made once and kept next to the map in the registry."""
+    if kind not in MAP_FIGURES:
+        raise FileNotFoundError(kind)
+    src = _map_file(kind, key)
+    out = src.parent / "figures" / f"{kind}_v{MAP_FIGURE_VERSION}.png"
+    if not out.exists():
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        out.parent.mkdir(exist_ok=True)
+        fig = MAP_FIGURES[kind][1](key)
+        fig.savefig(out, dpi=100, facecolor=fig.get_facecolor())
         plt.close(fig)
     return out

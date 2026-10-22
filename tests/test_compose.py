@@ -29,3 +29,15 @@ def test_summary_and_compare(monkeypatch):
     rows = compose.compare("a", "b")
     assert ("hv_case", "C", -3250, -215) in rows and ("state_name", "", "sept", "cmb50") in rows
     assert all(sec != "run" for sec, *_ in rows)
+
+
+def test_optics_table_labels_known_keys_first_and_keeps_the_rest():
+    t = compose.optics_table({"lxe": {"rayleigh_length_cm": 45, "refractive_index": 1.69},
+                              "ptfe_in_liquid": {"reflectivity": 0.95}, "new_thing": 3})
+    keys = list(t)
+    assert keys[:3] == ["LXe refractive index", "LXe Rayleigh length [cm]", "PTFE reflectivity, liquid"]
+    assert t["LXe Rayleigh length [cm]"] == 45 and t["new_thing"] == 3
+
+
+def test_map_figures_cover_both_optical_maps():
+    assert set(compose.MAP_FIGURES) == set(compose.OPTICAL_KINDS)

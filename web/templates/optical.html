@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="panel-title">Optical maps {{ o.key }}
+    {% for k, ok in o.kinds.items() %}<span class="status {{ 'current' if ok else 'outdated' }}">{{ k }}</span>{% endfor %}
+    <span class="muted small">made {{ o.created }} for {{ o.states|join(', ') }}; used by {{ o.used_by|join(', ') or 'no state now' }}</span>
+  </div>
+  <div class="muted small">{{ o.model }}</div>
+</section>
+
+{# Parameters left, the maps right: the numbers stay in view next to the pictures they made. #}
+<div class="split">
+  <section class="panel sticky">
+    <div class="panel-title">optical parameters <span class="muted small">config/materials.yaml `optics`, as used for this map</span></div>
+    <table class="kv">
+      {% for k, v in o.optics.items() %}<tr><td class="muted">{{ k }}</td><td class="mono">{{ v|fmt }}</td></tr>{% endfor %}
+      <tr><td class="muted">liquid level above the gate [mm]</td><td class="mono">{{ o.level_mm|fmt }}</td></tr>
+    </table>
+  </section>
+  <div>
+  {% for kind, (title, _) in figures.items() %}{% if o.kinds.get(kind) %}
+  <section class="panel">
+    <div class="panel-title">{{ title }}</div>
+    <img class="figure" loading="lazy" src="{{ url_for('map_figure', kind=kind, key=o.key) }}" alt="{{ title }}" />
+  </section>
+  {% endif %}{% endfor %}
+  </div>
+</div>
+{% endblock %}
