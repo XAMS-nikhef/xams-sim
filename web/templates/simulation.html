@@ -26,15 +26,22 @@
   {% endfor %}
 </section>
 
-{# Side by side and never larger than they were drawn: full width, the cross-section was blown up to 1500 px. #}
-<section class="grid two figures">
+{# Side by side at the same height: each panel gets a width in proportion to its figure's aspect ratio (set once the
+   image is loaded), so the figures fill one row with equal heights at any window width. #}
+<section class="figrow">
 {% for name, (title, _) in figures.items() %}
 <div class="panel">
   <div class="panel-title">{{ title }}</div>
-  <img class="figure" loading="lazy" src="{{ url_for('figure', run_id=run_id, name=name) }}" alt="{{ title }}" />
+  <img class="figure" src="{{ url_for('figure', run_id=run_id, name=name) }}" alt="{{ title }}" onload="figAspect(this)" />
 </div>
 {% endfor %}
 </section>
+<script>
+function figAspect(img) {
+  if (img.naturalHeight) img.closest('.panel').style.flex = (img.naturalWidth / img.naturalHeight) + ' 1 0';
+}
+document.querySelectorAll('.figrow img').forEach(function (img) { if (img.complete) figAspect(img); });
+</script>
 {% if optical %}
 <section class="panel">
   <div class="panel-title">Optical maps <a class="mono small" href="{{ url_for('optical_map', key=optical.key) }}">{{ optical.key }}</a>
