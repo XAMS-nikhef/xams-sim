@@ -43,8 +43,11 @@ def simulation(run_id):
     if d is None:
         abort(404)
     others = [r["id"] for r in compose.simulations()["rows"] if r["id"] != run_id]
+    # The optical maps of this simulation: the key in its provenance record.
+    key = ((d.get("record") or {}).get("maps") or {}).get("s1_light", {}).get("key")
+    optical = compose.optical_map(key) if key else None
     return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, others=others,
-                           dashboard=DASHBOARD, page="overview")
+                           optical=optical, map_figures=compose.MAP_FIGURES, dashboard=DASHBOARD, page="overview")
 
 
 @app.route("/sim/<run_id>/figure/<name>.png")

@@ -231,12 +231,17 @@ def fig_cross_section(rec):
     import matplotlib.pyplot as plt
     pos = rec["source"].get("position_mm") or [0, 0, 0]
     r_src = float(np.hypot(pos[0], pos[1]))
-    fig, ax = plt.subplots(figsize=(9, 7.5), facecolor="#111b2e")
+    xmax = max(75.0, r_src + 15)
+    xlim, ylim = (-xmax, xmax + 30), (min(-80.0, pos[2] - 15), 45)
+    # The figure takes the shape of what is drawn (equal axes): a fixed 9 x 7.5 left a wide detector-plus-source view
+    # with blank space above and below it.
+    width = 9.0
+    height = width * (ylim[1] - ylim[0]) / (xlim[1] - xlim[0]) + 1.4
+    fig, ax = plt.subplots(figsize=(width, max(3.5, height)), facecolor="#111b2e")
     _style(ax)
     _draw_detector(ax, rec)
-    xmax = max(75.0, r_src + 15)
-    ax.set_xlim(-xmax, xmax + 30)
-    ax.set_ylim(min(-80.0, pos[2] - 15), 45)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
     ax.set_aspect("equal")
     ax.set(xlabel="x [mm] (source: at its distance r from the axis)", ylabel="z [mm]",
            title=f"{rec['run_id']}: state {rec['state_name']}, detector {rec['detector']}")
@@ -316,7 +321,7 @@ def fig_field(rec):
     return fig
 
 
-FIGURE_VERSION = 3              # part of the figure file names: raise it when a figure changes, so old ones are remade
+FIGURE_VERSION = 4              # part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
            "field": ("Field and drift", fig_field)}
 
@@ -331,7 +336,7 @@ def figure(run_id: str, name: str) -> Path:
     if not out.exists():
         out.parent.mkdir(exist_ok=True)
         fig = FIGURES[name][1](rec)
-        fig.savefig(out, dpi=110, facecolor=fig.get_facecolor())
+        fig.savefig(out, dpi=110, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.15)
         import matplotlib.pyplot as plt
         plt.close(fig)
     return out

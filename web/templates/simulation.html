@@ -35,10 +35,21 @@
 </div>
 {% endfor %}
 </section>
-{% if d.record and d.record.maps and d.record.maps.s1_light %}
-<section class="panel"><span class="muted">optical maps of this simulation:</span>
-  <a href="{{ url_for('optical_map', key=d.record.maps.s1_light.key) }}">{{ d.record.maps.s1_light.key }}</a>
-  <span class="muted small">(S1 light, S2 pattern and the optical parameters)</span></section>
+{% if optical %}
+<section class="panel">
+  <div class="panel-title">Optical maps <a class="mono small" href="{{ url_for('optical_map', key=optical.key) }}">{{ optical.key }}</a>
+    <span class="muted small">Rayleigh {{ optical.optics.get('LXe Rayleigh length [cm]')|fmt }} cm ·
+      absorption {{ optical.optics.get('LXe absorption length [cm]')|fmt }} cm ·
+      PTFE R {{ optical.optics.get('PTFE reflectivity, liquid')|fmt }} (specular {{ optical.optics.get('PTFE specular fraction, liquid')|fmt }}) ·
+      steel R {{ optical.optics.get('stainless-steel reflectivity')|fmt }} ·
+      level {{ optical.level_mm|fmt }} mm — <a href="{{ url_for('optical_map', key=optical.key) }}">all parameters</a></span></div>
+  <div class="grid two figures">
+  {% for kind, (title, _) in map_figures.items() %}{% if optical.kinds.get(kind) %}
+    <div><div class="muted small">{{ title }}</div>
+    <img class="figure" loading="lazy" src="{{ url_for('map_figure', kind=kind, key=optical.key) }}" alt="{{ title }}" /></div>
+  {% endif %}{% endfor %}
+  </div>
+</section>
 {% endif %}
 {% else %}
 <section class="panel"><span class="muted">no provenance for this simulation (written by xamssim chain since 2026-10-19)</span></section>
