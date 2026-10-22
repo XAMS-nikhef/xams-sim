@@ -401,6 +401,66 @@ def fig_top_view(rec):
     return fig
 
 
+def fig_field_axis(rec):
+    """The field along the axis (x = y = 0) and at two radii, from the state's field map: |E| (log) and the potential,
+    with the electrodes, the liquid level and the field per region."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from .maps import MAPS, find
+    fm = rec["maps"].get("field", {})
+    e = find("field", fm.get("key", ""))
+    if e is None:
+        raise FileNotFoundError(f"field map {fm.get('key')} not in the registry")
+    f = np.load(MAPS / e["files"][0])
+    x, y, z = f["x"], f["y"], f["z"]
+    iy = int(np.argmin(np.abs(y)))
+    g = rec["geometry"]
+    zm = {m["name"]: m["z_mm"] for m in g["meshes"]}
+    level = zm["gate"] + rec["state"]["liquid_level_mm"]
+    hv = rec["hv_case"]
+    fig, (ax, axv) = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1.6, 1]))
+    for a_ in (ax, axv):
+        _style(a_)
+    shades = [("drift region", zm["cathode"], zm["gate"], "#1d4f7a"), ("liquid above gate", zm["gate"], level, "#2a6f97"),
+              ("gas gap", level, zm["anode"], "#3d3d5c")]
+    regions = []
+    ix0 = int(np.argmin(np.abs(x)))
+    emag0 = np.sqrt(f["Ex"][ix0, iy, :] ** 2 + f["Ey"][ix0, iy, :] ** 2 + f["Ez"][ix0, iy, :] ** 2)
+    for name, lo, hi, col in shades:
+        for a_ in (ax, axv):
+            a_.axvspan(lo, hi, color=col, alpha=0.35, lw=0, zorder=0)
+        m = (z > lo + 0.3) & (z < hi - 0.3)
+        if name == "drift region":
+            m = (z > lo + 5) & (z < hi - 5)
+        val = float(np.median(emag0[m])) if m.any() else np.nan
+        regions.append((name, val))
+    for r, col, lab in ((0.0, "#ffffff", "axis"), (15.0, "#4db6ff", "r = 15 mm"), (25.0, "#f39c12", "r = 25 mm")):
+        ix = int(np.argmin(np.abs(x - r)))
+        em = np.sqrt(f["Ex"][ix, iy, :] ** 2 + f["Ey"][ix, iy, :] ** 2 + f["Ez"][ix, iy, :] ** 2)
+        ax.plot(z, np.clip(em, 1, None), color=col, lw=1.4 if r == 0 else 1.0, label=lab, zorder=3)
+        axv.plot(z, f["V"][ix, iy, :] / 1e3, color=col, lw=1.4 if r == 0 else 1.0, label=lab, zorder=3)
+    for name, zz in zm.items():
+        v = hv.get(MESH_HV.get(name, ""))
+        for a_ in (ax, axv):
+            a_.axvline(zz, color="#f1c40f", lw=1, zorder=2)
+        ax.text(zz, 1.2, f"{name.replace('_', ' ')}\n{v:+g} V" if v is not None else name, color="#f1c40f", fontsize=7,
+                ha="center", va="bottom", rotation=90, zorder=4)
+    for a_ in (ax, axv):
+        a_.axvline(level, color="#4db6ff", lw=0.8, ls="--", zorder=2)
+        a_.set_xlim(z[0], z[-1])
+    ax.set(yscale="log", ylim=(1, 2e4), xlabel="z [mm]", ylabel="|E| [V/cm]",
+           title="field strength along z (dashed: liquid level)")
+    leg = ax.legend(loc="lower center", fontsize=8, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58",
+                    title="shaded: drift region, liquid above gate, gas gap", title_fontsize=7)
+    leg.get_title().set_color("#9fb4d8")
+    axv.set(xlabel="z [mm]", ylabel="potential [kV]", title="potential along z")
+    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}  —  " + ",  ".join(
+        f"{n} {v / 1e3:.2f} kV/cm" if v >= 1e3 else f"{n} {v:.0f} V/cm" for n, v in regions), color="#dce7ff", fontsize=10)
+    return fig
+
+
 def _events(rec):
     """xams_events of the simulation (the chain's fast output: one row per decay), as made with this record's settings."""
     import contextlib
@@ -491,11 +551,12 @@ def fig_results(rec):
 RESULT_FIGURES = {"results": ("Results (xams_events)", fig_results)}
 
 
-FIGURE_VERSION = 5              # part of the figure file names: raise it when a figure changes, so old ones are remade
+FIGURE_VERSION = 7              # part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
            "field": ("Field and drift", fig_field),
-           "top_view": ("Top view", fig_top_view)}
-FIGURE_ROWS = (("cross_section", "field"), ("top_view",))      # how the detail page groups them (one row each)
+           "top_view": ("Top view", fig_top_view),
+           "field_axis": ("Field along z", fig_field_axis)}
+FIGURE_ROWS = (("cross_section", "field"), ("top_view", "field_axis"))      # how the detail page groups them (one row each)
 
 
 def figure(run_id: str, name: str) -> Path:
