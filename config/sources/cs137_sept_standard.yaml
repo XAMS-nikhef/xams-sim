@@ -1,0 +1,11 @@
+# Cs-137 in its standard position of the SR-2026.2 (September 2026) runs: best estimate from the data, not measured
+# (2026-10-22). No drawing, run plan or run comment records the position. Height: the depth profile of the photopeak
+# events (x1.6 more at the bottom of the drift region than at the top) excludes a raised source and needs one well below
+# the cathode: z = -110 ± 30 mm (cannot tell -82 from -120). Azimuth: the x-y distribution of the events (position
+# reconstruction v2) points to 165 ± 15° in the data frame (all earlier sources were at 90°). Distance: on the outer
+# cryostat vessel (tube r 127 mm), assumed. To confirm: where it was placed (operator / photo), or a measured placement.
+description: "Cs-137 standard position of the September 2026 runs (best estimate from the data: z -110 ± 30 mm, azimuth ~169° ± 15°, r ~129 mm on the outer vessel)"
+isotope: Cs-137
+activity_bq: null
+position_mm: [-127.0, 25.0, -110.0]
+collimator: null
