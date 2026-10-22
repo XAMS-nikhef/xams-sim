@@ -28,14 +28,16 @@
 
 {# Side by side at the same height: each panel gets a width in proportion to its figure's aspect ratio (set once the
    image is loaded), so the figures fill one row with equal heights at any window width. #}
+{% for row in figure_rows %}
 <section class="figrow">
-{% for name, (title, _) in figures.items() %}
+{% for name in row %}{% set title = figures[name][0] %}
 <div class="panel">
   <div class="panel-title">{{ title }}</div>
   <img class="figure" src="{{ url_for('figure', run_id=run_id, name=name) }}" alt="{{ title }}" onload="figAspect(this)" />
 </div>
 {% endfor %}
 </section>
+{% endfor %}
 <script>
 function figAspect(img) {
   if (img.naturalHeight) img.closest('.panel').style.flex = (img.naturalWidth / img.naturalHeight) + ' 1 0';

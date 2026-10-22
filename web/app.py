@@ -46,7 +46,7 @@ def simulation(run_id):
     # The optical maps of this simulation: the key in its provenance record.
     key = ((d.get("record") or {}).get("maps") or {}).get("s1_light", {}).get("key")
     optical = compose.optical_map(key) if key else None
-    return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, others=others,
+    return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, figure_rows=compose.FIGURE_ROWS, others=others,
                            optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES, dashboard=DASHBOARD, page="overview")
 
 

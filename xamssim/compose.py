@@ -321,6 +321,86 @@ def fig_field(rec):
     return fig
 
 
+def fig_top_view(rec):
+    """Top view (x-y): the gate mesh with its etched holes (rotated by its angle to the anodes), field cage, mesh ring,
+    top-PMT sectors with their channels, SiPMs, the direction of the source; right: zoom on the centre."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import PolyCollection
+    from matplotlib import patheffects
+    from matplotlib.patches import Circle, Rectangle
+
+    halo = [patheffects.withStroke(linewidth=3, foreground="#0b1220")]
+    g = rec["geometry"]
+    mc = g["mesh_common"]
+    gate = next(m for m in g["meshes"] if m["name"] == "gate")
+    a = np.radians(gate.get("angle_to_anodes_deg", 0.0))
+    c, s_ = np.cos(a), np.sin(a)
+    p, h = mc["pitch_mm"], mc["hole_size_mm"]
+    holes = np.array(mc.get("holes") or [], float)
+    sq = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]]) * h / 2
+    polys = []
+    for i, j in holes:                                       # hole centre ((i + 1/2) p, (j + 1/2) p) in the mesh frame
+        corners = sq + [(i + 0.5) * p, (j + 0.5) * p]
+        polys.append(np.c_[c * corners[:, 0] - s_ * corners[:, 1], s_ * corners[:, 0] + c * corners[:, 1]])
+    pt = g["ptfe_cylinder"]
+    r_cage = pt["inner_diameter_mm"] / 2
+    pc = g["pmt_common"]
+    half = float(pc["photocathode_square_mm"]) / 2
+    top = next(q for q in g["pmts"] if q["name"] == "top")
+    quad = top.get("sector_quadrant", {})
+    chan = {v: k for k, v in top.get("sector_to_channel", {}).items()}
+    colors = {"ch1": "#e74c3c", "ch2": "#3498db", "ch3": "#2ecc71", "ch4": "#f39c12"}
+    fig, axs = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1.25, 1]))
+    for k, ax in enumerate(axs):
+        _style(ax)
+        for sec, (sx, sy) in quad.items():                  # top-PMT sectors (photocathode quadrants), channel colours
+            ch = chan.get(sec, sec)
+            ax.add_patch(Rectangle((0 if sx > 0 else -half, 0 if sy > 0 else -half), half, half,
+                                   color=colors.get(ch, "#888"), alpha=0.35, lw=0, zorder=0))
+            if k == 0:
+                ax.text(sx * half / 2, sy * half / 2, f"{ch}\n({sec})", color=colors.get(ch, "#ddd"), fontsize=11,
+                        ha="center", va="center", zorder=3, fontweight="bold", path_effects=halo)
+        ax.add_patch(Rectangle((-half, -half), 2 * half, 2 * half, fill=False, ec="#b3a7ff", lw=1, zorder=2))
+        # the holes as outlines (the steel bars between them), so the sector colours show through
+        ax.add_collection(PolyCollection(polys, facecolors="none", edgecolors="#f1c40f", linewidths=0.35 if k == 0 else 1.4,
+                                         alpha=0.8, zorder=1))
+        ax.add_patch(Circle((0, 0), r_cage, fill=False, ec="#d9d9d9", lw=1.2, zorder=2))
+        ax.set_aspect("equal")
+    ax = axs[0]
+    ax.add_patch(Circle((0, 0), r_cage + pt["wall_thickness_mm"], fill=False, ec="#d9d9d9", lw=0.8, ls="--", zorder=2))
+    ax.add_patch(Circle((0, 0), mc["ring"]["outer_diameter_mm"] / 2, fill=False, ec="#8a96a8", lw=1, zorder=2))
+    sp = g["sipms"]
+    for i, az in enumerate(np.atleast_1d(sp["azimuth_deg"]).astype(float)):
+        x, y = r_cage * np.cos(np.radians(az)), r_cage * np.sin(np.radians(az))
+        ax.plot([x], [y], "s", color="#2ecc71", ms=7, mec="w", mew=0.6, zorder=4)
+        ax.text(x * 0.8, y * 0.8, f"SiPM {i + 1}\n{az:.0f}°", color="#2ecc71", fontsize=8, ha="center", va="center",
+                zorder=4, path_effects=halo)
+    pos = rec["source"].get("position_mm")
+    lim = 52
+    if pos is not None:
+        r = float(np.hypot(pos[0], pos[1]))
+        if r > lim:                                          # outside the view: an arrow towards it
+            ux, uy = pos[0] / r, pos[1] / r
+            ax.annotate("", xy=(ux * (lim - 4), uy * (lim - 4)), xytext=(ux * (lim - 14), uy * (lim - 14)),
+                        arrowprops=dict(arrowstyle="<-", color="#ff6b6b", lw=1.5))
+            ax.text(ux * (lim - 9) + 3, uy * (lim - 9), f"source\nr = {r:.0f} mm", color="#ff6b6b", fontsize=8,
+                    ha="left", va="center")
+        else:
+            ax.plot([pos[0]], [pos[1]], "*", color="#ff6b6b", ms=12, zorder=5)
+    ax.set(xlim=(-lim, lim), ylim=(-lim, lim), xlabel="x [mm]", ylabel="y [mm]",
+           title=f"top view: gate mesh ({len(polys)} holes, {np.degrees(a):.1f}° to the anodes), "
+                 f"field cage r {r_cage:.0f} mm, top PMT")
+    z = 3.5 * p
+    axs[1].set(xlim=(-z, z), ylim=(-z, z), xlabel="x [mm]", ylabel="y [mm]",
+               title=f"centre: pitch {p} mm, holes {h} mm, bars {mc.get('bar_width_mm')} mm")
+    axs[1].axhline(0, color="#b3a7ff", lw=0.6)
+    axs[1].axvline(0, color="#b3a7ff", lw=0.6)
+    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}, detector {rec['detector']}", color="#dce7ff", fontsize=10)
+    return fig
+
+
 def _events(rec):
     """xams_events of the simulation (the chain's fast output: one row per decay), as made with this record's settings."""
     import contextlib
@@ -411,9 +491,11 @@ def fig_results(rec):
 RESULT_FIGURES = {"results": ("Results (xams_events)", fig_results)}
 
 
-FIGURE_VERSION = 4              # part of the figure file names: raise it when a figure changes, so old ones are remade
+FIGURE_VERSION = 5              # part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
-           "field": ("Field and drift", fig_field)}
+           "field": ("Field and drift", fig_field),
+           "top_view": ("Top view", fig_top_view)}
+FIGURE_ROWS = (("cross_section", "field"), ("top_view",))      # how the detail page groups them (one row each)
 
 
 def figure(run_id: str, name: str) -> Path:
