@@ -42,6 +42,14 @@ function figAspect(img) {
 }
 document.querySelectorAll('.figrow img').forEach(function (img) { if (img.complete) figAspect(img); });
 </script>
+{% if d.row and d.row.how_far in ('events', 'waveforms') %}
+{% for name, (title, _) in results.items() %}
+<section class="panel">
+  <div class="panel-title">{{ title }} <span class="muted small">same fixed set for every simulation; made once, the first view takes a while</span></div>
+  <img class="figure" src="{{ url_for('figure', run_id=run_id, name=name) }}" alt="{{ title }}" />
+</section>
+{% endfor %}
+{% endif %}
 {% if optical %}
 <section class="panel">
   <div class="panel-title">Optical maps <a class="mono small" href="{{ url_for('optical_map', key=optical.key) }}">{{ optical.key }}</a>

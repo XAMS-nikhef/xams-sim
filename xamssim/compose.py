@@ -321,6 +321,96 @@ def fig_field(rec):
     return fig
 
 
+def _events(rec):
+    """xams_events of the simulation (the chain's fast output: one row per decay), as made with this record's settings."""
+    import contextlib
+    import io
+
+    from . import chain
+    life = rec.get("settings", {}).get("electron_lifetime_us")
+    over = {} if rec["state"].get("electron_lifetime_us") else ({"electron_lifetime_us": float(life)} if life else {})
+    with contextlib.redirect_stdout(io.StringIO()):
+        st, sid = chain.context(rec["run_file"], **over)
+        if not st.is_stored(sid, "xams_events"):
+            raise FileNotFoundError(f"no xams_events of {sid} (xamssim chain {rec['run_file']})")
+        return st.get_array(sid, "xams_events", progress_bar=False)
+
+
+def fig_results(rec):
+    """The fixed result set of a simulation, from xams_events: energy, cS1 vs cS2, drift time vs depth, S1 / S2 area
+    fraction top, photoelectrons per channel."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
+
+    from .lightmap import CHANNEL_NAMES
+    e = _events(rec)
+    both = (e["s1_area"] > 0) & (e["s2_area"] > 0) & np.isfinite(e["cs1"]) & np.isfinite(e["cs2"])
+    peak = both & (e["energy_drift"] > 650)
+    fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#111b2e", gridspec_kw=dict(hspace=0.32, wspace=0.42))
+    for ax in axs.flat:
+        _style(ax)
+    cmap, norm = "viridis", LogNorm()
+
+    def cbar(m, ax):
+        from matplotlib.ticker import LogLocator, NullFormatter, NullLocator
+        c = fig.colorbar(m, ax=ax, fraction=0.045)
+        c.ax.yaxis.set_major_locator(LogLocator(base=10))
+        c.ax.yaxis.set_minor_locator(NullLocator())
+        c.ax.yaxis.set_minor_formatter(NullFormatter())
+        c.set_label("events", color="#9fb4d8")
+        c.ax.tick_params(colors="#9fb4d8")
+
+    ax = axs[0, 0]
+    ed = e["energy_drift"][e["energy_drift"] > 0]
+    ax.hist(ed, bins=np.arange(0, 720, 5), histtype="step", color="#4db6ff")
+    ax.hist(e["energy_drift"][both], bins=np.arange(0, 720, 5), histtype="step", color="#2ecc71")
+    ax.set(yscale="log", xlabel="energy in the drift region [keV]", ylabel="decays / 5 keV",
+           title="energy per decay (blue: all, green: with S1 and S2)")
+    ax = axs[0, 1]
+    if both.any():
+        x, y = e["cs1"][both], e["cs2"][both]
+        _, _, _, m = ax.hist2d(x, y, bins=[np.linspace(0, np.percentile(x, 99.8), 120),
+                                           np.linspace(0, np.percentile(y, 99.8), 120)], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="cS1 [PE]", ylabel="cS2 [PE]", title="cS1 vs cS2 (events with S1 and S2)")
+    ax = axs[0, 2]
+    if both.any():
+        _, _, _, m = ax.hist2d(e["z"][both] * 10, e["drift_time"][both], bins=[120, 120], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="true depth z [mm]", ylabel="drift time [µs]", title="drift time vs depth")
+    ax = axs[1, 0]
+    if both.any():
+        _, _, _, m = ax.hist2d(e["z"][both] * 10, e["s1_aft"][both], bins=[100, np.linspace(0, 1, 100)], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="true depth z [mm]", ylabel="S1 area fraction top", title="S1 AFT vs depth")
+    ax = axs[1, 1]
+    if both.any():
+        r = np.hypot(e["x"][both], e["y"][both]) * 10
+        _, _, _, m = ax.hist2d(r, e["s2_aft"][both], bins=[np.linspace(0, 35, 70), np.linspace(0, 1, 100)], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="r at the gate [mm]", ylabel="S2 area fraction top", title="S2 AFT vs radius")
+    ax = axs[1, 2]
+    sel = peak if peak.sum() > 20 else both
+    if sel.any():
+        k = np.arange(len(CHANNEL_NAMES))
+        ax.bar(k - 0.2, e["s1_area_ch"][sel].mean(axis=0), 0.4, color="#4db6ff", label="S1")
+        ax.bar(k + 0.2, e["s2_area_ch"][sel].mean(axis=0) / 100, 0.4, color="#f1c40f", label="S2 / 100")
+        ax.set_xticks(k, [c.replace("top_", "") for c in CHANNEL_NAMES], rotation=30)
+        ax.legend(fontsize=8, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    ax.set(yscale="log", ylabel="mean PE per event",
+           title="PE per channel (" + ("photopeak" if sel is peak else "all S1 + S2") + " events)")
+    med = (lambda a: f"{np.median(a):.0f}" if len(a) else "-")
+    fig.suptitle(f"{rec['run_id']}: {len(e)} decays with energy in XAMS, {both.sum()} with S1 and S2, {peak.sum()} in the "
+                 f"photopeak (> 650 keV in the drift region): median cS1 {med(e['cs1'][peak])} PE, "
+                 f"cS2 {med(e['cs2'][peak])} PE", color="#dce7ff", fontsize=10)
+    return fig
+
+
+RESULT_FIGURES = {"results": ("Results (xams_events)", fig_results)}
+
+
 FIGURE_VERSION = 4              # part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
            "field": ("Field and drift", fig_field)}
@@ -335,7 +425,7 @@ def figure(run_id: str, name: str) -> Path:
     out = f.parent / "figures" / f"{name}_v{FIGURE_VERSION}_{f.stem}.png"
     if not out.exists():
         out.parent.mkdir(exist_ok=True)
-        fig = FIGURES[name][1](rec)
+        fig = {**FIGURES, **RESULT_FIGURES}[name][1](rec)
         fig.savefig(out, dpi=110, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.15)
         import matplotlib.pyplot as plt
         plt.close(fig)

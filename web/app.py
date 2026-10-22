@@ -47,12 +47,12 @@ def simulation(run_id):
     key = ((d.get("record") or {}).get("maps") or {}).get("s1_light", {}).get("key")
     optical = compose.optical_map(key) if key else None
     return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, others=others,
-                           optical=optical, map_figures=compose.MAP_FIGURES, dashboard=DASHBOARD, page="overview")
+                           optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES, dashboard=DASHBOARD, page="overview")
 
 
 @app.route("/sim/<run_id>/figure/<name>.png")
 def figure(run_id, name):
-    if name not in compose.FIGURES:
+    if name not in compose.FIGURES and name not in compose.RESULT_FIGURES:
         abort(404)
     try:
         return send_file(compose.figure(run_id, name), mimetype="image/png")
