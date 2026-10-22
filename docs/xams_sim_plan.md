@@ -334,7 +334,51 @@ Original task list:
 **Check:** amstrax processes simulated runs unchanged; the same analysis cuts give the same distributions as data
 (cS1, cS2, widths, AFT, drift time) within the known differences.
 
-### S9. MC runs as runs: run database, central storage, STBC, dashboard (1–2 weeks) — **planned 2026-10-20**
+### S9. The whole pipeline correct: validation against data, upstream to downstream — **planned 2026-10-22**
+
+The chain runs end to end (S0–S8); what is open is whether its numbers agree with the data. Known differences (from the
+S4–S8 checks, 2026-10-19 … 2026-10-21): geometry / source: source position (z −120 or −82 mm), liquid level (2 or
+4 mm), SiPM positions not certain; drift: drift time at the gate 4.5 µs in the sim vs 1.14 µs in data (cathode 37.5 vs
+38.3 µs), no S1–S2 anticorrelation in data, more and later alternative S2s in data, S2 width growing faster with depth
+in data; EL: g2 ~1.9× too high in the sim; light: S1 scale ~0.5–0.6, top / bottom split (top-PMT effect in data), SiPM
+S1 7× too low, sim S1 AFT higher (amstrax leaves S1s unclassified above AFT 0.2); sensors: released v2 gains vs LED
+gains (top ~1.2×), top-PMT non-linearity, afterpulses, dark counts not modelled; DAQ: baseline effects and noise
+triggers not modelled.
+
+**Principle:** from upstream to downstream, one step at a time, each against a fixed data target: errors pile up (a
+wrong liquid level shifts drift times, extraction and EL), so the upstream steps are settled before light or gains are
+tuned. Measured quantities stay fixed; only what is not measured is tuned, and every tuned value is written down with the
+data it came from.
+
+0. **The comparison first** (was part of S12): a reference set of data runs (e.g. 7719 / 7687, Cs, sept; cmb50 data
+   when taken) and a fixed list of observables with their data values: drift-time edges (gate, cathode), S2 width vs
+   depth, photopeak cS1 / cS2 and resolutions, AFT vs depth and radius, light per channel incl. SiPMs, anticorrelation
+   angle, alternative-S2 fraction, rates. One command that processes data and MC through the same analysis
+   (analysis_SR2026.2 `X.context`, the same cuts) and writes a side-by-side report; the comparisons themselves are
+   studies in `../simulations/`.
+1. **Geometry and source:** liquid level and source position from the data (z distribution and energy spectrum of the
+   photopeak events, drift-time edges). The gate discrepancy (4.5 vs 1.14 µs) points here first: liquid level, the field
+   above the gate, or the drift velocity at high field.
+2. **Drift:** drift-time scale, diffusion (S2 width vs depth), electron lifetime; then the missing anticorrelation and
+   the alternative S2s (charge loss, delayed electrons; the model belongs to the paper, open question 5).
+3. **Extraction and EL:** the g2 factor (extraction efficiency and EL yield against the gas field); the mesh-cell figure
+   of the app belongs here.
+4. **Light:** the optical parameters (PTFE reflectivity, absorption and Rayleigh lengths, QE top / bottom) against S1
+   light and AFT vs depth and the S2 pattern; then the SiPM S1 deficit (filter efficiency, positions).
+5. **Sensors:** one consistent set of gains (LED vs released), SPE resolution, double PE, the top-PMT non-linearity
+   (the "top effect" in data).
+6. **DAQ / waveforms:** dark counts and afterpulses where they matter for S1 finding and classification; S1
+   classification (AFT limit) and event building in amstrax against data.
+7. **End to end:** the whole list of observables in one report; then everything is rerun (geometry v5, all maps; old
+   outputs are disposable) and the report is the reference for the MC productions.
+
+Alongside: a higher `source_rate_hz` (e.g. 1–2 kHz) in production runs, so that the live-data route does not take
+hours (run 900001: 19 048 chunks at 100 Hz, 6 h through amstrax).
+
+Decisions from the user: which data runs are the reference; which parameters are fixed (measured) and which may be
+tuned; whether the delayed-electron model is part of "correct" now or later for the paper.
+
+### S10. MC runs as runs: run database, central storage, STBC, dashboard (1–2 weeks) — **planned 2026-10-20**
 
 Goal: one process flow for data and MC. A simulated run is a run like a data run: a number (900000–999999), a run
 document in MongoDB, raw records in a central place, processed by amstrax and the analysis in the same way, visible in
@@ -400,7 +444,7 @@ Plan:
 **Check:** a data run and an MC run go through the same commands (context, step scripts, EventDisplay) with only the
 run number different; another user on STBC can process and read an MC run; the dashboard lists it.
 
-### S10. Simulation app: overview and composer (2–3 weeks, in phases) — **planned 2026-10-20, worked out 2026-10-21**
+### S11. Simulation app: overview and composer (2–3 weeks, in phases) — **planned 2026-10-20, worked out 2026-10-21**
 
 A web app to see which simulations exist and how they were made, and to compose new ones, instead of reading and
 editing YAML by hand. No notebook stage (user, 2026-10-21): a web app from the start. **The text files stay the source
@@ -417,7 +461,7 @@ repository later if it grows or joins the xams-dashboard.
 **Where it runs:** for development on the Mac (`xamssim web`); shared on stbc-i1 as xamsdata next to the xams-dashboard
 (own port, reached the same way), from `software/xams-sim` in `anaconda/xamssim`, writing run files into a configured
 simulations checkout; deployment only with the user's OK. Same stack as the xams-dashboard (to be checked first). It
-shows the data folder of the machine it runs on (Mac / STBC); with S9's central MC folder one place for everyone.
+shows the data folder of the machine it runs on (Mac / STBC); with S10's central MC folder one place for everyone.
 
 **Split with the xams-dashboard:** the app answers which simulations exist and *how* they were made (parameters, maps,
 code, current / outdated); the xams-dashboard which *runs* exist, where their data are and how far they are processed.
@@ -464,11 +508,10 @@ Pages:
    progress per step.
 
 Phases: (a) overview, detail pages with figures, comparison, maps (read-only); (b) composer writing run / state /
-source files; (c) starting on condor; (d) integration with S9 (`runs_mc`, links with the xams-dashboard).
+source files; (c) starting on condor; (d) integration with S10 (`runs_mc`, links with the xams-dashboard).
 
-### S11. Validation suite, overview and docs (2–3 days)
-- Validation: one command per comparison with data (targets from analysis_SR2026.2), report per state; the comparisons
-  themselves are studies in `../simulations/`.
+### S12. Overview and docs (2–3 days)
+- Validation against data: S9.
 - **Detectors (2026-10-19):** `config/detectors/<detector>/geometry.yaml`, `detector:` in every state; keys follow
   the resolved geometry (hole pattern included), COMSOL models carry a geometry tag. Now one detector, `xams2026`.
   For a structurally different detector (e.g. a SiPM top array) still to make generic: Geant4 sensors from a list,
@@ -481,7 +524,7 @@ source files; (c) starting on condor; (d) integration with S9 (`runs_mc`, links 
   they are current for the run file as it is now (state, maps, settings, Geant4 output), and the maps per state
   (present / missing / stale). Optional: `--prune` lists outdated data that can be removed (never deletes by itself).
 - Docs: config reference, how to run each producer and the chain, how to add a state or a source.
-- The web page for studies, runs and productions: S10.
+- The web page for studies, runs and productions: S11.
 
 ## Effort
 
@@ -491,9 +534,10 @@ source files; (c) starting on condor; (d) integration with S9 (`runs_mc`, links 
 | S2–S4 (Geant4 particle, yields, drift) | ~6–8 days |
 | S5–S7 (extraction/EL, light maps, sensors, fast output) | ~5–7 days |
 | S8 (waveforms → amstrax) | 1–2 weeks |
-| S9 (MC runs as runs: database, central storage, STBC, dashboard) | 1–2 weeks |
-| S10 (simulation dashboard) | 2–3 weeks |
-| S11 | ~2 days |
+| S9 (validation against data, upstream to downstream) | 2–4 weeks |
+| S10 (MC runs as runs: database, central storage, STBC, dashboard) | 1–2 weeks |
+| S11 (simulation dashboard) | 2–3 weeks |
+| S12 | ~2 days |
 
 After S7 the chain already answers the physics questions (resolution per state, SiPM and cathode effects, gamma-X);
 S8 adds the like-for-like comparison through amstrax.
@@ -505,4 +549,4 @@ S8 adds the like-for-like comparison through amstrax.
 3. strax / amstrax versions for the simulation environment (STBC runs strax 1.5.4 on Python 3.8).
 4. Where the field map comes from in production: COMSOL file export (security setting) or the printed-map route.
 5. Delayed-electron model in the drift step: which model (for the paper).
-6. Large productions: the Mac for development; condor on Stoomboot for big runs (max 10 jobs at once, S9).
+6. Large productions: the Mac for development; condor on Stoomboot for big runs (max 10 jobs at once, S10).

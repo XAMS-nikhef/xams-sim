@@ -20,8 +20,9 @@
 #               H = reference/LightSensors/R12699.pdf (Hamamatsu datasheet R12699-406-M4, 2017).
 
 meta:
-  version: 5                 # v5 (2026-10-18): data frame (x mirrored vs v4: top-PMT sectors, SiPM azimuths)
-  date: 2026-10-18
+  version: 6                 # v6 (2026-10-22): SiPM azimuths and heights from the data (were the assembly sheet)
+                             # v5 (2026-10-18): data frame (x mirrored vs v4: top-PMT sectors, SiPM azimuths)
+  date: 2026-10-22
   status: draft — to be completed by AP
 
 # ------------------------------------------------------------------------------------------------ liquid level
@@ -62,7 +63,11 @@ meshes:                      # z = foil mid-plane
     foil_side: down          # user, 2026-10-05 (ring body on the other side)
   - name: gate
     z_mm: 0.0                # definition
-    angle_to_anodes_deg: 29.4  # R: posrec2_fit.json mesh_angle_to_anodes_deg (mod 90°)
+    angle_to_anodes_deg: 29.4  # R: posrec2_fit.json mesh_angle_to_anodes_deg (mod 90°). Checked 2026-10-22 (user
+                             #   expected 0°): the hole lattice in the raw top-PMT pattern (u, v) is square at 30.9°;
+                             #   gains, crosstalk, channel swaps or mirroring cannot make 0° look like ~30°; drawings:
+                             #   mesh rings have 3 holes at 120°, the top-PMT PTFE plate 6 rods at 60°, so a ring on
+                             #   the other rod set sits at 60° = 30° mod 90°. To confirm: photo of the rods used
     foil_side: up          # user, 2026-10-05 (ring body on the other side)
   - name: cathode
     z_mm: -51.8              # P (gate–cathode 51.8 mm)
@@ -182,8 +187,14 @@ sipms:
   type: Hamamatsu S13370-3025CN (VUV-MPPC)
   active_mm: [3.0, 3.0]
   mounting: inside the inner PTFE cylinder, looking inward   # user
-  azimuth_deg: [90, 180]     # data frame, from the data (results/sipm_checks, spread map); user 2026-10-18
-  z_mm: [-25.0, -25.0]       # user, 2026-10-05 (in the liquid, mid drift region)
+  azimuth_deg: [131, 28]     # sipm_1 = data ch6, sipm_2 = data ch7; from the data (2026-10-22): fit of the S1 ch6 / ch7
+                             #   ratio in (x, y, z) of runs 7687-7720 (analysis_SR2026.2 outputs/sipm_locate.npz) with
+                             #   point sensors on the wall: ch6 131 ± 2°, ch7 28 ± 4° (systematics ±10-15° / ±25°:
+                             #   position reconstruction pulls towards the diagonals, little coverage at 210-330°;
+                             #   135° / 45° fits nearly as well). Was [90, 180]: the assembly sheet mirrored into the
+                             #   data frame, not data (chi2 3933 vs 1716 for 748 dof)
+  z_mm: [-21.0, -21.0]       # same fit (-19.6 / -21.7 mm, ±5 mm): one height for both, as the COMSOL model takes one
+                             #   (efield/comsol/make_model.py uses z_mm[0]); was -25 (user, 2026-10-05: mid drift region)
   recess_mm: 1.0             # sensor 1 mm deep in a square hole in the PTFE wall (user, 2026-10-12)
   electrical: grounded 3 x 3 mm conducting plane (field model); no package, PCB, cables or foil (user, 2026-10-12)
   filter: not modelled in v1 (user, 2026-10-05)

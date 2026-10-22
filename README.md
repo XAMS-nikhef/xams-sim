@@ -26,6 +26,7 @@ xamssim particle config/runs/cs137_cmb50_001.yaml [--events N]   # Geant4 energy
 xamssim chain    config/runs/cs137_cmb50_001.yaml --target quanta # clusters, field, NEST quanta -> <data>/strax/
 xamssim optical  config/scans/example_s2.yaml [--jobs 8]          # optical scan -> <data>/scans/<scan>/
 xamssim maps     --state sept --export field                      # 3D field map from the solved COMSOL model
+xamssim maps     --state sept --make [--dry-run]                  # all missing maps of a state, in order (COMSOL: licence)
 xamssim status   config/runs/<run>.yaml                           # resolved run, input hashes, map status
 python -m pytest tests
 ```

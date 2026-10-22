@@ -1,4 +1,4 @@
-"""XAMS simulation app (plan S10): which simulations exist and how they were made; later the composer.
+"""XAMS simulation app (plan S11): which simulations exist and how they were made; later the composer.
 
     xamssim web [--host 127.0.0.1] [--port 8071]
 
@@ -43,13 +43,16 @@ def simulation(run_id):
     if d is None:
         abort(404)
     others = [r["id"] for r in compose.simulations()["rows"] if r["id"] != run_id]
-    return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, others=others,
-                           dashboard=DASHBOARD, page="overview")
+    # The optical maps of this simulation: the key in its provenance record.
+    key = ((d.get("record") or {}).get("maps") or {}).get("s1_light", {}).get("key")
+    optical = compose.optical_map(key) if key else None
+    return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, figure_rows=compose.FIGURE_ROWS, others=others,
+                           optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES, dashboard=DASHBOARD, page="overview")
 
 
 @app.route("/sim/<run_id>/figure/<name>.png")
 def figure(run_id, name):
-    if name not in compose.FIGURES:
+    if name not in compose.FIGURES and name not in compose.RESULT_FIGURES:
         abort(404)
     try:
         return send_file(compose.figure(run_id, name), mimetype="image/png")

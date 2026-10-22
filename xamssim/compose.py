@@ -1,4 +1,4 @@
-"""What the simulation app shows and (later) composes (plan S10).
+"""What the simulation app shows and (later) composes (plan S11).
 
 Phase (a), read-only: which simulations exist and how they were made, from what xams-sim already keeps:
     simulations()          all simulations in the data folder (`xamssim list`): study, run number, state, source, decays,
@@ -231,12 +231,17 @@ def fig_cross_section(rec):
     import matplotlib.pyplot as plt
     pos = rec["source"].get("position_mm") or [0, 0, 0]
     r_src = float(np.hypot(pos[0], pos[1]))
-    fig, ax = plt.subplots(figsize=(9, 7.5), facecolor="#111b2e")
+    xmax = max(75.0, r_src + 15)
+    xlim, ylim = (-xmax, xmax + 30), (min(-80.0, pos[2] - 15), 45)
+    # The figure takes the shape of what is drawn (equal axes): a fixed 9 x 7.5 left a wide detector-plus-source view
+    # with blank space above and below it.
+    width = 9.0
+    height = width * (ylim[1] - ylim[0]) / (xlim[1] - xlim[0]) + 1.4
+    fig, ax = plt.subplots(figsize=(width, max(3.5, height)), facecolor="#111b2e")
     _style(ax)
     _draw_detector(ax, rec)
-    xmax = max(75.0, r_src + 15)
-    ax.set_xlim(-xmax, xmax + 30)
-    ax.set_ylim(min(-80.0, pos[2] - 15), 45)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
     ax.set_aspect("equal")
     ax.set(xlabel="x [mm] (source: at its distance r from the axis)", ylabel="z [mm]",
            title=f"{rec['run_id']}: state {rec['state_name']}, detector {rec['detector']}")
@@ -316,9 +321,242 @@ def fig_field(rec):
     return fig
 
 
-FIGURE_VERSION = 3              # part of the figure file names: raise it when a figure changes, so old ones are remade
+def fig_top_view(rec):
+    """Top view (x-y): the gate mesh with its etched holes (rotated by its angle to the anodes), field cage, mesh ring,
+    top-PMT sectors with their channels, SiPMs, the direction of the source; right: zoom on the centre."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import PolyCollection
+    from matplotlib import patheffects
+    from matplotlib.patches import Circle, Rectangle
+
+    halo = [patheffects.withStroke(linewidth=3, foreground="#0b1220")]
+    g = rec["geometry"]
+    mc = g["mesh_common"]
+    gate = next(m for m in g["meshes"] if m["name"] == "gate")
+    a = np.radians(gate.get("angle_to_anodes_deg", 0.0))
+    c, s_ = np.cos(a), np.sin(a)
+    p, h = mc["pitch_mm"], mc["hole_size_mm"]
+    holes = np.array(mc.get("holes") or [], float)
+    sq = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]]) * h / 2
+    polys = []
+    for i, j in holes:                                       # hole centre ((i + 1/2) p, (j + 1/2) p) in the mesh frame
+        corners = sq + [(i + 0.5) * p, (j + 0.5) * p]
+        polys.append(np.c_[c * corners[:, 0] - s_ * corners[:, 1], s_ * corners[:, 0] + c * corners[:, 1]])
+    pt = g["ptfe_cylinder"]
+    r_cage = pt["inner_diameter_mm"] / 2
+    pc = g["pmt_common"]
+    half = float(pc["photocathode_square_mm"]) / 2
+    top = next(q for q in g["pmts"] if q["name"] == "top")
+    quad = top.get("sector_quadrant", {})
+    chan = {v: k for k, v in top.get("sector_to_channel", {}).items()}
+    colors = {"ch1": "#e74c3c", "ch2": "#3498db", "ch3": "#2ecc71", "ch4": "#f39c12"}
+    fig, axs = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1.25, 1]))
+    for k, ax in enumerate(axs):
+        _style(ax)
+        for sec, (sx, sy) in quad.items():                  # top-PMT sectors (photocathode quadrants), channel colours
+            ch = chan.get(sec, sec)
+            ax.add_patch(Rectangle((0 if sx > 0 else -half, 0 if sy > 0 else -half), half, half,
+                                   color=colors.get(ch, "#888"), alpha=0.35, lw=0, zorder=0))
+            if k == 0:
+                ax.text(sx * half / 2, sy * half / 2, f"{ch}\n({sec})", color=colors.get(ch, "#ddd"), fontsize=11,
+                        ha="center", va="center", zorder=3, fontweight="bold", path_effects=halo)
+        ax.add_patch(Rectangle((-half, -half), 2 * half, 2 * half, fill=False, ec="#b3a7ff", lw=1, zorder=2))
+        # the holes as outlines (the steel bars between them), so the sector colours show through
+        ax.add_collection(PolyCollection(polys, facecolors="none", edgecolors="#f1c40f", linewidths=0.35 if k == 0 else 1.4,
+                                         alpha=0.8, zorder=1))
+        ax.add_patch(Circle((0, 0), r_cage, fill=False, ec="#d9d9d9", lw=1.2, zorder=2))
+        ax.set_aspect("equal")
+    ax = axs[0]
+    ax.add_patch(Circle((0, 0), r_cage + pt["wall_thickness_mm"], fill=False, ec="#d9d9d9", lw=0.8, ls="--", zorder=2))
+    ax.add_patch(Circle((0, 0), mc["ring"]["outer_diameter_mm"] / 2, fill=False, ec="#8a96a8", lw=1, zorder=2))
+    sp = g["sipms"]
+    for i, az in enumerate(np.atleast_1d(sp["azimuth_deg"]).astype(float)):
+        x, y = r_cage * np.cos(np.radians(az)), r_cage * np.sin(np.radians(az))
+        ax.plot([x], [y], "s", color="#2ecc71", ms=7, mec="w", mew=0.6, zorder=4)
+        ax.text(x * 0.8, y * 0.8, f"SiPM {i + 1}\n{az:.0f}°", color="#2ecc71", fontsize=8, ha="center", va="center",
+                zorder=4, path_effects=halo)
+    pos = rec["source"].get("position_mm")
+    lim = 52
+    if pos is not None:
+        r = float(np.hypot(pos[0], pos[1]))
+        if r > lim:                                          # outside the view: an arrow towards it
+            ux, uy = pos[0] / r, pos[1] / r
+            ax.annotate("", xy=(ux * (lim - 4), uy * (lim - 4)), xytext=(ux * (lim - 14), uy * (lim - 14)),
+                        arrowprops=dict(arrowstyle="<-", color="#ff6b6b", lw=1.5))
+            ax.text(ux * (lim - 9) + 3, uy * (lim - 9), f"source\nr = {r:.0f} mm", color="#ff6b6b", fontsize=8,
+                    ha="left", va="center")
+        else:
+            ax.plot([pos[0]], [pos[1]], "*", color="#ff6b6b", ms=12, zorder=5)
+    ax.set(xlim=(-lim, lim), ylim=(-lim, lim), xlabel="x [mm]", ylabel="y [mm]",
+           title=f"top view: gate mesh ({len(polys)} holes, {np.degrees(a):.1f}° to the anodes), "
+                 f"field cage r {r_cage:.0f} mm, top PMT")
+    z = 3.5 * p
+    axs[1].set(xlim=(-z, z), ylim=(-z, z), xlabel="x [mm]", ylabel="y [mm]",
+               title=f"centre: pitch {p} mm, holes {h} mm, bars {mc.get('bar_width_mm')} mm")
+    axs[1].axhline(0, color="#b3a7ff", lw=0.6)
+    axs[1].axvline(0, color="#b3a7ff", lw=0.6)
+    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}, detector {rec['detector']}", color="#dce7ff", fontsize=10)
+    return fig
+
+
+def fig_field_axis(rec):
+    """The field along the axis (x = y = 0) and at two radii, from the state's field map: |E| (log) and the potential,
+    with the electrodes, the liquid level and the field per region."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from .maps import MAPS, find
+    fm = rec["maps"].get("field", {})
+    e = find("field", fm.get("key", ""))
+    if e is None:
+        raise FileNotFoundError(f"field map {fm.get('key')} not in the registry")
+    f = np.load(MAPS / e["files"][0])
+    x, y, z = f["x"], f["y"], f["z"]
+    iy = int(np.argmin(np.abs(y)))
+    g = rec["geometry"]
+    zm = {m["name"]: m["z_mm"] for m in g["meshes"]}
+    level = zm["gate"] + rec["state"]["liquid_level_mm"]
+    hv = rec["hv_case"]
+    fig, (ax, axv) = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1.6, 1]))
+    for a_ in (ax, axv):
+        _style(a_)
+    shades = [("drift region", zm["cathode"], zm["gate"], "#1d4f7a"), ("liquid above gate", zm["gate"], level, "#2a6f97"),
+              ("gas gap", level, zm["anode"], "#3d3d5c")]
+    regions = []
+    ix0 = int(np.argmin(np.abs(x)))
+    emag0 = np.sqrt(f["Ex"][ix0, iy, :] ** 2 + f["Ey"][ix0, iy, :] ** 2 + f["Ez"][ix0, iy, :] ** 2)
+    for name, lo, hi, col in shades:
+        for a_ in (ax, axv):
+            a_.axvspan(lo, hi, color=col, alpha=0.35, lw=0, zorder=0)
+        m = (z > lo + 0.3) & (z < hi - 0.3)
+        if name == "drift region":
+            m = (z > lo + 5) & (z < hi - 5)
+        val = float(np.median(emag0[m])) if m.any() else np.nan
+        regions.append((name, val))
+    for r, col, lab in ((0.0, "#ffffff", "axis"), (15.0, "#4db6ff", "r = 15 mm"), (25.0, "#f39c12", "r = 25 mm")):
+        ix = int(np.argmin(np.abs(x - r)))
+        em = np.sqrt(f["Ex"][ix, iy, :] ** 2 + f["Ey"][ix, iy, :] ** 2 + f["Ez"][ix, iy, :] ** 2)
+        ax.plot(z, np.clip(em, 1, None), color=col, lw=1.4 if r == 0 else 1.0, label=lab, zorder=3)
+        axv.plot(z, f["V"][ix, iy, :] / 1e3, color=col, lw=1.4 if r == 0 else 1.0, label=lab, zorder=3)
+    for name, zz in zm.items():
+        v = hv.get(MESH_HV.get(name, ""))
+        for a_ in (ax, axv):
+            a_.axvline(zz, color="#f1c40f", lw=1, zorder=2)
+        ax.text(zz, 1.2, f"{name.replace('_', ' ')}\n{v:+g} V" if v is not None else name, color="#f1c40f", fontsize=7,
+                ha="center", va="bottom", rotation=90, zorder=4)
+    for a_ in (ax, axv):
+        a_.axvline(level, color="#4db6ff", lw=0.8, ls="--", zorder=2)
+        a_.set_xlim(z[0], z[-1])
+    ax.set(yscale="log", ylim=(1, 2e4), xlabel="z [mm]", ylabel="|E| [V/cm]",
+           title="field strength along z (dashed: liquid level)")
+    leg = ax.legend(loc="lower center", fontsize=8, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58",
+                    title="shaded: drift region, liquid above gate, gas gap", title_fontsize=7)
+    leg.get_title().set_color("#9fb4d8")
+    axv.set(xlabel="z [mm]", ylabel="potential [kV]", title="potential along z")
+    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}  —  " + ",  ".join(
+        f"{n} {v / 1e3:.2f} kV/cm" if v >= 1e3 else f"{n} {v:.0f} V/cm" for n, v in regions), color="#dce7ff", fontsize=10)
+    return fig
+
+
+def _events(rec):
+    """xams_events of the simulation (the chain's fast output: one row per decay), as made with this record's settings."""
+    import contextlib
+    import io
+
+    from . import chain
+    life = rec.get("settings", {}).get("electron_lifetime_us")
+    over = {} if rec["state"].get("electron_lifetime_us") else ({"electron_lifetime_us": float(life)} if life else {})
+    with contextlib.redirect_stdout(io.StringIO()):
+        st, sid = chain.context(rec["run_file"], **over)
+        if not st.is_stored(sid, "xams_events"):
+            raise FileNotFoundError(f"no xams_events of {sid} (xamssim chain {rec['run_file']})")
+        return st.get_array(sid, "xams_events", progress_bar=False)
+
+
+def fig_results(rec):
+    """The fixed result set of a simulation, from xams_events: energy, cS1 vs cS2, drift time vs depth, S1 / S2 area
+    fraction top, photoelectrons per channel."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
+
+    from .lightmap import CHANNEL_NAMES
+    e = _events(rec)
+    both = (e["s1_area"] > 0) & (e["s2_area"] > 0) & np.isfinite(e["cs1"]) & np.isfinite(e["cs2"])
+    peak = both & (e["energy_drift"] > 650)
+    fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#111b2e", gridspec_kw=dict(hspace=0.32, wspace=0.42))
+    for ax in axs.flat:
+        _style(ax)
+    cmap, norm = "viridis", LogNorm()
+
+    def cbar(m, ax):
+        from matplotlib.ticker import LogLocator, NullFormatter, NullLocator
+        c = fig.colorbar(m, ax=ax, fraction=0.045)
+        c.ax.yaxis.set_major_locator(LogLocator(base=10))
+        c.ax.yaxis.set_minor_locator(NullLocator())
+        c.ax.yaxis.set_minor_formatter(NullFormatter())
+        c.set_label("events", color="#9fb4d8")
+        c.ax.tick_params(colors="#9fb4d8")
+
+    ax = axs[0, 0]
+    ed = e["energy_drift"][e["energy_drift"] > 0]
+    ax.hist(ed, bins=np.arange(0, 720, 5), histtype="step", color="#4db6ff")
+    ax.hist(e["energy_drift"][both], bins=np.arange(0, 720, 5), histtype="step", color="#2ecc71")
+    ax.set(yscale="log", xlabel="energy in the drift region [keV]", ylabel="decays / 5 keV",
+           title="energy per decay (blue: all, green: with S1 and S2)")
+    ax = axs[0, 1]
+    if both.any():
+        x, y = e["cs1"][both], e["cs2"][both]
+        _, _, _, m = ax.hist2d(x, y, bins=[np.linspace(0, np.percentile(x, 99.8), 120),
+                                           np.linspace(0, np.percentile(y, 99.8), 120)], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="cS1 [PE]", ylabel="cS2 [PE]", title="cS1 vs cS2 (events with S1 and S2)")
+    ax = axs[0, 2]
+    if both.any():
+        _, _, _, m = ax.hist2d(e["z"][both] * 10, e["drift_time"][both], bins=[120, 120], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="true depth z [mm]", ylabel="drift time [µs]", title="drift time vs depth")
+    ax = axs[1, 0]
+    if both.any():
+        _, _, _, m = ax.hist2d(e["z"][both] * 10, e["s1_aft"][both], bins=[100, np.linspace(0, 1, 100)], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="true depth z [mm]", ylabel="S1 area fraction top", title="S1 AFT vs depth")
+    ax = axs[1, 1]
+    if both.any():
+        r = np.hypot(e["x"][both], e["y"][both]) * 10
+        _, _, _, m = ax.hist2d(r, e["s2_aft"][both], bins=[np.linspace(0, 35, 70), np.linspace(0, 1, 100)], norm=norm, cmap=cmap)
+        cbar(m, ax)
+    ax.set(xlabel="r at the gate [mm]", ylabel="S2 area fraction top", title="S2 AFT vs radius")
+    ax = axs[1, 2]
+    sel = peak if peak.sum() > 20 else both
+    if sel.any():
+        k = np.arange(len(CHANNEL_NAMES))
+        ax.bar(k - 0.2, e["s1_area_ch"][sel].mean(axis=0), 0.4, color="#4db6ff", label="S1")
+        ax.bar(k + 0.2, e["s2_area_ch"][sel].mean(axis=0) / 100, 0.4, color="#f1c40f", label="S2 / 100")
+        ax.set_xticks(k, [c.replace("top_", "") for c in CHANNEL_NAMES], rotation=30)
+        ax.legend(fontsize=8, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    ax.set(yscale="log", ylabel="mean PE per event",
+           title="PE per channel (" + ("photopeak" if sel is peak else "all S1 + S2") + " events)")
+    med = (lambda a: f"{np.median(a):.0f}" if len(a) else "-")
+    fig.suptitle(f"{rec['run_id']}: {len(e)} decays with energy in XAMS, {both.sum()} with S1 and S2, {peak.sum()} in the "
+                 f"photopeak (> 650 keV in the drift region): median cS1 {med(e['cs1'][peak])} PE, "
+                 f"cS2 {med(e['cs2'][peak])} PE", color="#dce7ff", fontsize=10)
+    return fig
+
+
+RESULT_FIGURES = {"results": ("Results (xams_events)", fig_results)}
+
+
+FIGURE_VERSION = 7              # part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
-           "field": ("Field and drift", fig_field)}
+           "field": ("Field and drift", fig_field),
+           "top_view": ("Top view", fig_top_view),
+           "field_axis": ("Field along z", fig_field_axis)}
+FIGURE_ROWS = (("cross_section", "field"), ("top_view", "field_axis"))      # how the detail page groups them (one row each)
 
 
 def figure(run_id: str, name: str) -> Path:
@@ -330,8 +568,8 @@ def figure(run_id: str, name: str) -> Path:
     out = f.parent / "figures" / f"{name}_v{FIGURE_VERSION}_{f.stem}.png"
     if not out.exists():
         out.parent.mkdir(exist_ok=True)
-        fig = FIGURES[name][1](rec)
-        fig.savefig(out, dpi=110, facecolor=fig.get_facecolor())
+        fig = {**FIGURES, **RESULT_FIGURES}[name][1](rec)
+        fig.savefig(out, dpi=110, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.15)
         import matplotlib.pyplot as plt
         plt.close(fig)
     return out
