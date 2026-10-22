@@ -212,11 +212,11 @@ def main(argv=None) -> int:
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_amstrax)
     p = sub.add_parser("live", help="a run with run_number as redax live data (live_mc/<run>/) + run document and truth "
-                                    "file, for amstrax's DAQReader (S9)")
+                                    "file, for amstrax's DAQReader (S10)")
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_live)
-    p = sub.add_parser("web", help="the simulation app (S10): which simulations exist and how they were made")
+    p = sub.add_parser("web", help="the simulation app (S11): which simulations exist and how they were made")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8071)
     p.add_argument("--debug", action="store_true", help="reload on code changes")

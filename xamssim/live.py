@@ -1,4 +1,4 @@
-"""Simulated runs as redax live data (plan S9, point 6).
+"""Simulated runs as redax live data (plan S10, point 6).
 
     xamssim live <run file>            # after: xamssim chain <run file> --target raw_records
 

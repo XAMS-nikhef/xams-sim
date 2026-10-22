@@ -1,1 +1,1 @@
-"""XAMS simulation app (plan S10): `xamssim web`."""
+"""XAMS simulation app (plan S11): `xamssim web`."""

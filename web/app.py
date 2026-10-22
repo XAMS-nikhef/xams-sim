@@ -1,4 +1,4 @@
-"""XAMS simulation app (plan S10): which simulations exist and how they were made; later the composer.
+"""XAMS simulation app (plan S11): which simulations exist and how they were made; later the composer.
 
     xamssim web [--host 127.0.0.1] [--port 8071]
 

@@ -1,4 +1,4 @@
-"""What the simulation app shows and (later) composes (plan S10).
+"""What the simulation app shows and (later) composes (plan S11).
 
 Phase (a), read-only: which simulations exist and how they were made, from what xams-sim already keeps:
     simulations()          all simulations in the data folder (`xamssim list`): study, run number, state, source, decays,
