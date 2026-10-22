@@ -65,8 +65,41 @@ def cmd_status(a) -> int:
     return 0
 
 
+# --make: the order in which missing maps are made (drift needs the field and the mesh cells)
+MAKE_ORDER = ("field", "mesh_cells", "drift", "extraction_el", "s1_light", "s2_pattern")
+
+
+def _make_maps(res, dry_run: bool) -> int:
+    """Make the missing maps of a state with their registered commands, in dependency order (COMSOL steps need the
+    licence; s1_light and s2_pattern share one command)."""
+    import subprocess
+
+    from .config import ROOT
+    from .maps import status
+    rows = {r["kind"]: r for r in status(res)}
+    todo, seen = [], set()
+    for kind in MAKE_ORDER:
+        r = rows[kind]
+        if not r["present"] and r["make"] not in seen:
+            todo.append((kind, r["make"]))
+            seen.add(r["make"])
+    if not todo:
+        print(f"state {res.state_name}: all maps present")
+        return 0
+    for kind, cmd in todo:
+        print(f"{'would make' if dry_run else 'making'} {kind}: {cmd}", flush=True)
+        if not dry_run and subprocess.call(cmd, shell=True, cwd=ROOT) != 0:
+            print(f"stopped: making {kind} failed (COMSOL steps need the licence server)")
+            return 1
+    return 0
+
+
 def cmd_maps(a) -> int:
     res = resolve_state(a.state)
+    if a.make:
+        rc = _make_maps(res, a.dry_run)
+        if rc or a.dry_run:
+            return rc
     if a.export:
         from . import fieldmap
         from . import cellmap, driftmap, elmap, lightmap
@@ -189,6 +222,10 @@ def main(argv=None) -> int:
                         "drift: electron end points and drift times in the composite field; "
                         "el: extraction and electroluminescence from the gate + anode cell, needs the licence; "
                         "light: S1 and S2 light maps per channel from Geant4 optical runs, ~5 min)")
+    p.add_argument("--make", action="store_true",
+                   help="make all missing maps of the state in dependency order (field, mesh cells, drift, EL, light), "
+                        "running the commands the status shows (COMSOL on this machine, licence needed)")
+    p.add_argument("--dry-run", action="store_true", help="with --make: only show the commands")
     p.add_argument("--photons-s1", type=float, default=5e7, help="light: photons for the S1 map (default 5e7)")
     p.add_argument("--photons-s2", type=float, default=1e8, help="light: photons for the S2 map (default 1e8)")
     p.add_argument("--jobs", type=int, default=8, help="light: parallel Geant4 runs (default 8)")

@@ -13,6 +13,7 @@ The Python package (`xamssim/`, installed editable in the `xamssim` env) and its
 | `xamssim chain <run> [--target T] [--g4 DIR]` | [simulation chain](chain.md) on the Geant4 output: clusters, field, NEST quanta, drift to the surface, extraction and EL → `<data>/strax/` |
 | `xamssim status <run>` | resolved run: state, voltages, level, pressure, lifetime, source, geometry version, map keys and status |
 | `xamssim maps --state <state>` | map keys and status of a state |
+| `xamssim maps --state <state> --make [--dry-run]` | make all missing maps of the state in dependency order (field, mesh cells, drift, EL, light) with the commands the status shows; stops at the first failure (COMSOL steps need the licence server) |
 | `xamssim maps --state <state> --export field` | COMSOL field of the state's HV case → `<data>/maps/field/<key>/` (registered) |
 | `xamssim maps --state <state> --export cells` | gate and cathode mesh-cell fields from the solved cell models → `<data>/maps/mesh_cells/<key>/` |
 | `xamssim maps --state <state> --export el` | extraction / EL map from the gate + anode cell model → `<data>/maps/extraction_el/<key>/` |
