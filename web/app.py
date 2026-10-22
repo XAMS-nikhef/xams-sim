@@ -72,7 +72,23 @@ def compare():
 
 @app.route("/maps")
 def maps():
-    return render_template("maps.html", m=compose.simulations()["maps"], page="maps")
+    return render_template("maps.html", m=compose.simulations()["maps"], optical=compose.optical_maps(), page="maps")
+
+
+@app.route("/maps/optical/<key>")
+def optical_map(key):
+    o = compose.optical_map(key)
+    if o is None:
+        abort(404)
+    return render_template("optical.html", o=o, figures=compose.MAP_FIGURES, page="maps")
+
+
+@app.route("/maps/<kind>/<key>/figure.png")
+def map_figure(kind, key):
+    try:
+        return send_file(compose.map_figure(kind, key), mimetype="image/png")
+    except FileNotFoundError:
+        abort(404)
 
 
 @app.route("/reload")
