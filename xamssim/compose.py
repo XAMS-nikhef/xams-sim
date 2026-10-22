@@ -77,7 +77,7 @@ def simulations() -> dict:
         rows.append(dict(id=r["id"], study=r.get("study", ""), number=r.get("number"), state=r.get("state", ""),
                          source=r.get("source", ""), n_events=r.get("n_events"),
                          g4_events=r["g4"]["events"] if r["g4"] else None,
-                         how_far=_how_far({p["type"] for p in prods if p["state"] != "old"}), status=status,
+                         how_far=_how_far({p["type"] for p in prods}), status=status,   # status says whether it is outdated
                          size_mb=size / 1e6, last_run=files[-1].name[:15] if files else "", note=r.get("note", ""),
                          exported=_exported(r.get("number")), n_records=len(files)))
     return dict(rows=rows, data=str(DATA), studies=str(STUDIES), maps=d["maps"])
