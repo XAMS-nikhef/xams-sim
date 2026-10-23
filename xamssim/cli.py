@@ -183,6 +183,20 @@ def cmd_web(a) -> int:
     return 0
 
 
+def cmd_rundb(a) -> int:
+    from . import rundb
+    rng = tuple(int(x) for x in a.range.split("-")) if a.range else None
+    if not rundb.configured():
+        print(f"no [mc] account in {rundb.CONFIG_FILE}: run documents are written only as files")
+        return 1
+    if a.delete and not a.yes:
+        rundb.delete(rng, a.tag, dry_run=True)
+        if input("delete these run documents from run.runs_mc? [y/N] ").strip().lower() != "y":
+            return 0
+    rundb.delete(rng, a.tag, dry_run=not a.delete)
+    return 0
+
+
 def cmd_show(a) -> int:
     from .provenance import show
     return show(a.run, product=a.product, lineage_hash=a.hash, n=a.n, full=a.full, with_diff=a.diff)
@@ -253,6 +267,12 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_live)
+    p = sub.add_parser("rundb", help="run documents of simulated runs in run.runs_mc (S10): list, or delete with --delete")
+    p.add_argument("--range", help="run numbers LO-HI (default all of 900000-999999)")
+    p.add_argument("--tag", help="only documents with this tag (e.g. test)")
+    p.add_argument("--delete", action="store_true", help="delete the selected documents (after a confirmation)")
+    p.add_argument("--yes", action="store_true", help="with --delete: without the confirmation")
+    p.set_defaults(func=cmd_rundb)
     p = sub.add_parser("web", help="the simulation app (S11): which simulations exist and how they were made")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8071)

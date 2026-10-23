@@ -153,10 +153,18 @@ def export(run_path, lifetime_us: float | None = None, store: Path | None = None
         saver.close()
         print("\r", end="")
         log(f"  {ax_type}: {n} records -> {store / str(key)}")
-    _write_run_metadata(sf, res, rid, sim_id, sim, lifetime_us)
+    _write_run_metadata(sf, res, rid, sim_id, sim, lifetime_us, log=log, data=[
+        dict(type=t, host=_host(), location=str(store), protocol="FileSytemBackend") for t in RAW])
     _write_truth(store, res, rid, sim_id, sim)
     tag.write_text(json.dumps({"run_file": str(Path(run_path).resolve()), "sim_run_id": sim_id, "sources": src}))
     return rid
+
+
+def _host() -> str:
+    """Where the data are: stbc for the Nikhef batch file system, else the machine's name."""
+    import socket
+    h = socket.gethostname()
+    return "stbc" if h.startswith(("stbc", "wn-")) or str(STORE or "").startswith("/data/xenon") else h
 
 
 def _first_time(sim, sim_id) -> int:
@@ -166,9 +174,11 @@ def _first_time(sim, sim_id) -> int:
 
 
 def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_us, start_ns: int | None = None,
-                        daq_extra: dict | None = None) -> None:
+                        daq_extra: dict | None = None, data: list | None = None, log=print) -> None:
     """A run document for the simulated run, as the run database has it for data (start_ns: run start [ns], default
-    just before the first record; daq_extra: more daq_config fields, e.g. those of the live data)."""
+    just before the first record; daq_extra: more daq_config fields, e.g. those of the live data; data: the data
+    locations, as data[] of a data run). Written as a file next to the data and, with a writer account, into
+    run.runs_mc (xamssim.rundb)."""
     import datetime as dt
     from .waveforms import load_daq
     daq = load_daq(res)
@@ -178,8 +188,9 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
     md0 = sim.get_metadata(sim_id, RAW["raw_records"])
     t = lambda ns: dt.datetime.fromtimestamp(ns / 1e9, tz=dt.timezone.utc)   # noqa: E731
     pre = int(daq["digitizer"]["pre_trigger_samples"]) // 4                    # register 0x8038 in units of 4 samples
-    sf.write_run_metadata(rid, {
-        "name": rid, "number": int(rid), "mode": f"simulation ({res.state_name})", "tags": ["simulation"],
+    doc = {
+        "name": rid, "number": int(rid), "mode": f"simulation ({res.state_name})",
+        "tags": ["simulation"] + [t_ for t_ in res.run.get("tags", []) if t_ != "simulation"],
         "start": t(start_ns if start_ns is not None else max(0, min(md0["start"], _first_time(sim, sim_id) - FIRST_MARGIN_NS))),
         "end": t(md0["end"]), "detectors": ["tpc"],
         "comments": [{"comment": f"xams-sim run {sim_id}: state {res.state_name}, source {res.source_name}, "
@@ -192,7 +203,11 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
                     "state": res.state_name, "source": res.source_name, "source_position_mm": res.source.get("position_mm"),
                     "detector": res.detector, "n_events": res.run["n_events"], "seed": res.run["seed"],
                     "truth": truth_constants(res, lifetime_us)},
-    })
+        "data": data or [],
+    }
+    sf.write_run_metadata(rid, doc)
+    from . import rundb
+    rundb.register(doc, log=log)
 
 
 def _write_truth(store: Path, res: Resolved, rid: str, sim_id: str, sim) -> None:

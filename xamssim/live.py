@@ -99,6 +99,7 @@ def write(run_path, lifetime_us: float | None = None, store: Path | None = None,
     amstrax_io._write_run_metadata(sf, res, rid, sim_id, sim, lifetime_us, start_ns=t0, daq_extra={
         "processing_threads": {THREAD: 1}, "strax_output_path": str(live),
         "strax_fragment_payload_bytes": 2 * RECORD_SAMPLES, "strax_chunk_length": CHUNK_NS / 1e9,
-        "strax_chunk_overlap": OVERLAP_NS / 1e9, "compressor": COMPRESSOR})
+        "strax_chunk_overlap": OVERLAP_NS / 1e9, "compressor": COMPRESSOR},
+        data=[dict(type="live_data", host=amstrax_io._host(), location=str(out), protocol="live")], log=log)
     amstrax_io._write_truth(store, res, rid, sim_id, sim)
     return rid
