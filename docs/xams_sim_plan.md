@@ -512,6 +512,27 @@ run number different; another user on STBC can process and read an MC run; the d
   (`analysis_SR2026.2/steps`) → `xamssim corrections --calibrated` → reconstruct (pass 2) = the version compared with
   data (S9). Truth minus calibrated = the bias of the calibration method (closure test, S9).
 
+**Restructuring before the fresh start (decided 2026-10-23, user: "remove all production simulations, cleanup the
+database and start fresh").**
+1. *Everything filed by run number.* Every simulation has a run number; the run id of the chain (strax), the Geant4
+   folder (`<data>/g4/<number>`), the provenance (`<data>/provenance/<number>/`, with its figures), the locks, the
+   listing and the app all use the six-digit number instead of the run-file name. A run file without `run_number` gets
+   the next free private number (99xxxx) written into it on its first run; production numbers (900000-989999) are
+   always set by hand. The run file name is a label.
+2. *One run file = one run number = one simulation.* A number is refused when another run file uses it, or when its
+   provenance belongs to another run file or another run key; a run file is refused when it was run before under
+   another number. A rerun is a new run file (`<name>_r<k>.yaml`, next free number, `supersedes`).
+3. *Production run files out of the personal area:* `/data/xenon/xams_v2/mc/run_files/<study>/` (owned by xamsdata;
+   `XAMSSIM_STUDIES` of xamsdata), copied from the simulations repository (kept in git there); the production app
+   writes its reruns there.
+4. *Reconstruction: keep latest + truth.* amstrax `for_mc_run(st, run, use=...)`: "latest" (default: the run's
+   current calibration; for version 0 the same as truth), "truth" (only the simulation's own values, no calibration
+   in the address: one stable lineage). The job makes the latest and, after a calibration, also the truth
+   reconstruction, then deletes every other version of the run's processed products (raw records untouched). The app
+   shows one at a time with a switch "latest (vN) | truth".
+5. *Fresh start:* delete all MC (runs_mc documents, central MC folders, private test outputs; keep the maps) and make
+   the three Cs-137 runs again (sept short / long, cmb50_a36 long) as 900301-900303.
+
 ### S11. Simulation app: overview and composer (2–3 weeks, in phases) — **planned 2026-10-20, worked out 2026-10-21**
 
 A web app to see which simulations exist and how they were made, and to compose new ones, instead of reading and
