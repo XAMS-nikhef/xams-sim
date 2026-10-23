@@ -110,19 +110,68 @@ def lookup(u, v, grid: dict):
     return out[0], out[1]
 
 
-def build_map(u, v, x, y, smooth_bins: float = 2.0) -> dict:
-    """(u, v) -> mean (x, y) on amstrax's grid; empty bins from the nearest filled one; light Gaussian smoothing."""
+def build_map(u, v, x, y, smooth_bins: float = 2.0, min_count: int = 5, r_max: float | None = None,
+              n_rays: int = 720, fit_width: float = 0.06) -> dict:
+    """(u, v) -> mean (x, y) on amstrax's grid.
+
+    Cells with at least `min_count` events get the mean position of their events. Beyond the simulated range (and in
+    poorly filled cells at the edge) the map is extrapolated along rays from the centre of the (u, v) plane: per
+    direction, the radius of the last `fit_width` (in |(u, v)|) of well-filled cells is fitted with a straight line in
+    |(u, v)| and continued outwards at the azimuth of the edge, capped at `r_max` (the PTFE wall). So events whose
+    light sharing lies beyond what the simulation covered are spread up to the wall, not piled up at the map's border.
+    Isolated empty cells inside take the nearest filled cell. Then a light Gaussian smoothing (`smooth_bins` cells)."""
     from scipy.ndimage import distance_transform_edt, gaussian_filter
     edges = UV_MIN - UV_STEP / 2 + UV_STEP * np.arange(UV_N + 1)
     cnt, _, _ = np.histogram2d(u, v, bins=(edges, edges))
     sx, _, _ = np.histogram2d(u, v, bins=(edges, edges), weights=x)
     sy, _, _ = np.histogram2d(u, v, bins=(edges, edges), weights=y)
-    filled = cnt > 0
-    mx = np.where(filled, sx / np.maximum(cnt, 1), 0.0)
-    my = np.where(filled, sy / np.maximum(cnt, 1), 0.0)
-    _, (ii, jj) = distance_transform_edt(~filled, return_indices=True)
-    mx, my = mx[ii, jj], my[ii, jj]
+    filled = cnt >= min_count
+    mx = np.where(filled, sx / np.maximum(cnt, 1), np.nan)
+    my = np.where(filled, sy / np.maximum(cnt, 1), np.nan)
+    c = UV_MIN + UV_STEP * np.arange(UV_N)
+    U, V = np.meshgrid(c, c, indexing="ij")
+    rho, theta = np.hypot(U, V), np.arctan2(V, U)
+    if r_max is None:
+        r_max = float(np.nanmax(np.hypot(mx, my)))
+    # per ray: the edge of the well-filled region and the radial slope there
+    ab = ((theta + np.pi) / (2 * np.pi) * n_rays).astype(int) % n_rays
+    rho_edge = np.full(n_rays, np.nan); r_edge = np.full(n_rays, np.nan)
+    slope = np.full(n_rays, np.nan); phi_edge = np.full(n_rays, np.nan)
+    R = np.hypot(mx, my)
+    for k in range(n_rays):
+        m = (ab == k) & filled
+        if m.sum() < 5:
+            continue
+        re = np.max(rho[m])
+        sel = m & (rho > re - fit_width)
+        if sel.sum() >= 3 and np.ptp(rho[sel]) > 0:
+            b1, b0 = np.polyfit(rho[sel], R[sel], 1)
+        else:
+            b1, b0 = 0.0, float(np.mean(R[sel]))
+        rho_edge[k], slope[k] = re, max(b1, 0.0)
+        r_edge[k] = b0 + b1 * re
+        far = sel & (rho > re - fit_width / 3)
+        phi_edge[k] = np.arctan2(np.mean(my[far]), np.mean(mx[far]))
+    ok = np.isfinite(rho_edge)                                      # rays without data: from their neighbours
+    idx = np.arange(n_rays)
+    for arr in (rho_edge, r_edge, slope, phi_edge):
+        if arr is phi_edge:
+            cs, sn = np.interp(idx, idx[ok], np.cos(arr[ok]), period=n_rays), np.interp(idx, idx[ok], np.sin(arr[ok]), period=n_rays)
+            arr[:] = np.arctan2(sn, cs)
+        else:
+            arr[:] = np.interp(idx, idx[ok], arr[ok], period=n_rays)
+    outside = ~filled & (rho >= rho_edge[ab])
+    rr = np.minimum(r_edge[ab] + slope[ab] * (rho - rho_edge[ab]), r_max)
+    mx = np.where(outside, rr * np.cos(phi_edge[ab]), mx)
+    my = np.where(outside, rr * np.sin(phi_edge[ab]), my)
+    holes = ~np.isfinite(mx)                                        # isolated empty cells inside
+    if holes.any():
+        _, (ii, jj) = distance_transform_edt(holes, return_indices=True)
+        mx, my = mx[ii, jj], my[ii, jj]
     mx, my = gaussian_filter(mx, smooth_bins), gaussian_filter(my, smooth_bins)
+    rr = np.hypot(mx, my)                                           # the smoothing must not push past the wall
+    f = np.where(rr > r_max, r_max / np.maximum(rr, 1e-9), 1.0)
+    mx, my = mx * f, my * f
     return dict(uv_min=UV_MIN, step=UV_STEP, n=UV_N, x=np.round(mx, 3).tolist(), y=np.round(my, 3).tolist())
 
 
@@ -151,7 +200,7 @@ def run(state: str = "sept", n: int = 300_000, sizes=(30, 300, 3000, 30000), dat
 
     # the MC map: high statistics (n_top 1e5) per event, extraction position as reference
     u_hi, v_hi = uv(m, xe, ye, 1e5, rng)
-    mc = build_map(u_hi, v_hi, xe, ye)
+    mc = build_map(u_hi, v_hi, xe, ye, r_max=m.r_cage)
     dm = data_map(data_map_name)
     folder = DATA / "posrec"
     folder.mkdir(parents=True, exist_ok=True)

@@ -21,3 +21,17 @@ def test_lookup_matches_amstrax_convention():
              x=np.repeat(np.linspace(-30, 30, n)[:, None], n, axis=1), y=np.repeat(np.linspace(-30, 30, n)[None, :], n, axis=0))
     x, y = posrec.lookup(np.array([0.5, 2.0]), np.array([-0.5, 0.0]), g)
     assert np.allclose(x, [15, 30], atol=0.2) and np.allclose(y, [-15, 0], atol=0.2)
+
+
+def test_edge_extrapolation():
+    """Beyond the simulated range the map continues outwards and stops at r_max (no pile-up at the border)."""
+    rng = np.random.default_rng(2)
+    r = 20 * np.sqrt(rng.random(300000)); phi = 2 * np.pi * rng.random(300000)
+    x, y = r * np.cos(phi), r * np.sin(phi)
+    u, v = x / 40, y / 40                                          # simulated range: |(u, v)| < 0.5
+    g = posrec.build_map(u, v, x, y, smooth_bins=0.5, r_max=31.0)
+    for rho in (0.55, 0.65):                                     # beyond the range: further out, along the ray
+        xr, yr = posrec.lookup(np.array([rho, 0.0]), np.array([0.0, -rho]), g)
+        assert np.all(np.hypot(xr, yr) > 20.5) and np.all(np.hypot(xr, yr) <= 31.0 + 1e-6)
+    xr, yr = posrec.lookup(np.array([0.95]), np.array([0.0]), g)
+    assert abs(np.hypot(xr, yr)[0] - 31.0) < 0.5 and abs(yr[0]) < 1.0      # capped at the wall, same direction
