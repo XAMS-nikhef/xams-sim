@@ -10,10 +10,11 @@ events, ...), with the calibration the analysis gives it (correction files of am
 never with the simulation's own values.
 
 Run document (`<number>-metadata.json`, as the run database has it for data): number, mode, start / end, tags, comment,
-the DAQ config (thresholds, channel map, pre-trigger register), and a section `xamssim` with the run file, run key and the
-truth constants of the simulation (gains, lifetime, drift velocity, gate / cathode drift times, state, source, detector):
-for comparison with what the analysis finds, not applied. Truth file `<number>-truth.npz`: one row per simulated decay
-(xams_events: true energy, position, S1 / S2 of the simulation), with the decay time for matching amstrax events.
+the DAQ config (thresholds, channel map, pre-trigger register), and a section `xamssim` with the run file, run key,
+state, source, detector, condition and the per-run corrections (`xamssim.corrections`: the simulation's truth, later a
+calibration; used by amstrax's MC global version, see `corrections.py`). Truth file `<number>-truth.npz`: one row per simulated decay
+(xams_events: true energy, position, S1 / S2 of the simulation), with the decay time for matching amstrax events;
+in amstrax units (mm, ns), read with `load_truth` (converts older files in cm).
 
 `context(run, calibration="truth")` gives an amstrax context with the simulation's own calibration: a check of the
 waveform simulation (xams-sim's S8 notebook), not for the analysis.
@@ -245,9 +246,37 @@ def _write_truth(store: Path, res: Resolved, rid: str, sim_id: str, sim) -> None
     import io
     with contextlib.redirect_stdout(io.StringIO()):
         e = sim.get_array(sim_id, "xams_events", progress_bar=False)
-    np.savez_compressed(store / f"{rid}-truth.npz", events=e,
-                        note=np.array(f"xams-sim truth of run {rid} ({sim_id}): xams_events, one row per decay "
-                                      f"(times in ns as in the raw records; x, y, z in cm)"))
+    np.savez_compressed(store / f"{rid}-truth.npz", events=_truth_units(e), units=np.array(TRUTH_UNITS),
+                        note=np.array(f"xams-sim truth of run {rid} ({sim_id}): xams_events, one row per decay, in "
+                                      "amstrax units (times and drift_time in ns, x, y, z in mm, data frame)"))
+
+
+# the truth file in the units of amstrax (event_info), so that truth and reconstruction compare directly; the chain
+# itself works in fuse's units (cm, drift time in µs). Files without `units` (before 2026-10-23) are in the chain's.
+TRUTH_UNITS = "amstrax"
+_TO_AMSTRAX = {"x": (10.0, "mm"), "y": (10.0, "mm"), "z": (10.0, "mm"), "drift_time": (1e3, "ns")}
+
+
+def _truth_units(e: np.ndarray) -> np.ndarray:
+    """xams_events with x, y, z in mm and drift_time in ns (titles updated)."""
+    descr = []
+    for title_name, fmt in e.dtype.descr:
+        title, name = title_name if isinstance(title_name, tuple) else (None, title_name)
+        if name in _TO_AMSTRAX and title:
+            unit = _TO_AMSTRAX[name][1]
+            title = title.replace("[cm]", f"[{unit}]").replace("[µs]", f"[{unit}]")
+        descr.append(((title, name), fmt) if title else (name, fmt))
+    out = np.zeros(len(e), dtype=np.dtype(descr))
+    for name in e.dtype.names:
+        out[name] = e[name] * _TO_AMSTRAX[name][0] if name in _TO_AMSTRAX else e[name]
+    return out
+
+
+def load_truth(path) -> np.ndarray:
+    """The truth events of a simulated run (`<number>-truth.npz`) in amstrax units, also for older files (cm, µs)."""
+    f = np.load(path)
+    e = f["events"]
+    return e if "units" in f.files and str(f["units"]) == TRUTH_UNITS else _truth_units(e)
 
 
 def context(run_path, lifetime_us: float | None = None, processing=None, calibration: str = "truth"):
