@@ -510,6 +510,18 @@ Pages:
 Phases: (a) overview, detail pages with figures, comparison, maps (read-only); (b) composer writing run / state /
 source files; (c) starting on condor; (d) integration with S10 (`runs_mc`, links with the xams-dashboard).
 
+**Reconstruction on the detail page (decided 2026-10-23).** Private MC (own account, own area) never enters the run
+database, so the xams-dashboard cannot show it; the app, which reads only files, is the overview of MC runs, made *and*
+reconstructed, private and production alike. A section "Reconstruction" per run with a run number, read from
+`XAMSSIM_PROCESSED` / `XAMSSIM_AMSTRAX_STORE` (no database):
+- which amstrax data types exist (raw_records … event_info), corrections version, date;
+- reconstructed events vs simulated decays (efficiency);
+- fixed quick figures from `event_info`: cS2 vs cS1, drift time, x–y, S1 / S2 spectra (stored next to the
+  provenance like the other figures);
+- later: against the truth file (reconstructed vs true energy and position).
+Split: xams-dashboard = processing of database runs (data + production MC); the app = overview of all MC runs;
+notebooks = analysis and data comparisons. First test case: private run 990001 (z37).
+
 ### S12. Overview and docs (2–3 days)
 - Validation against data: S9.
 - **Detectors (2026-10-19):** `config/detectors/<detector>/geometry.yaml`, `detector:` in every state; keys follow
