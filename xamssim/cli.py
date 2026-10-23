@@ -222,6 +222,12 @@ def cmd_corrections(a) -> int:
     return 0
 
 
+def cmd_posrec(a) -> int:
+    from .posrec import run
+    run(state=a.state, n=int(a.n), sizes=tuple(int(x) for x in a.sizes.split(",")), data_map_name=a.data_map, out=a.out)
+    return 0
+
+
 def cmd_nest(a) -> int:
     from .nestfig import main
     main(states=a.state or (), fields=a.field or (), runs=a.run or (), kinds=tuple(a.types.split(",")), out=a.out,
@@ -306,6 +312,16 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_live)
+    p = sub.add_parser("posrec", help="position-reconstruction toy: uniform positions -> drift map -> S2 light pattern -> "
+                                      "photon statistics -> (u, v) -> data map and an MC-built map; bias, resolution; "
+                                      "writes the MC map in amstrax's format")
+    p.add_argument("--state", default="sept")
+    p.add_argument("--n", default="300000", help="events (default 3e5)")
+    p.add_argument("--sizes", default="30,300,3000,30000", help="S2 sizes in detected top photoelectrons")
+    p.add_argument("--data-map", default="pos_rec_map_v1.json", help="amstrax_files position map (file or name)")
+    p.add_argument("--out", help="figure file (default <data>/posrec/posrec_<state>.png)")
+    p.set_defaults(func=cmd_posrec)
+
     p = sub.add_parser("nest", help="NEST light / charge yields vs energy (with fluctuation bands) for the fields of "
                                     "states, given fields or run files (their physics.nest), and the Cs-137 photopeak in "
                                     "quanta; no simulation")
