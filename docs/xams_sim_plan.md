@@ -390,6 +390,29 @@ Condition: per correction the truth must be defined as the calibration measures 
 the drift-time distribution, not the drift map at 0.5 mm below the gate: 900201 3904 vs 4416 ns). Corrections MC cannot
 calibrate (gains without simulated SPE / LED data) stay at truth, marked as such.
 
+**NEST parameters (planned 2026-10-23).** The chain now uses NEST's default ER / NR yield models
+(`nest_er_yields_parameters=-1`, `nest_nr_yields_parameters=-1`) without extra width parameters
+(`nest_width_parameters={}`, `xamssim/chain.py`). To study them:
+1. *In the run file:* a section `physics.nest` (yield parameters ER / NR, width parameters), validated by the schema,
+   default = today's values. Part of the run key, so another setting is another run (new number, as for any rerun);
+   shown on the app's detail page and in `xamssim show --diff`.
+2. *Fast loop:* simulate up to the quanta / `xams_events` step (no waveforms, no amstrax): yields and widths against
+   field and energy, from the same Geant4 output (reused by key), so a parameter scan costs only the chain.
+3. *Against data at the same field:* Cs-137 photopeak position and width in cS1 and cS2, the anti-correlation (charge vs
+   light yield), and later other lines (Na-22, NaI) and fields (sept vs cmb50 states). Data with calibrated
+   corrections, MC with truth and calibrated (closure).
+4. *Scan:* one parameter at a time, a small set of run files in a study folder (`simulations/<date>_nest_*`); results
+   as figures data vs MC (sim bands, data points).
+Order: after the waveform / S1 shape fixes (SPE templates v2), so that S1 shape and area are trustworthy first.
+
+**SPE templates (2026-10-23):** v1 (aligned per pulse at its maximum, median) gave ch0 a step of 5 % before the peak
+(11 % of the area): simulated ch0 S1s rose ~40 ns early (MC 900202 vs data 7687: 11.1 % vs 2.9 % of the maximum
+40–12 ns before it; rise 24 vs 12 ns). v2 (`analysis_SR2026.2/steps/measure_daq.py`): LED windows aligned with a
+matched filter, mean, then a fitted shape (Gaussian rise + two exponential tails), causal by construction. The MC S1 also
+decays faster than data in all channels (tail 20–100 ns low): check again with v2 (ch0 gets a 30 ns tail of 30 %), then
+scintillation timing / optical delays. Templates stay pinned per state (SR-2026.2 = sept), not updated with every
+LED calibration. The app's detail page shows the SPE response a run used (S11).
+
 ### S10. MC runs as runs: run database, central storage, STBC, dashboard (1–2 weeks) — **planned 2026-10-20**
 
 Goal: one process flow for data and MC. A simulated run is a run like a data run: a number (900000–999999), a run
