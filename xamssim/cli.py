@@ -222,6 +222,13 @@ def cmd_corrections(a) -> int:
     return 0
 
 
+def cmd_nest(a) -> int:
+    from .nestfig import main
+    main(states=a.state or (), fields=a.field or (), runs=a.run or (), kinds=tuple(a.types.split(",")), out=a.out,
+         n_fluct=a.fluct)
+    return 0
+
+
 def cmd_number(a) -> int:
     from .runid import ensure_number
     for r in a.run:
@@ -299,6 +306,17 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_live)
+    p = sub.add_parser("nest", help="NEST light / charge yields vs energy (with fluctuation bands) for the fields of "
+                                    "states, given fields or run files (their physics.nest), and the Cs-137 photopeak in "
+                                    "quanta; no simulation")
+    p.add_argument("--state", action="append", help="state(s): NEST defaults at the state's drift field (field map)")
+    p.add_argument("--field", action="append", type=float, help="field(s) [V/cm]: NEST defaults")
+    p.add_argument("--run", action="append", help="run file(s): its state's field and its physics.nest")
+    p.add_argument("--types", default="beta,gamma", help="interactions: beta,gamma,nr (default beta,gamma)")
+    p.add_argument("--fluct", type=int, default=200, help="NEST draws per energy for the bands (default 200)")
+    p.add_argument("--out", help="figure file (default <data>/nest/nest_yields.png)")
+    p.set_defaults(func=cmd_nest)
+
     p = sub.add_parser("number", help="the run number of run files; one without gets the next one written into it "
                                       "(production account: last production number + 1; else private 99xxxx)")
     p.add_argument("run", nargs="+", help="run file(s)")

@@ -229,9 +229,25 @@ physics:
     nr_yields: -1                # NR yields parameters: -1 = NEST's, or a list of 12
 ```
 
-Width names (NEST defaults): `fano_ions_NR` (0.4), `fano_excitons_NR` (0.4), `A_NR` (0.04), `xi_NR` (0.50),
-`omega_NR` (0.19), `skewness_NR` (2.25), `fano_ER` (1, multiplier; < 0 field dependent), `A_ER` (0.096452, recombination
-amplitude, field dependent), `omega_ER` (0.205), `xi_ER` (0.45), `alpha_skewness_ER` (−0.2). The settings are part of
+Width names with the defaults of nestpy 2.0.6 (`nestpy.NESTcalc(...).default_NRERWidthsParam`; fuse's code comment
+says 0.096452 for `A_ER`, the installed value is 0.046452): `fano_ions_NR` (0.4), `fano_excitons_NR` (0.4), `A_NR`
+(0.04), `xi_NR` (0.50), `omega_NR` (0.19), `skewness_NR` (2.25), `fano_ER` (1, multiplier; < 0 field dependent), `A_ER`
+(0.046452), `omega_ER` (0.205), `xi_ER` (0.45), `alpha_skewness_ER` (−0.2).
+
+`A_ER`, `omega_ER`, `xi_ER`, `alpha_skewness_ER` describe the **recombination fluctuations of electronic recoils**:
+beyond binomial statistics, the fraction of electrons that recombine varies from event to event as a (skewed)
+Gaussian in the recombination probability r with amplitude `A_ER`, centred at `xi_ER` with width `omega_ER`. They
+change the widths of S1 and S2 at fixed energy and their anti-correlation, not the mean yields. The yield parameters
+(`er_yields`, `nr_yields`) change the mean light / charge yields.
+
+Without a simulation, `xamssim nest` shows what a setting does: light and charge yield against energy (β-ER, γ-ER,
+NR) with the fluctuation bands, at the drift field of states (from their field maps), given fields, or the state and
+`physics.nest` of run files, and the Cs-137 photopeak in quanta (photons, electrons, their widths and correlation):
+
+```bash
+xamssim nest --state sept --state cmb50_a36 --field 23
+xamssim nest --state sept --run runs/a_er_0.08.yaml --types gamma
+``` The settings are part of
 the run file and so of the run key: another setting is another run (another number). The fast way to study them is the
 chain up to the events (`xamssim chain <run> --target events`: quanta → … → cS1 / cS2 of the simulation, no
 waveforms); with the waveforms and amstrax (`stbc/submit_production.sh`) they can be compared with data as data.
