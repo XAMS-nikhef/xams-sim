@@ -23,3 +23,8 @@ def test_yields_and_widths():
     assert all(r["corr"] < -0.9 for r in rows)                                        # recombination: anti-correlated
     k = nestfig.Nest().curves("beta", 150.0, 2.87, np.array([10.0, 100.0]), n_fluct=50)
     assert np.all(k["ly"] > 0) and np.all(k["qy"] > 0) and k["ly"].shape == (2,)
+
+
+def test_nr():
+    k = nestfig.Nest().curves("nr", 150.0, 2.87, np.array([5.0, 50.0]), n_fluct=20)
+    assert np.all(k["qy"] > 0) and np.all(k["ly"] > 0)

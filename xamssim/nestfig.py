@@ -63,7 +63,8 @@ class Nest:
             self.widths[WIDTH_KEYS.index(k)] = float(v)
 
     def yields(self, kind: str, energy: float, field: float, density: float):
-        return self.nc.GetYields(interaction=getattr(self.np, TYPES[kind]), energy=float(energy),
+        # xenon interaction types (nestpy.NR etc. at module level can be the argon ones: LArInteraction)
+        return self.nc.GetYields(interaction=getattr(self.np.INTERACTION_TYPE, TYPES[kind]), energy=float(energy),
                                  drift_field=float(field), A=131.293, Z=54.0, density=float(density),
                                  ERYieldsParam=self.er, nuisance_parameters=self.nr)
 
