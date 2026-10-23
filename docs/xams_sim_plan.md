@@ -444,6 +444,27 @@ Plan:
 **Check:** a data run and an MC run go through the same commands (context, step scripts, EventDisplay) with only the
 run number different; another user on STBC can process and read an MC run; the dashboard lists it.
 
+**Reruns and corrections (decided 2026-10-23).**
+- *A run number is one fixed simulation, never overwritten* (as data). The run file is the recipe and the lasting
+  identity; a rerun of it (new code, maps, geometry, source, events, seed: anything that changes the simulated data)
+  gets the next free number and `supersedes: <old number>` in run file and run document. Same rule for private and
+  production. Under the same number only: reprocessing with amstrax (new corrections / amstrax version: new products
+  next to the old, new lineage) and finishing a failed, incomplete run. Outdated runs are removed when no longer needed
+  (`xamssim rundb --delete` by range / tag + files); refer to standard runs by run file and tag, not by number.
+- *Corrections of MC runs:* the per-run values live in the run document, not in amstrax_files:
+  `xamssim.corrections.truth` (from the simulation, written when the run is made; now `xamssim.truth`) and
+  `xamssim.corrections.calibrated` (determined from the reconstructed MC with the data calibration steps, with method,
+  analysis commit, date and a calibration version). amstrax_files holds the recipe: a global MC version
+  (`_global_mc_vN.json`, same cuts and settings as the data version it is compared with; per-run corrections as
+  `rundoc://?path=...calibrated...,...truth...`) and detector maps shared by MC runs (pos_rec_map: by default the data
+  map, an MC-made map for checks). The calibration version goes into the correction address so that each calibration
+  gets its own lineage (products side by side, nothing silently reused). The per-run 9xxxxx entries in the v5 files go
+  (TODO.md). Until then: private jobs fall back to the truth values (production_job.sh, 2026-10-23).
+- *Two passes, as for data:* reconstruct with truth (pass 1) → calibrate on the reconstructed MC
+  (`analysis_SR2026.2/steps`) → reconstruct with the calibrated values (pass 2) = the version compared with data (S9).
+  Noted: 900201 has gate / cathode drift times 4416 / 37751 ns in amstrax_files against truth 3904 / 37238 ns
+  (different definitions; check in S9).
+
 ### S11. Simulation app: overview and composer (2–3 weeks, in phases) — **planned 2026-10-20, worked out 2026-10-21**
 
 A web app to see which simulations exist and how they were made, and to compose new ones, instead of reading and
@@ -521,6 +542,12 @@ reconstructed, private and production alike. A section "Reconstruction" per run 
 - later: against the truth file (reconstructed vs true energy and position).
 Split: xams-dashboard = processing of database runs (data + production MC); the app = overview of all MC runs;
 notebooks = analysis and data comparisons. First test case: private run 990001 (z37).
+
+**Rerun button (decided 2026-10-23):** on an outdated run (signal only: made with older maps / code / run file), with
+the reason shown; it starts the same run file under the next free number (`supersedes` link), never overwrites. The
+account of the app decides private (own app) or production (xamsdata app); confirmation, at most 10 condor jobs; later
+"rerun all outdated". The overview shows the newest version per run file, older versions folded underneath
+(deletable). The detail page shows truth and calibrated corrections side by side.
 
 ### S12. Overview and docs (2–3 days)
 - Validation against data: S9.
