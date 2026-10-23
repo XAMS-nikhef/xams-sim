@@ -8,7 +8,7 @@ them** decides where the output goes and whether the run enters the run database
 | account | your own (e.g. `z37`) | `xamsdata` |
 | output | your own area, e.g. `/data/xenon/xams_v2/users/<you>/xamssim/` | the central MC folders `/data/xenon/xams_v2/mc`, `live_mc`, `mc_raw_records`, `mc_processed` (only `xamsdata` can write there) |
 | run database | **never**: your account has no database account for MC | registered in `run.runs_mc` (with its processing) |
-| visible in | your own notebooks, `xamssim list` | the xams-dashboard ("Simulated runs (MC)") and the simulation app ("Simulations" tile) |
+| visible in | your private simulation app ("Simulations (private)" tile), your notebooks, `xamssim list`; **not** in the xams-dashboard (that shows only runs in the run database) | the xams-dashboard ("Simulated runs (MC)") and the simulation app ("Simulations" tile) |
 | run files | your own copy of the studies (`simulations` repository) | committed run files that `xamsdata` reads |
 
 **Rule of thumb:** everything starts as a private MC. Only a run that others need (a reference, a comparison with
@@ -44,6 +44,14 @@ private run therefore cannot end up in the database, whichever command you use.
     them made on the Mac first (COMSOL); ask for it rather than making your own.
 
 4. **Run files:** a checkout of the `simulations` repository in `XAMSSIM_STUDIES` (your own study folder in it).
+5. **Private app** (optional): the simulation app on your own data, as your account on stbc-i1, in a screen:
+
+    ```bash
+    XAMSSIM_WEB_SCREEN=xamssim_web_private XAMSSIM_WEB_PORT=8077 XAMSSIM_WEB_LOG=$HOME/xamssim_web_private.log \
+        /data/xenon/xams_v2/software/xams-sim/web/start_stbc.sh
+    ```
+
+    The launcher tile "Simulations (private)" tunnels to it (port 8077). Restart it after a `git pull` of the software.
 
 ## A private MC
 
