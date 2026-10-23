@@ -70,6 +70,32 @@ def register(doc: dict, log=print) -> bool:
     return True
 
 
+def record_processing(number: int, entries: list, status: str = "done", corrections_version: str | None = None,
+                      log=print) -> bool:
+    """After amstrax processed a simulated run: its data[] entries (replacing older ones of the same types),
+    processing_status and a processing_history line in run.runs_mc, as the auto-processing does for data runs."""
+    import datetime as dt
+    import getpass
+    n = _check_number(number)
+    col = collection()
+    if col is None:
+        log(f"  run database: no [mc] account in {CONFIG_FILE}: processing not recorded")
+        return False
+    now = dt.datetime.now()
+    entries = [dict(e, time=dt.datetime.fromisoformat(e["time"])) if isinstance(e.get("time"), str) else e
+               for e in entries]                                   # as the auto-processing: a date, not a string
+    types = sorted({e["type"] for e in entries})
+    col.update_one({"number": n}, {"$pull": {"data": {"type": {"$in": types}}}})
+    hist = dict(time=now, user=getpass.getuser(), host="stbc", action="mc_production", status=status,
+                corrections_version=corrections_version, targets=types)
+    res = col.update_one({"number": n}, {"$push": {"data": {"$each": entries}, "processing_history": hist},
+                                         "$set": {"processing_status": dict(status=status, time=now, host="stbc")}})
+    col.update_one({"number": n, "xamssim.made": {"$exists": False}}, {"$set": {"xamssim.made": now}})
+    log(f"  run database: run {n:06d} processing {status} recorded ({', '.join(types)})" if res.matched_count
+        else f"  run database: run {n:06d} not in {DB}.{COLLECTION}: processing not recorded")
+    return bool(res.matched_count)
+
+
 def delete(numbers: tuple[int, int] | None = None, tag: str | None = None, dry_run: bool = True, log=print) -> int:
     """Remove run documents from run.runs_mc by number range and / or tag (only ever within the simulated range)."""
     lo, hi = numbers or MC_RUN_NUMBERS

@@ -200,6 +200,7 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
                        "registers": [{"reg": "8038", "val": f"{pre:x}", "comment": "Pre-trigger (simulated)"}],
                        **(daq_extra or {})},
         "xamssim": {"run_name": sim_id, "run_file": str(Path(res.run_path).resolve()), "run_key": res.run_key(),
+                    "made": dt.datetime.now(tz=dt.timezone.utc),       # when exported (the run's start is simulated time)
                     "state": res.state_name, "source": res.source_name, "source_position_mm": res.source.get("position_mm"),
                     "detector": res.detector, "n_events": res.run["n_events"], "seed": res.run["seed"],
                     "truth": truth_constants(res, lifetime_us)},

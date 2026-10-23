@@ -50,3 +50,17 @@ def test_no_account(monkeypatch, tmp_path):
     assert not rundb.configured()
     msgs = []
     assert rundb.register(dict(number=900201), log=msgs.append) is False and "only as a file" in msgs[0]
+
+
+def test_record_processing(monkeypatch):
+    import mongomock
+    col = mongomock.MongoClient()["run"]["runs_mc"]
+    col.insert_one(dict(number=900201, data=[dict(type="live_data"), dict(type="event_info", lineage_hash="old")]))
+    monkeypatch.setattr(rundb, "collection", lambda: col)
+    entries = [dict(type="raw_records", location="/mc_raw_records"), dict(type="event_info", lineage_hash="new")]
+    assert rundb.record_processing(900201, entries, "done", "v5", log=lambda *a: None)
+    d = col.find_one({"number": 900201})
+    assert sorted(e["type"] for e in d["data"]) == ["event_info", "live_data", "raw_records"]
+    assert [e.get("lineage_hash") for e in d["data"] if e["type"] == "event_info"] == ["new"]
+    assert d["processing_status"]["status"] == "done" and d["processing_history"][-1]["corrections_version"] == "v5"
+    assert "made" in d["xamssim"]

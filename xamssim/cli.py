@@ -184,7 +184,12 @@ def cmd_web(a) -> int:
 
 
 def cmd_rundb(a) -> int:
+    import json
+
     from . import rundb
+    if a.record:
+        entries = json.loads(open(a.entries).read())
+        return 0 if rundb.record_processing(a.record, entries["data"], a.status, entries.get("corrections_version")) else 1
     rng = tuple(int(x) for x in a.range.split("-")) if a.range else None
     if not rundb.configured():
         print(f"no [mc] account in {rundb.CONFIG_FILE}: run documents are written only as files")
@@ -272,6 +277,10 @@ def main(argv=None) -> int:
     p.add_argument("--tag", help="only documents with this tag (e.g. test)")
     p.add_argument("--delete", action="store_true", help="delete the selected documents (after a confirmation)")
     p.add_argument("--yes", action="store_true", help="with --delete: without the confirmation")
+    p.add_argument("--record", type=int, metavar="NUMBER", help="record amstrax processing of a simulated run: data[] "
+                   "entries, processing_status, processing_history (from --entries, written by the production job)")
+    p.add_argument("--entries", help="with --record: JSON {data: [...], corrections_version}")
+    p.add_argument("--status", default="done", help="with --record: processing status (default done)")
     p.set_defaults(func=cmd_rundb)
     p = sub.add_parser("web", help="the simulation app (S11): which simulations exist and how they were made")
     p.add_argument("--host", default="127.0.0.1")
