@@ -1,18 +1,24 @@
 #!/bin/bash
-# One MC production run on STBC, as a condor job (as xamsdata: the central MC folders, run database runs_mc).
+# One MC run on STBC, simulated and reconstructed, as a condor job:
 #   production_job.sh <run file> [corrections version]
-# 1 xams-sim (setup_xamssim.sh, settings from ~/.config/xamssim/env): Geant4 -> chain to raw records -> live data
-#   (live_mc/<run>/) + run document (mc_raw_records/<run>-metadata.json) + registration in run.runs_mc
-# 2 amstrax as for data (setup_py312.sh): live data -> raw_records (mc_raw_records/) -> event_info (mc_processed/)
-# 3 the processing recorded in run.runs_mc (data[] entries, processing_status), via xamssim rundb --record
+# Where everything goes comes from the settings of the account that runs it (~/.config/xamssim/env):
+#   XAMSSIM_DATA (Geant4, chain), XAMSSIM_LIVE (live data), XAMSSIM_AMSTRAX_STORE (raw records + run document),
+#   XAMSSIM_PROCESSED (amstrax products; default: processed/ next to XAMSSIM_DATA).
+# As xamsdata (production) these are the central MC folders and the run is registered in run.runs_mc; any other account
+# (a private MC) has no [mc] database account, so nothing is ever written to the database.
+# 1 xams-sim: Geant4 -> chain to raw records -> live data + run document (+ run.runs_mc for production)
+# 2 amstrax as for data (setup_py312.sh): live data -> raw_records -> peak_basics ... event_info
+# 3 production only: the processing recorded in run.runs_mc (data[] entries, processing_status)
 set -o pipefail
 RUN=$(readlink -f "$1"); CV=${2:-v5}
 X=/data/xenon/xams_v2
-RAW=$X/mc_raw_records; PROC=$X/mc_processed
+source $X/setup_xamssim.sh >/dev/null || exit 1
+RAW=$XAMSSIM_AMSTRAX_STORE; PROC=${XAMSSIM_PROCESSED:-$(dirname "$XAMSSIM_DATA")/processed}
+mkdir -p "$RAW" "$PROC"
 echo "host $(hostname), user $(whoami), $(date), run file $RUN, corrections $CV"
+echo "data $XAMSSIM_DATA, raw records $RAW, processed $PROC"
 umask 022
-( source $X/setup_xamssim.sh || exit 1
-  xamssim particle "$RUN" && xamssim chain "$RUN" --target raw_records && xamssim live "$RUN" ) || { echo "simulation failed"; exit 1; }
+( xamssim particle "$RUN" && xamssim chain "$RUN" --target raw_records && xamssim live "$RUN" ) || { echo "simulation failed"; exit 1; }
 RID=$(sed -nE 's/^run_number:[[:space:]]*([0-9]+).*/\1/p' "$RUN" | head -1)
 RID=$(printf "%06d" "$RID")
 ENTRIES=$(mktemp /tmp/xamssim_entries_${RID}_XXXX.json)
@@ -52,7 +58,8 @@ PY
 rc=$?
 # 3 record the processing in run.runs_mc (data[] entries, processing_status, history), as the auto-processing does for data
 if [ $rc -eq 0 ]; then
-    ( source $X/setup_xamssim.sh >/dev/null && xamssim rundb --record "$((10#$RID))" --entries "$ENTRIES" ) || rc=1
+    ( source $X/setup_xamssim.sh >/dev/null && if python -c "import xamssim.rundb as r; raise SystemExit(0 if r.configured() else 1)"; then
+          xamssim rundb --record "$((10#$RID))" --entries "$ENTRIES"; else echo "private run: not recorded in the run database"; fi ) || rc=1
 fi
 rm -f "$ENTRIES"
 echo "exit $rc, $(date)"; exit $rc

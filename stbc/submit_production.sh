@@ -1,11 +1,12 @@
 #!/bin/bash
-# Submit MC production runs to condor (as xamsdata), one job per run file:
+# Submit MC runs to condor, one job per run file (production as xamsdata, or private as your own account):
 #   submit_production.sh <run file> [<run file> ...]
-# Logs in /data/xenon/xams_v2/mc/logs/<run file name>/. At most MAX_JOBS (10) xams-sim jobs of this account in condor
-# at once (batch name xamssim_*); nothing is submitted beyond that.
+# Logs in $XAMSSIM_DATA/logs/<run file name>/ (from your ~/.config/xamssim/env). At most MAX_JOBS (10) xams-sim jobs
+# of this account in condor at once (batch name xamssim_*); nothing is submitted beyond that.
 MAX_JOBS=${MAX_JOBS:-10}
 HERE=$(dirname "$(readlink -f "$0")")
-LOGS=/data/xenon/xams_v2/mc/logs
+source /data/xenon/xams_v2/setup_xamssim.sh >/dev/null || exit 1
+LOGS=$XAMSSIM_DATA/logs
 for f in "$@"; do
     run=$(readlink -f "$f"); name=$(basename "$run" .yaml)
     n=$(condor_q "$USER" -af JobBatchName 2>/dev/null | grep -c '^xamssim_')

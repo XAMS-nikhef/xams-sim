@@ -46,6 +46,7 @@ nav:
       - Simulation chain: chain.md
       - Viewers: viewers.md
       - Electric field: efield.md
+      - On STBC (private and production MC): stbc.md
   - Output:
       - Output formats: output.md
       - Reading the output: analysis.md
