@@ -46,8 +46,39 @@ def simulation(run_id):
     # The optical maps of this simulation: the key in its provenance record.
     key = ((d.get("record") or {}).get("maps") or {}).get("s1_light", {}).get("key")
     optical = compose.optical_map(key) if key else None
+    rec = d.get("record")
+    number = (d.get("row") or {}).get("number")
+    reasons = compose.outdated_reasons(rec) if rec and (d.get("row") or {}).get("status") == "outdated" else []
     return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, figure_rows=compose.FIGURE_ROWS, others=others,
-                           optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES, dashboard=DASHBOARD, page="overview")
+                           optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES, dashboard=DASHBOARD,
+                           daq=compose.daq_settings(rec) if rec else None, live=compose.live_settings(rec, number),
+                           reco=compose.reconstruction(number), reasons=reasons, page="overview")
+
+
+@app.route("/sim/<run_id>/reconstruction/<ev_hash>.png")
+def reconstruction_figure(run_id, ev_hash):
+    number = (compose.detail(run_id) or {}).get("row", {}).get("number")
+    try:
+        return send_file(compose.reconstruction_figure(run_id, number, ev_hash), mimetype="image/png")
+    except (FileNotFoundError, TypeError):
+        abort(404)
+
+
+@app.route("/sim/<run_id>/rerun", methods=["GET", "POST"])
+def rerun(run_id):
+    """GET: what a rerun would do (new number, new run file, reasons); POST: write the run file and submit it."""
+    result, error = None, ""
+    try:
+        plan = compose.rerun_plan(run_id)
+    except (FileNotFoundError, ValueError) as e:
+        return render_template("rerun.html", run_id=run_id, plan=None, result=None, error=str(e), page="overview")
+    if request.method == "POST":
+        try:
+            result = compose.rerun(run_id)
+        except (PermissionError, FileExistsError, OSError) as e:
+            error = str(e)
+    return render_template("rerun.html", run_id=run_id, plan=plan, result=result, error=error,
+                           can_submit=os.environ.get("XAMSSIM_WEB_SUBMIT") == "1", page="overview")
 
 
 @app.route("/sim/<run_id>/figure/<name>.png")

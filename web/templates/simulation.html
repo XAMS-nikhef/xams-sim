@@ -4,7 +4,9 @@
   <div class="panel-title">{{ run_id }}
     {% if d.row and d.row.number %}<span class="tag">run {{ "%06d"|format(d.row.number) }}</span>{% endif %}
     {% if d.row %}<span class="status {{ d.row.status }}">{{ d.row.status }}</span> <span class="muted small">{{ d.row.how_far }}</span>{% endif %}
+    {% if d.row and d.row.status == 'outdated' and d.row.number %}<a class="nav-link small" href="{{ url_for('rerun', run_id=run_id) }}">rerun…</a>{% endif %}
   </div>
+  {% if reasons %}<div class="muted small">outdated: {{ reasons|join("; ") }}</div>{% endif %}
   <form class="controls" action="{{ url_for('compare') }}" method="get">
     <input type="hidden" name="a" value="{{ run_id }}" />
     <span class="muted">compare with</span>
@@ -28,7 +30,7 @@
 
 {# Side by side at the same height: each panel gets a width in proportion to its figure's aspect ratio (set once the
    image is loaded), so the figures fill one row with equal heights at any window width. #}
-{% for row in figure_rows %}
+{% for row in figure_rows %}{% if not ('spe' in row and not daq) %}
 <section class="figrow">
 {% for name in row %}{% set title = figures[name][0] %}
 <div class="panel">
@@ -37,7 +39,7 @@
 </div>
 {% endfor %}
 </section>
-{% endfor %}
+{% endif %}{% endfor %}
 <script>
 function figAspect(img) {
   if (img.naturalHeight) img.closest('.panel').style.flex = (img.naturalWidth / img.naturalHeight) + ' 1 0';
@@ -49,6 +51,56 @@ document.querySelectorAll('.figrow img').forEach(function (img) { if (img.comple
 <section class="panel">
   <div class="panel-title">{{ title }} <span class="muted small">same fixed set for every simulation; made once, the first view takes a while</span></div>
   <img class="figure" src="{{ url_for('figure', run_id=run_id, name=name) }}" alt="{{ title }}" />
+</section>
+{% endfor %}
+{% endif %}
+{% if daq %}
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-title">DAQ: simulated pulses → digitizer <span class="muted small">as the waveform step used it</span></div>
+    <table class="kv">
+      {% for k, v in daq.digitizer.items() %}<tr><td class="muted">{{ k }}</td><td class="mono">{{ v|fmt }}</td></tr>{% endfor %}
+      {% for k, v in daq.photoelectrons.items() %}<tr><td class="muted">{{ k }}</td><td class="mono">{{ v|fmt }}</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="panel">
+    <div class="panel-title">live data <span class="muted small">run document (xamssim live)</span></div>
+    {% if live %}<table class="kv">
+      {% for k, v in live.items() %}<tr><td class="muted">{{ k }}</td><td class="mono">{{ v|fmt }}</td></tr>{% endfor %}
+    </table>{% else %}<span class="muted">no live data (no run number, or not exported)</span>{% endif %}
+  </div>
+</section>
+<section class="panel">
+  <div class="panel-title">channels</div>
+  <table class="table">
+    <thead><tr>{% for k in daq.channels[0].keys() %}<th>{{ k }}</th>{% endfor %}</tr></thead>
+    {% for c in daq.channels %}<tr>{% for v in c.values() %}<td class="mono">{{ v|fmt }}</td>{% endfor %}</tr>{% endfor %}
+  </table>
+</section>
+{% endif %}
+{% if reco and reco.products %}
+<section class="panel">
+  <div class="panel-title">Reconstruction (amstrax) <span class="muted small">run {{ "%06d"|format(d.row.number) }}; stored data types, no database
+    {% if reco.n_decays %}· {{ reco.n_decays|fmt }} decays simulated{% endif %}</span></div>
+  <div class="grid two">
+    <table class="table">
+      <thead><tr><th>data type</th><th>hash</th><th class="num">chunks</th><th class="num">rows</th><th class="num">size</th><th>calibration</th><th>made</th></tr></thead>
+      {% for p in reco.products %}<tr><td>{{ p.type }}</td><td class="mono">{{ p.hash }}</td><td class="num">{{ p.n_chunks }}</td>
+        <td class="num">{{ p.rows }}</td><td class="num">{{ "%.1f"|format(p.size_mb) }} MB</td>
+        <td>{% if p.calibration is not none %}{{ "truth" if p.calibration == 0 else "v%d"|format(p.calibration) }}{% endif %}</td><td class="mono small">{{ p.made }}</td></tr>{% endfor %}
+    </table>
+    <table class="table">
+      <thead><tr><th>correction</th><th>truth</th><th>calibrated</th></tr></thead>
+      {% for c in reco.corrections %}<tr><td>{{ c.name }}</td><td class="mono">{{ c.truth|fmt }}</td><td class="mono">{{ c.calibrated|fmt }}</td></tr>{% endfor %}
+      <tr><td class="muted">current calibration</td><td colspan="2">{{ "truth (version 0)" if not reco.calibration_version else "version %d"|format(reco.calibration_version) }}
+        {% if reco.calibration %}<span class="muted small">from run {{ reco.calibration.from_run }}, {{ reco.calibration.method }}</span>{% endif %}</td></tr>
+    </table>
+  </div>
+</section>
+{% for e in reco.event_info %}
+<section class="panel">
+  <div class="panel-title">event_info {{ e.hash }} <span class="muted small">{{ e.rows }} events · calibration {{ "truth" if not e.calibration else "v%d"|format(e.calibration) }} · made once, the first view takes a while</span></div>
+  <img class="figure" loading="lazy" src="{{ url_for('reconstruction_figure', run_id=run_id, ev_hash=e.hash) }}" alt="reconstruction" />
 </section>
 {% endfor %}
 {% endif %}

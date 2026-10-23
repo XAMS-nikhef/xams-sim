@@ -155,8 +155,8 @@ def _style(ax):
 
 
 def _draw_detector(ax, rec, labels=True, liquid=True):
-    """Side cross-section (x-z through the axis): meshes with their voltages, PTFE cylinder, field-shaping rings, PMTs,
-    SiPMs (at their height, projected), liquid level, source."""
+    """Side cross-section (x-z through the axis): meshes with their voltages, PTFE cylinder, field-shaping rings, PMTs
+    with their PTFE holders, the PTFE bucket, SiPMs (at their height, projected), liquid level, source."""
     from matplotlib.patches import Rectangle
     g, hv = rec["geometry"], rec["hv_case"]
     mc = g["mesh_common"]
@@ -165,8 +165,20 @@ def _draw_detector(ax, rec, labels=True, liquid=True):
     level = z_gate + rec["state"]["liquid_level_mm"]
     bucket = g.get("ptfe_bucket", {})
     rb = bucket.get("inner_diameter_mm", 112) / 2
+    PTFE = dict(color="#d9d9d9", alpha=0.8, lw=0, zorder=2)
+    z_rim = level + bucket.get("weir_below_rim_mm", 0.0)                 # the weir sets the level (as Geant4 builds it)
+    z_bucket = z_rim - bucket.get("height_mm", 0.0)
+    bot = bucket.get("bottom_thickness_mm") or 10.0                      # g4config default: = wall
     if liquid:
-        ax.add_patch(Rectangle((-rb, -75), 2 * rb, level + 75, color="#1d4f7a", alpha=0.35, lw=0, zorder=0))
+        ax.add_patch(Rectangle((-rb, z_bucket + bot), 2 * rb, level - z_bucket - bot, color="#1d4f7a", alpha=0.35,
+                               lw=0, zorder=0))
+    if bucket:                                                           # PTFE bucket: wall and bottom
+        rbo = bucket["outer_diameter_mm"] / 2
+        for x0 in (-rbo, rb):
+            ax.add_patch(Rectangle((x0, z_bucket), rbo - rb, z_rim - z_bucket, **PTFE))
+        ax.add_patch(Rectangle((-rb, z_bucket), 2 * rb, bot, **PTFE))
+        if labels:
+            ax.text(rbo + 1, z_bucket + 4, "PTFE bucket", color="#d9d9d9", fontsize=7, va="bottom")
     ax.axhline(level, color="#4db6ff", lw=0.8, ls="--", zorder=1)
     if labels:
         ax.text(-rb + 1, level + 0.6, f"liquid level (gate +{rec['state']['liquid_level_mm']} mm)", color="#4db6ff",
@@ -197,6 +209,24 @@ def _draw_detector(ax, rec, labels=True, liquid=True):
                     color="#f1c40f", fontsize=7, va="center")
     pc = g["pmt_common"]
     half, h = pc["outer_square_mm"] / 2, pc["height_mm"]
+    hp = g.get("pmt_ptfe")
+    if hp:                                                               # PTFE holders: plate (opening) + surround (slot)
+        ro, ap, t_ring = hp["outer_diameter_mm"] / 2, hp["aperture_square_mm"] / 2, mc["ring"]["thickness_mm"] / 2
+        zmesh = {m["name"]: m["z_mm"] for m in g["meshes"]}
+        for p in g["pmts"]:
+            top_pmt = p["name"] == "top"
+            w = p["window_z_mm"]
+            sl = hp["slot_square_mm"]
+            slot = (sl[p["name"]] if isinstance(sl, dict) else sl) / 2
+            plate = (zmesh["top_screen"] + t_ring, w) if top_pmt else (w, zmesh["bottom_screen"] - t_ring)
+            block = (w, w + h) if top_pmt else (w - h, w)
+            for (lo, hi), inner in ((plate, ap), (block, slot)):
+                if hi > lo:
+                    for x0 in (-ro, inner):
+                        ax.add_patch(Rectangle((x0, lo), ro - inner, hi - lo, **PTFE))
+        if labels:
+            ax.text(ro + 1, max(p["window_z_mm"] for p in g["pmts"]) + 0.75 * h, "PTFE PMT holder", color="#d9d9d9",
+                    fontsize=7, ha="left", va="center")
     for p in g["pmts"]:
         z = p["window_z_mm"]
         up = z > z_gate
@@ -232,7 +262,10 @@ def fig_cross_section(rec):
     pos = rec["source"].get("position_mm") or [0, 0, 0]
     r_src = float(np.hypot(pos[0], pos[1]))
     xmax = max(75.0, r_src + 15)
-    xlim, ylim = (-xmax, xmax + 30), (min(-80.0, pos[2] - 15), 45)
+    b = rec["geometry"].get("ptfe_bucket", {})
+    level = rec["state"]["liquid_level_mm"]                              # above the gate (z = 0)
+    z_low = level + b.get("weir_below_rim_mm", 0.0) - b.get("height_mm", 0.0) - 5 if b else -80.0
+    xlim, ylim = (-xmax, xmax + 30), (min(-80.0, z_low, pos[2] - 15), 45)
     # The figure takes the shape of what is drawn (equal axes): a fixed 9 x 7.5 left a wide detector-plus-source view
     # with blank space above and below it.
     width = 9.0
@@ -371,6 +404,17 @@ def fig_top_view(rec):
     ax = axs[0]
     ax.add_patch(Circle((0, 0), r_cage + pt["wall_thickness_mm"], fill=False, ec="#d9d9d9", lw=0.8, ls="--", zorder=2))
     ax.add_patch(Circle((0, 0), mc["ring"]["outer_diameter_mm"] / 2, fill=False, ec="#8a96a8", lw=1, zorder=2))
+    hp, bk = g.get("pmt_ptfe"), g.get("ptfe_bucket")
+    if hp:                                                               # PTFE PMT holder: outline and opening
+        ax.add_patch(Circle((0, 0), hp["outer_diameter_mm"] / 2, fill=False, ec="#d9d9d9", lw=0.8, ls=":", zorder=2))
+        ap = hp["aperture_square_mm"] / 2
+        ax.add_patch(Rectangle((-ap, -ap), 2 * ap, 2 * ap, fill=False, ec="#d9d9d9", lw=0.8, ls=":", zorder=2))
+    if bk:                                                               # PTFE bucket wall
+        from matplotlib.patches import Wedge
+        ax.add_patch(Wedge((0, 0), bk["outer_diameter_mm"] / 2, 0, 360, width=(bk["outer_diameter_mm"] - bk["inner_diameter_mm"]) / 2,
+                           color="#d9d9d9", alpha=0.5, lw=0, zorder=2))
+        ax.text(0, -bk["outer_diameter_mm"] / 2 + 2, "PTFE bucket", color="#d9d9d9", fontsize=8, ha="center", va="bottom",
+                zorder=4, path_effects=halo)
     sp = g["sipms"]
     for i, az in enumerate(np.atleast_1d(sp["azimuth_deg"]).astype(float)):
         x, y = r_cage * np.cos(np.radians(az)), r_cage * np.sin(np.radians(az))
@@ -378,7 +422,7 @@ def fig_top_view(rec):
         ax.text(x * 0.8, y * 0.8, f"SiPM {i + 1}\n{az:.0f}°", color="#2ecc71", fontsize=8, ha="center", va="center",
                 zorder=4, path_effects=halo)
     pos = rec["source"].get("position_mm")
-    lim = 52
+    lim = 70
     if pos is not None:
         r = float(np.hypot(pos[0], pos[1]))
         if r > lim:                                          # outside the view: an arrow towards it
@@ -391,7 +435,7 @@ def fig_top_view(rec):
             ax.plot([pos[0]], [pos[1]], "*", color="#ff6b6b", ms=12, zorder=5)
     ax.set(xlim=(-lim, lim), ylim=(-lim, lim), xlabel="x [mm]", ylabel="y [mm]",
            title=f"top view: gate mesh ({len(polys)} holes, {np.degrees(a):.1f}° to the anodes), "
-                 f"field cage r {r_cage:.0f} mm, top PMT")
+                 f"field cage r {r_cage:.0f} mm, top PMT, PTFE (dotted: PMT holder)")
     z = 3.5 * p
     axs[1].set(xlim=(-z, z), ylim=(-z, z), xlabel="x [mm]", ylabel="y [mm]",
                title=f"centre: pitch {p} mm, holes {h} mm, bars {mc.get('bar_width_mm')} mm")
@@ -551,7 +595,7 @@ def fig_results(rec):
 RESULT_FIGURES = {"results": ("Results (xams_events)", fig_results)}
 
 
-FIGURE_VERSION = 7              # part of the figure file names: raise it when a figure changes, so old ones are remade
+FIGURE_VERSION = 8              # part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
            "field": ("Field and drift", fig_field),
            "top_view": ("Top view", fig_top_view),
@@ -749,3 +793,331 @@ def map_figure(kind: str, key: str) -> Path:
         fig.savefig(out, dpi=100, facecolor=fig.get_facecolor())
         plt.close(fig)
     return out
+
+
+# ------------------------------------------------------------------------------------------------ DAQ, live data
+# What turned the simulated photoelectrons into DAQ data, as the run used it: the DAQ setup of the waveform step (the
+# chain's xams_daq setting, stored in the provenance record: digitizer, per-channel settings, single-PE templates,
+# scintillation timing) and the live-data layout of the run (its run document, written by xamssim live).
+
+def daq_settings(rec: dict) -> dict | None:
+    s = (rec or {}).get("settings", {})
+    d = s.get("xams_daq")
+    if not d:
+        return None
+    dig = d["digitizer"]
+    chans = []
+    for ch, c in sorted(d["channels"].items(), key=lambda kv: int(kv[0])):
+        chans.append({"channel": int(ch), "light": c.get("light"), "data": c.get("raw"), "polarity": c.get("polarity"),
+                      "threshold [ADC]": c.get("threshold"), "baseline [ADC]": c.get("baseline"),
+                      "noise rms [ADC]": c.get("noise"), "gain [ADC·samples / PE]": c.get("gain"),
+                      "samples after last crossing": c.get("post_samples")})
+    sc = d.get("scintillation", {})
+    return {"digitizer": {"model": dig.get("model"), "sampling [ns]": dig.get("dt_ns"), "bits": dig.get("bits"),
+                          "record length [samples]": dig.get("record_length"),
+                          "pre-trigger [samples]": dig.get("pre_trigger_samples"),
+                          "shortest pulse [samples]": dig.get("min_pulse_samples"),
+                          "single-PE templates": dig.get("spe_templates")},
+            "photoelectrons": {"singlet / triplet [ns]": f"{sc.get('singlet_ns')} / {sc.get('triplet_ns')}",
+                               "singlet fraction": sc.get("singlet_fraction"),
+                               "PMT transit-time spread [ns]": d.get("pmt_transit_spread_ns"),
+                               "SPE resolution": s.get("spe_resolution"),
+                               "double-PE probability (PMTs)": s.get("double_pe_probability"),
+                               "crosstalk probability (SiPMs)": s.get("crosstalk_probability")},
+            "channels": chans}
+
+
+def _run_doc(number) -> dict | None:
+    from . import amstrax_io
+    if number is None or amstrax_io.STORE is None:
+        return None
+    f = Path(amstrax_io.STORE) / f"{int(number):06d}-metadata.json"
+    return json.loads(f.read_text()) if f.exists() else None
+
+
+def live_settings(rec: dict, number) -> dict | None:
+    """The live-data layout of a run with a number (its run document) and how many chunks it wrote."""
+    doc = _run_doc(number)
+    if doc is None:
+        return None
+    dc = doc.get("daq_config", {})
+    n_chunks = None
+    try:
+        from . import amstrax_io
+        from .live import live_root
+        d = live_root(Path(amstrax_io.STORE)) / f"{int(number):06d}"
+        if d.is_dir():
+            n_chunks = sum(1 for p in d.iterdir() if p.name.isdigit())
+    except Exception:
+        pass
+    return {"chunk length [s]": dc.get("strax_chunk_length"), "chunk overlap [s]": dc.get("strax_chunk_overlap"),
+            "chunks written": n_chunks, "payload per record [bytes]": dc.get("strax_fragment_payload_bytes"),
+            "compressor": dc.get("compressor"), "reader threads": dc.get("processing_threads"),
+            "source rate [Hz] (decays on the timeline)": (rec or {}).get("physics", {}).get("source_rate_hz"),
+            "live data folder": dc.get("strax_output_path"), "run start / end": f"{doc.get('start')} / {doc.get('end')}"}
+
+
+def fig_spe(rec):
+    """The single-PE pulse shape per channel as the waveform step used it, with gain, noise and threshold."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    d = rec["settings"]["xams_daq"]
+    dt = float(d["digitizer"]["dt_ns"])
+    chans = sorted(d["templates"], key=int)
+    fig, axs = plt.subplots(1, len(chans), figsize=(2.6 * len(chans), 2.9), facecolor="#111b2e", sharey=False)
+    for ax, ch in zip(np.atleast_1d(axs), chans):
+        _style(ax)
+        t = np.asarray(d["templates"][ch], float)
+        c = d["channels"][ch]
+        amp = t * float(c["gain"])                                 # ADC per sample of one PE
+        x = (np.arange(len(t)) - 10) * dt
+        ax.step(x, amp, where="mid", color="#4db6ff", lw=1.3)
+        ax.axhline(float(c["threshold"]), color="#ff6b6b", lw=0.8, ls=":")
+        ax.axhspan(-float(c["noise"]), float(c["noise"]), color="#8a96a8", alpha=0.25, lw=0)
+        ax.set(title=f"ch{ch} ({c['light']})", xlabel="time from max [ns]", xlim=(-40, 120))
+        ax.text(0.97, 0.95, f"gain {c['gain']:g}\nnoise {c['noise']:g} ADC\nthreshold {c['threshold']:g}",
+                transform=ax.transAxes, ha="right", va="top", fontsize=7, color="#dce7ff")
+    np.atleast_1d(axs)[0].set_ylabel("one PE [ADC per 4 ns sample]")
+    fig.suptitle(f"{rec['run_id']}: single-PE response per channel (red dotted: trigger threshold, grey: noise rms)",
+                 color="#dce7ff", fontsize=9)
+    fig.tight_layout()
+    return fig
+
+
+FIGURES["spe"] = ("Single-PE responses", fig_spe)
+FIGURE_ROWS = FIGURE_ROWS + (("spe",),)
+
+
+# ------------------------------------------------------------------------------------------------ reconstruction
+# What amstrax made of a run with a number (plan S11): the stored data types in the raw-records store and the
+# processed folder, read from their strax metadata (no amstrax, no database), the corrections the run document holds,
+# and a fixed set of figures from event_info (made once per event_info version, next to the provenance).
+
+def processed_dir() -> Path:
+    import os
+    return Path(os.environ["XAMSSIM_PROCESSED"]) if os.environ.get("XAMSSIM_PROCESSED") else DATA.parent / "processed"
+
+
+def _stored(number) -> list:
+    from . import amstrax_io
+    rid = f"{int(number):06d}"
+    out = []
+    for folder in [Path(amstrax_io.STORE) if amstrax_io.STORE is not None else None, processed_dir()]:
+        if folder is None or not folder.is_dir():
+            continue
+        for d in sorted(folder.glob(f"{rid}-*")):
+            if not d.is_dir() or d.name.endswith("_temp"):
+                continue
+            _, dtype, h = d.name.split("-", 2)
+            md = next(iter(d.glob("*metadata.json")), None)
+            meta = json.loads(md.read_text()) if md else {}
+            chunks = meta.get("chunks", [])
+            cal = None
+            for plugin, (name, version, cfg) in (meta.get("lineage") or {}).items():
+                for v in (cfg or {}).values():
+                    if isinstance(v, str) and "calibration=" in v and "xamssim.corrections" in v:
+                        cal = int(v.split("calibration=")[1].split("&")[0])
+            out.append(dict(type=dtype, hash=h, folder=str(folder), n_chunks=len(chunks),
+                            rows=sum(c.get("n", 0) for c in chunks), size_mb=sum(f.stat().st_size for f in d.iterdir()) / 1e6,
+                            made=time.strftime("%Y-%m-%d %H:%M", time.localtime(meta["writing_ended"])) if meta.get("writing_ended") else "",
+                            calibration=cal, path=str(d)))
+    return out
+
+
+def reconstruction(number) -> dict | None:
+    """The amstrax products of a run (data type, lineage hash, chunks, rows, calibration version) and its corrections."""
+    if number is None:
+        return None
+    prods = _stored(number)
+    doc = _run_doc(number) or {}
+    corr = (doc.get("xamssim") or {}).get("corrections") or {}
+    if not corr and (doc.get("xamssim") or {}).get("truth"):
+        corr = {"truth": doc["xamssim"]["truth"]}
+    keys = ("elife", "drift_time_gate", "drift_time_cathode", "gain_to_pe_array")
+    table = [dict(name=k, truth=(corr.get("truth") or {}).get(k), calibrated=(corr.get("calibrated") or {}).get(k))
+             for k in keys]
+    cal = corr.get("calibrated") or {}
+    ev = [p for p in prods if p["type"] == "event_info"]
+    return dict(products=prods, corrections=table, calibration_version=cal.get("version", 0),
+                calibration=dict(from_run=cal.get("from_run"), method=cal.get("method"), date=cal.get("date")) if cal else None,
+                event_info=ev, n_decays=doc.get("xamssim", {}).get("n_events"))
+
+
+def _load(path: str) -> np.ndarray:
+    import ast
+    import strax
+    d = Path(path)
+    meta = json.loads(next(iter(d.glob("*metadata.json"))).read_text())
+    dtype = np.dtype([tuple(x) if not isinstance(x[0], list) else (tuple(x[0]), *x[1:]) for x in ast.literal_eval(meta["dtype"])])
+    parts = [strax.load_file(str(d / c["filename"]), compressor=meta["compressor"], dtype=dtype)
+             for c in meta["chunks"] if c.get("n", 0) > 0]
+    return np.concatenate(parts) if parts else np.zeros(0, dtype)
+
+
+def fig_reconstruction(number, ev_path: str, run_id: str):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
+    from . import amstrax_io
+    ev = _load(ev_path)
+    ok = np.isfinite(ev["cs1"]) & np.isfinite(ev["cs2"]) & (ev["cs1"] > 0) & (ev["cs2"] > 0)
+    fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#111b2e")
+    for a in axs.flat:
+        _style(a)
+    kw = dict(norm=LogNorm(), cmap="viridis")
+    a = axs[0, 0]
+    a.hist2d(ev["cs1"][ok], ev["cs2"][ok], bins=[np.linspace(0, np.nanpercentile(ev["cs1"][ok], 99.5), 120),
+                                                  np.linspace(0, np.nanpercentile(ev["cs2"][ok], 99.5), 120)], **kw)
+    a.set(xlabel="cS1 [PE]", ylabel="cS2 [PE]", title=f"cS1 vs cS2 ({ok.sum()} events with S1 and S2)")
+    a = axs[0, 1]
+    a.hist(ev["drift_time"][ok] / 1e3, bins=np.arange(0, 60, 0.25), histtype="step", color="#4db6ff")
+    a.set(xlabel="drift time [µs]", ylabel="events", title="drift time")
+    a = axs[0, 2]
+    a.hist2d(ev["s2_x"][ok & np.isfinite(ev["s2_x"])], ev["s2_y"][ok & np.isfinite(ev["s2_y"])],
+             bins=[np.linspace(-35, 35, 141)] * 2, **kw)
+    a.set(xlabel="x [mm]", ylabel="y [mm]", title="position of the main S2", aspect="equal")
+    a = axs[1, 0]
+    a.hist(np.log10(ev["s1_area"][ok]), bins=120, histtype="step", color="#4db6ff")
+    a.set(xlabel="log10 S1 area [PE]", ylabel="events", title="S1 spectrum")
+    a = axs[1, 1]
+    a.hist(np.log10(ev["s2_area"][ok]), bins=120, histtype="step", color="#4db6ff")
+    a.set(xlabel="log10 S2 area [PE]", ylabel="events", title="S2 spectrum")
+    a = axs[1, 2]                                          # against the simulation's own values (truth file)
+    tf = Path(amstrax_io.STORE) / f"{int(number):06d}-truth.npz" if amstrax_io.STORE is not None else None
+    if tf is not None and tf.exists():
+        t = amstrax_io.load_truth(tf)
+        t = t[np.argsort(t["time"])]
+        i = np.clip(np.searchsorted(t["time"], ev["time"]), 1, len(t) - 1)
+        j = np.where(np.abs(t["time"][i - 1] - ev["time"]) < np.abs(t["time"][i] - ev["time"]), i - 1, i)
+        m = ok & (np.abs(t["time"][j] - ev["time"]) < 200_000) & (t["cs2"][j] > 0)
+        a.hist2d(ev["drift_time"][m] / 1e3, ev["cs2"][m] / t["cs2"][j][m], bins=[np.arange(0, 60, 0.5), np.linspace(0, 2, 81)], **kw)
+        a.axhline(1, color="#ff6b6b", lw=0.8)
+        a.set(xlabel="drift time [µs]", ylabel="cS2 amstrax / simulation", title=f"cS2 against the simulation ({m.sum()} matched)")
+    else:
+        a.text(0.5, 0.5, "no truth file", transform=a.transAxes, ha="center", color="#8a96a8")
+    fig.suptitle(f"{run_id} = run {int(number):06d}: amstrax event_info ({Path(ev_path).name.split('-')[-1]})",
+                 color="#dce7ff", fontsize=10)
+    fig.tight_layout()
+    return fig
+
+
+def reconstruction_figure(run_id: str, number, ev_hash: str) -> Path:
+    """PNG of the reconstruction figures for one event_info version, made once next to the run's provenance."""
+    ev = next((p for p in _stored(number) if p["type"] == "event_info" and p["hash"] == ev_hash), None)
+    if ev is None:
+        raise FileNotFoundError(f"no event_info {ev_hash} for run {number}")
+    recs = records(run_id)
+    base = recs[-1][0].parent if recs else DATA / "provenance" / run_id
+    out = base / "figures" / f"reconstruction_v{FIGURE_VERSION}_{ev_hash}.png"
+    if not out.exists():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        fig = fig_reconstruction(number, ev["path"], run_id)
+        fig.savefig(out, dpi=100, facecolor=fig.get_facecolor(), bbox_inches="tight")
+        import matplotlib.pyplot as plt
+        plt.close(fig)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ rerun
+# A run number is one fixed simulation (plan S10): a rerun of a run file (new code, maps, ...) is a new run file with
+# the next free number and `supersedes: <old number>`, submitted with stbc/submit_production.sh under the account the
+# app runs as (private app: private run; production app: production run). The old run stays until it is deleted.
+# Submitting from the app needs XAMSSIM_WEB_SUBMIT=1 (set by web/start_stbc.sh on STBC); otherwise the app only shows
+# what it would do.
+PRIVATE_NUMBERS = (990000, 999999)
+PRODUCTION_NUMBERS = (900000, 989999)
+SUBMIT = Path(__file__).resolve().parents[1] / "stbc" / "submit_production.sh"
+
+
+def outdated_reasons(rec: dict) -> list:
+    """Why a simulation is outdated: what differs between its newest provenance record and the run file, state,
+    source and maps as they are now; [] if nothing found (then only the code can differ)."""
+    from .config import resolve
+    out = []
+    try:
+        res = resolve(rec["run_file"])
+    except Exception as e:
+        return [f"run file cannot be read now: {e}"]
+    if res.run != rec.get("run"):
+        out.append("run file changed since")
+    if res.state != rec.get("state"):
+        out.append(f"state {res.state_name} changed")
+    if res.source != rec.get("source"):
+        out.append(f"source {res.source_name} changed")
+    old = {k: v.get("key") for k, v in (rec.get("maps") or {}).items()}
+    new = res.map_keys()
+    changed = sorted(k for k in new if old.get(k) not in (None, new[k]))
+    if changed:
+        out.append("maps changed: " + ", ".join(changed))
+    if (rec.get("geometry") or {}) != res.geometry:
+        out.append("geometry changed")
+    return out
+
+
+def _numbers_in_use() -> set:
+    """Run numbers in run files under the studies folder and in the raw-records store."""
+    import re
+    from . import amstrax_io
+    used = set()
+    for f in Path(STUDIES).glob("**/runs/*.yaml"):
+        m = re.search(r"^run_number:\s*(\d+)", f.read_text(), re.M)
+        if m:
+            used.add(int(m.group(1)))
+    if amstrax_io.STORE is not None and Path(amstrax_io.STORE).is_dir():
+        used |= {int(p.name[:6]) for p in Path(amstrax_io.STORE).glob("[0-9]" * 6 + "-metadata.json")}
+    return used
+
+
+def rerun_plan(run_id: str) -> dict:
+    """What a rerun of a simulation would do: reasons, new number, new run file and its text."""
+    import re
+    recs = records(run_id)
+    if not recs:
+        raise FileNotFoundError(f"no provenance for {run_id}")
+    rec = recs[-1][1]
+    old = (rec.get("run") or {}).get("run_number")
+    if old is None:
+        raise ValueError("only runs with a run number can be rerun from the app")
+    lo, hi = PRIVATE_NUMBERS if PRIVATE_NUMBERS[0] <= old <= PRIVATE_NUMBERS[1] else PRODUCTION_NUMBERS
+    used = _numbers_in_use()
+    new = max([n for n in used if lo <= n <= hi] + [old]) + 1
+    if new > hi:
+        raise ValueError(f"no free run number in {lo}-{hi}")
+    src = Path(rec["run_file"])
+    stem = re.sub(r"_r\d+$", "", src.stem)
+    k = 2
+    while (src.parent / f"{stem}_r{k}.yaml").exists():
+        k += 1
+    dst = src.parent / f"{stem}_r{k}.yaml"
+    text = src.read_text() if src.exists() else ""
+    if not text:
+        raise FileNotFoundError(f"run file {src} not found")
+    text = re.sub(r"^run_number:.*$", f"run_number: {new}", text, count=1, flags=re.M)
+    text = re.sub(r"^supersedes:.*\n", "", text, flags=re.M)
+    text = text.replace(f"run_number: {new}", f"run_number: {new}\nsupersedes: {old}", 1)
+    head = f"# Rerun of {src.name} (run {old}) with the code and maps of {time.strftime('%Y-%m-%d')}; same settings and seed.\n"
+    return dict(run_id=run_id, old=old, new=new, src=str(src), dst=str(dst), text=head + text,
+                reasons=outdated_reasons(rec), private=lo == PRIVATE_NUMBERS[0])
+
+
+def rerun(run_id: str) -> dict:
+    """Write the new run file and submit it (needs XAMSSIM_WEB_SUBMIT=1 and at most 10 own jobs in condor)."""
+    import os
+    import subprocess
+    plan = rerun_plan(run_id)
+    if os.environ.get("XAMSSIM_WEB_SUBMIT") != "1":
+        raise PermissionError("submitting is off here (XAMSSIM_WEB_SUBMIT is not 1); run by hand: "
+                              f"{SUBMIT} {plan['dst']}")
+    q = subprocess.run(["condor_q", "-af", "ClusterId"], capture_output=True, text=True, timeout=60)
+    n_jobs = len([x for x in q.stdout.split() if x.strip()])
+    if n_jobs >= 10:
+        raise PermissionError(f"{n_jobs} jobs of this account in condor already (at most 10)")
+    dst = Path(plan["dst"])
+    if dst.exists():
+        raise FileExistsError(dst)
+    dst.write_text(plan["text"])
+    r = subprocess.run([str(SUBMIT), str(dst)], capture_output=True, text=True, timeout=300, cwd=str(dst.parent.parent))
+    _CACHE.clear()
+    return dict(plan, returncode=r.returncode, output=(r.stdout + r.stderr)[-3000:])

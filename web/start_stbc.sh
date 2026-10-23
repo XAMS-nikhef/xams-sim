@@ -21,7 +21,8 @@ case "${1:-start}" in
         ss -ltn 2>/dev/null | grep -q "127.0.0.1:$PORT " && echo "port $PORT listening" || echo "port $PORT not listening" ;;
     start)
         if running; then echo "$SCREEN_NAME already running (port $PORT)"; exit 0; fi
-        screen -S "$SCREEN_NAME" -dm bash -lc "source $SETUP && exec xamssim web --host 127.0.0.1 --port $PORT >> $LOG 2>&1"
+        # XAMSSIM_WEB_SUBMIT=1: the rerun button may submit condor jobs (as the user running the app; 0 to switch off)
+        screen -S "$SCREEN_NAME" -dm bash -lc "source $SETUP && export XAMSSIM_WEB_SUBMIT=${XAMSSIM_WEB_SUBMIT:-1} && exec xamssim web --host 127.0.0.1 --port $PORT >> $LOG 2>&1"
         sleep 5
         running && echo "started $SCREEN_NAME on 127.0.0.1:$PORT (log $LOG)" || { echo "failed to start; see $LOG"; exit 1; } ;;
     *)

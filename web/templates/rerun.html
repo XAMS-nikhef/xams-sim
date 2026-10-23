@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="panel-title">Rerun {{ run_id }} <a class="small" href="{{ url_for('simulation', run_id=run_id) }}">back</a></div>
+  {% if error %}<p class="status outdated">{{ error }}</p>{% endif %}
+  {% if plan %}
+  <p class="muted small">A run number is one fixed simulation: a rerun is a new run file with the next free number and
+    <span class="mono">supersedes: {{ plan.old }}</span>, with the same settings and seed and today's code and maps.
+    The old run stays until you delete it. Geant4 runs again (its output is kept per run file).</p>
+  <table class="kv">
+    <tr><td class="muted">why</td><td>{% if plan.reasons %}{{ plan.reasons|join("; ") }}{% else %}the code (plugin versions) changed{% endif %}</td></tr>
+    <tr><td class="muted">old run</td><td class="mono">{{ "%06d"|format(plan.old) }}</td></tr>
+    <tr><td class="muted">new run</td><td class="mono">{{ "%06d"|format(plan.new) }} ({{ "private" if plan.private else "production" }})</td></tr>
+    <tr><td class="muted">new run file</td><td class="mono">{{ plan.dst }}</td></tr>
+  </table>
+  <pre class="mono small">{{ plan.text }}</pre>
+  {% if result %}
+    <p>{% if result.returncode == 0 %}<span class="status current">submitted</span>{% else %}<span class="status outdated">failed ({{ result.returncode }})</span>{% endif %}
+      — commit the new run file from a checkout with access to the repository.</p>
+    <pre class="mono small">{{ result.output }}</pre>
+  {% elif can_submit %}
+    <form method="post"><button type="submit">write the run file and submit</button></form>
+  {% else %}
+    <p class="muted small">Submitting is off for this app (XAMSSIM_WEB_SUBMIT is not 1). By hand: write the file above, then
+      <span class="mono">stbc/submit_production.sh {{ plan.dst }}</span></p>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
