@@ -212,9 +212,29 @@ physics:
   production_cut_mm: 0.1         # Geant4 particle mode
   cloud_samples: 16              # drift: points per cluster for the cloud splitting (1: one fate per cluster)
   cloud_track_sigma_mm: 0.2      # drift: ionization-track size for the cloud splitting
+  nest: {}                       # NEST settings, see below ({} = NEST's defaults)
 ```
 
 Unknown keys are rejected. The values above are the defaults (`xamssim.chain.PHYSICS_DEFAULTS`).
+
+### NEST settings
+
+The quanta step (fuse `NestYields`) uses NEST's default ER / NR models unless the run file sets `physics.nest`:
+
+```yaml
+physics:
+  nest:
+    widths: {A_ER: 0.11}         # recombination / Fano width parameters by name (NEST NRERWidthsParam)
+    er_yields: -1                # ER yields parameters (BetaYieldsGR): -1 = NEST's, or a list of 10
+    nr_yields: -1                # NR yields parameters: -1 = NEST's, or a list of 12
+```
+
+Width names (NEST defaults): `fano_ions_NR` (0.4), `fano_excitons_NR` (0.4), `A_NR` (0.04), `xi_NR` (0.50),
+`omega_NR` (0.19), `skewness_NR` (2.25), `fano_ER` (1, multiplier; < 0 field dependent), `A_ER` (0.096452, recombination
+amplitude, field dependent), `omega_ER` (0.205), `xi_ER` (0.45), `alpha_skewness_ER` (−0.2). The settings are part of
+the run file and so of the run key: another setting is another run (another number). The fast way to study them is the
+chain up to the events (`xamssim chain <run> --target events`: quanta → … → cS1 / cS2 of the simulation, no
+waveforms); with the waveforms and amstrax (`stbc/submit_production.sh`) they can be compared with data as data.
 
 ## Field map
 

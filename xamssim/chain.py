@@ -28,7 +28,7 @@ All settings come from the configuration (fuse plugin defaults are XENONnT value
                    gas           liquid surface .. top PMT window
     densities      liquid / gas xenon from materials.yaml
     field          <data>/maps/field/<key>/efield_xyz.npz of the state (3D, from the COMSOL model)
-    NEST           default NEST ER / NR models (parameters -1), no extra width parameters
+    NEST           NEST ER / NR yields and widths: defaults, or the run file's physics.nest (NEST_KEYS)
 
 Clustering and timeline options come from the run file's `physics` block (PHYSICS_DEFAULTS).
 """
@@ -54,7 +54,37 @@ PHYSICS_DEFAULTS = {
     "production_cut_mm": 0.1,          # Geant4 (particle mode), not used here
     "cloud_samples": 16,               # drift: points per cluster for the cloud splitting (1: whole cluster one fate)
     "cloud_track_sigma_mm": 0.2,       # drift: size of the ionization track (Gaussian sigma) for the cloud splitting
+    "nest": {},                        # NEST settings (NEST_KEYS); {} = NEST's defaults
 }
+
+# physics.nest of a run file (fuse NestYields): yield parameter lists (-1 = NEST's defaults, as nestpy's
+# default_er_yields_params / default_nr_yields_params) and named recombination / Fano width parameters
+NEST_KEYS = {
+    "er_yields": 10,                   # ERYieldsParam (BetaYieldsGR), list of 10 or -1
+    "nr_yields": 12,                   # NR yields parameters, list of 12 or -1
+    "widths": ("fano_ions_NR", "fano_excitons_NR", "A_NR", "xi_NR", "omega_NR", "skewness_NR",
+               "fano_ER", "A_ER", "omega_ER", "xi_ER", "alpha_skewness_ER"),   # NRERWidthsParam by name
+}
+
+
+def nest_settings(res: Resolved) -> dict:
+    """fuse's NEST options from the run file's physics.nest (validated); defaults when absent."""
+    n = dict(physics(res)["nest"] or {})
+    unknown = set(n) - set(NEST_KEYS)
+    if unknown:
+        raise ConfigError(f"{res.run_path}: unknown physics.nest keys {sorted(unknown)} (known: {sorted(NEST_KEYS)})")
+    out = {}
+    for key, length in (("er_yields", NEST_KEYS["er_yields"]), ("nr_yields", NEST_KEYS["nr_yields"])):
+        v = n.get(key, -1)
+        if v != -1 and not (isinstance(v, list) and len(v) == length and all(isinstance(x, (int, float)) for x in v)):
+            raise ConfigError(f"{res.run_path}: physics.nest.{key} must be -1 or a list of {length} numbers")
+        out[f"nest_{key}_parameters"] = v
+    w = dict(n.get("widths") or {})
+    bad = sorted(set(w) - set(NEST_KEYS["widths"]))
+    if bad or not all(isinstance(x, (int, float)) for x in w.values()):
+        raise ConfigError(f"{res.run_path}: physics.nest.widths: numbers for {list(NEST_KEYS['widths'])} (unknown: {bad})")
+    out["nest_width_parameters"] = {k: float(v) for k, v in w.items()}
+    return out
 
 STORE = DATA / "strax"
 
@@ -177,7 +207,7 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         density_liquid_g_cm3=lxe, density_gas_g_cm3=gxe,
         # field, NEST
         xams_efield_map=str(xams_efield_map or fieldmap.path(res)),
-        nest_er_yields_parameters=-1, nest_nr_yields_parameters=-1, nest_width_parameters={},
+        **nest_settings(res),
         # drift (S4): drift map of the state, lifetime of the state, diffusion of the liquid
         xams_drift_map=str(xams_drift_map or driftmap.path(res)),
         **({"electron_lifetime_us": res.state["electron_lifetime_us"]} if res.state.get("electron_lifetime_us") else {}),
