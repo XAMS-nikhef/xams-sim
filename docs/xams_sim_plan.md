@@ -378,6 +378,12 @@ hours (run 900001: 19 048 chunks at 100 Hz, 6 h through amstrax).
 Decisions from the user: which data runs are the reference; which parameters are fixed (measured) and which may be
 tuned; whether the delayed-electron model is part of "correct" now or later for the paper.
 
+**Coordinate frame checked (2026-10-23):** MC and data share the frame defined by the top PMT (+x towards ch1/ch3,
++y towards ch1/ch2): run 900201, true vs reconstructed x, y correlate at 0.99, no swap or mirror, rotation −0.2°,
+99 % of events in the right quadrant. Reconstructed radii are smaller at large r (−4.4 mm at r = 20–30 mm): a known
+feature of the current position map (user), not of the simulation. The truth file is now in amstrax units (mm, ns;
+was the chain's cm, µs), `amstrax_io.load_truth` reads old and new files.
+
 **Closure test of the calibration (2026-10-23):** every MC run has true and calibrated corrections; their difference
 is the bias of the data calibration method (elife fit, drift-time edges, …), to correct for or carry as a systematic.
 Condition: per correction the truth must be defined as the calibration measures it (e.g. gate drift time: the edge of
