@@ -1,6 +1,6 @@
 # Digitizer and readout of xams2026 for the waveform simulation (plan S8), as in SR-2026.2 (Science_Rev2.4, run 7719).
 # Sources: R = run doc 7719 daq_config (read-only, 2026-10-20); M = measured from raw_records of 7719 (seconds 30-33) and
-# the LED runs 7682 / 7723 (analysis_SR2026.2/scratch/measure_daq.py; simulations/2026-10-20_s8_waveforms);
+# the LED runs 7682 / 7723 (analysis_SR2026.2/steps/measure_daq.py, was scratch/; simulations/2026-10-20_s8_waveforms);
 # G = analysis_SR2026.2 config/gains.csv, gain period P4.
 digitizer:
   model: V1725              # R
@@ -9,7 +9,11 @@ digitizer:
   record_length: 110        # R: strax_fragment_payload_bytes 220 -> 110 samples per raw_record
   pre_trigger_samples: 32   # M: samples kept before the first threshold crossing (0x8038 = 8)
   min_pulse_samples: 80     # M: shortest pulse (0x8020 = 8)
-  spe_templates: spe_templates.npz   # M: single-PE pulse shapes per channel (area 1), 4 ns samples
+  spe_templates: spe_templates.npz   # M: single-PE pulse shapes per channel (area 1), 4 ns samples, max at sample 10.
+                            #   v2 (2026-10-23): PMTs = fitted shape (Gaussian rise + two exponential tails) to the
+                            #   matched-filter-aligned mean of LED single-PE windows (ch1-4: 7682, ch0: 7723); SiPMs as v1.
+                            #   v1 (2026-10-20) had a 5 % step before the ch0 peak (S1s on ch0 rose ~40 ns early).
+                            #   Pinned per state / run period, not updated with every LED calibration.
 channels:                   # data channel number -> simulated light channel (xamssim.lightmap.CHANNEL_NAMES)
   # threshold ADC (R), polarity (R: 0x1n80), baseline ADC and noise rms ADC (M), samples after the last crossing (M),
   # single-PE gain in ADC·samples (G; SiPMs: 1 / to_pe)
