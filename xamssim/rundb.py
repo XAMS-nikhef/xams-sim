@@ -55,6 +55,45 @@ def _check_number(n: int) -> int:
     return int(n)
 
 
+PRODUCTION_NUMBERS = (900000, 989999)
+
+
+def reserve(run_file, log=print) -> int:
+    """The next production run number, taken in run.runs_mc: highest production number + 1 (900001 if none), written
+    as a reserved run document (run file, submission time, status submitted). The unique index on `number` makes
+    concurrent submissions safe: a lost race fails the insert and takes the following number."""
+    import datetime as dt
+    import getpass
+
+    from pymongo.errors import DuplicateKeyError
+    col = collection()
+    if col is None:
+        raise ConfigError(f"no [mc] account in {CONFIG_FILE}: production numbers come from the run database")
+    lo, hi = PRODUCTION_NUMBERS
+    for _ in range(100):
+        last = col.find_one({"number": {"$gte": lo, "$lte": hi}}, {"number": 1}, sort=[("number", -1)])
+        n = max(int(last["number"]) + 1 if last else lo + 1, lo + 1)
+        if n > hi:
+            raise ConfigError(f"no free production number in {lo}-{hi}")
+        now = dt.datetime.now(tz=dt.timezone.utc)
+        doc = {"number": n, "name": f"{n:06d}", "mode": "simulation (reserved)", "tags": ["simulation"],
+               "xamssim": {"run_file": str(Path(run_file).resolve()), "run_name": Path(run_file).stem,
+                           "reserved": now, "reserved_by": getpass.getuser()},
+               "processing_status": {"status": "submitted", "time": now, "host": "stbc"}}
+        try:
+            col.insert_one(doc)
+        except DuplicateKeyError:
+            continue                                                       # taken meanwhile: the next one
+        log(f"  run database: {DB}.{COLLECTION} run {n:06d} reserved for {Path(run_file).name}")
+        return n
+    raise ConfigError("could not reserve a production run number (100 attempts)")
+
+
+def find(number: int) -> dict | None:
+    col = collection()
+    return None if col is None else col.find_one({"number": int(number)}, {"number": 1, "xamssim": 1})
+
+
 def register(doc: dict, log=print) -> bool:
     """Insert or replace the run document of a simulated run in run.runs_mc; False if no account is configured."""
     n = _check_number(doc["number"])

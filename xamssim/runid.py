@@ -4,14 +4,14 @@ Every simulation has a run number (900000-999999); the run id of everything it m
 the Geant4 output (<data>/g4/<id>), the chain's strax data (<data>/strax/<id>-<type>-<hash>), the provenance
 (<data>/provenance/<id>/), the run document and the amstrax data. The run file's name is only a label.
 
-    ensure_number(run file)   a run file without run_number gets the next number, written into the file: under a
-                              production account (with the run-database writer account) the last production number
-                              + 1 (900001 after a clean start, sequential like the DAQ's run numbers), otherwise the
-                              next private number (99xxxx). Done when a run is submitted or first run, under a lock.
-    check_identity(res)       one run file = one run number = one simulation: refuses a number that another run file
-                              uses, a number whose provenance belongs to another run file or to other settings (run
-                              key), and a run file that was run before under another number. A changed run is a new
-                              run: a new run file with the next free number and `supersedes` (the app's rerun).
+    ensure_number(run file)   a run file without run_number gets one, written into the file when it is submitted or
+                              first run. Production (the account with the run-database writer account): reserved in
+                              run.runs_mc as the highest production number + 1 (rundb.reserve; the unique index on
+                              `number` makes concurrent submissions safe). Private: the next free 99xxxx of this area.
+    check_identity(res)       production: one run file = one run number = one simulation, the number from the run
+                              database; a changed run is a new run (a new run file without number, `supersedes`).
+                              Private: numbers are free; a changed run or another run file under the same number
+                              replaces the old private run (clear: its outputs are deleted first).
 """
 from __future__ import annotations
 
@@ -82,18 +82,23 @@ def next_free(block: tuple = PRIVATE) -> int:
     return n
 
 
+def production_account() -> bool:
+    """Production = the account has the run-database writer account ([mc] in ~/.xams_config, i.e. xamsdata)."""
+    from . import rundb
+    return rundb.configured()
+
+
 def ensure_number(run_path, production: bool | None = None) -> int:
-    """The run file's number; a run file without one gets the next number written into it: production (the last
-    production number + 1) under an account with the run-database writer account, else private. Under a lock, so that
-    two submissions never take the same number."""
+    """The run file's number; a run file without one gets one written into it. Production: reserved in run.runs_mc
+    (highest production number + 1; safe for concurrent submissions, rundb.reserve). Private: the next free private
+    number in this area (a lock against two of your own submissions at once)."""
     import fcntl
     run_path = Path(run_path)
     n = number_of(run_path)
     if n is not None:
         return n
     if production is None:
-        from . import rundb
-        production = rundb.configured()
+        production = production_account()
     kind = "production" if production else "private"
     lock = DATA / "locks" / "run_numbers.lock"
     lock.parent.mkdir(parents=True, exist_ok=True)
@@ -102,7 +107,11 @@ def ensure_number(run_path, production: bool | None = None) -> int:
         n = number_of(run_path)                                  # numbered meanwhile by another process
         if n is not None:
             return n
-        n = next_free(PRODUCTION if production else PRIVATE)
+        if production:
+            from . import rundb
+            n = rundb.reserve(run_path)
+        else:
+            n = next_free(PRIVATE)
         lines = run_path.read_text().splitlines(keepends=True)
         i = 0
         while i < len(lines) and (lines[i].startswith("#") or not lines[i].strip()):   # after the leading comments
@@ -118,23 +127,71 @@ def _records(rid: str) -> list:
     return [json.loads(f.read_text()) for f in sorted(d.glob("*.json"))] if d.is_dir() else []
 
 
+def clear(rid: str, log=print) -> list:
+    """Delete everything of run `rid` in this account's folders (Geant4, chain data, provenance, raw records / run
+    document / truth, live data, amstrax products): a private run that is replaced."""
+    import os
+    import shutil
+
+    from . import amstrax_io
+    places = [DATA / "g4" / rid, PROV / rid] + list((DATA / "strax").glob(f"{rid}-*"))
+    if amstrax_io.STORE is not None:
+        store = Path(amstrax_io.STORE)
+        places += list(store.glob(f"{rid}-*")) + list(store.glob(f"{rid}.*"))
+        try:
+            from .live import live_root
+            places.append(live_root(store) / rid)
+        except Exception:
+            pass
+    proc = Path(os.environ["XAMSSIM_PROCESSED"]) if os.environ.get("XAMSSIM_PROCESSED") else DATA.parent / "processed"
+    places += list(proc.glob(f"{rid}-*"))
+    gone = []
+    for p in places:
+        if p.is_dir():
+            shutil.rmtree(p); gone.append(p)
+        elif p.exists():
+            p.unlink(); gone.append(p)
+    if gone:
+        log(f"run {rid}: {len(gone)} outputs of the earlier run with this number deleted")
+    return gone
+
+
 def check_identity(res: Resolved) -> str:
-    """Refuse anything that would make one run number stand for two simulations or one run file for two runs."""
+    """Production: one run file = one run number = one simulation, and the number comes from the run database (refused
+    otherwise). Private: numbers are free; a changed run or another run file under the same number replaces the old
+    private run (its outputs deleted first)."""
     rid = run_id(res)
     n = int(rid)
     me = Path(res.run_path).resolve()
-    others = [f for f in numbers_in_use().get(n, []) if Path(f).resolve() != me]
-    if others:
-        raise ConfigError(f"run number {n} of {res.run_path} is also used by {', '.join(map(str, others))}")
+    production = production_account()
+    if production and not PRODUCTION[0] <= n <= PRODUCTION[1]:
+        raise ConfigError(f"run number {n}: not a production number ({PRODUCTION[0]}-{PRODUCTION[1]}); production "
+                          "numbers come from the run database (leave run_number out, the submission takes one)")
+    if not production and not PRIVATE[0] <= n <= PRIVATE[1]:
+        raise ConfigError(f"run number {n}: private runs use {PRIVATE[0]}-{PRIVATE[1]} (production numbers come from the "
+                          "run database, under the production account)")
+    if production:
+        from . import rundb
+        doc = rundb.find(n)
+        if doc is None:
+            raise ConfigError(f"run {rid} is not in {rundb.DB}.{rundb.COLLECTION}: production numbers come from the run "
+                              "database (leave run_number out, the submission takes one)")
+        made = Path((doc.get("xamssim") or {}).get("run_file", "")).resolve()
+        if made != me:
+            raise ConfigError(f"run {rid} belongs to {made} in the run database, not to {res.run_path}")
+    conflict = ""
     for r in _records(rid):
         if Path(r.get("run_file", "")).resolve() != me:
-            raise ConfigError(f"run {rid} was made from {r.get('run_file')}, not from {res.run_path}: give this run file "
-                              f"its own number (next free private: {next_free(PRIVATE)})")
-        if r.get("run_key") and r["run_key"] != res.run_key():
-            raise ConfigError(f"run {rid} was made with other settings (run key {r['run_key']}, now {res.run_key()}): "
-                              "a changed run is a new run: a new run file with the next free number and "
-                              f"`supersedes: {n}` (the app's rerun)")
-    if PROV.is_dir():
+            conflict = f"run {rid} was made from {r.get('run_file')}"
+        elif r.get("run_key") and r["run_key"] != res.run_key():
+            conflict = f"run {rid} was made with other settings (run key {r['run_key']}, now {res.run_key()})"
+    if conflict and production:
+        raise ConfigError(conflict + ": a changed run is a new run: a new run file without number (the submission "
+                          f"takes the next one), with `supersedes: {n}` (the app's rerun)")
+    if conflict:
+        print(conflict + ": private, so it is replaced")
+        clear(rid)
+    if production and PROV.is_dir():
         for d in PROV.iterdir():
             if d.is_dir() and d.name != rid and re.fullmatch(r"\d{6}", d.name):
                 rec = next(iter(_records(d.name)[-1:]), None)

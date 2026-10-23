@@ -162,14 +162,19 @@ Two passes:
 - **Every simulation has a run number**, and everything it makes is filed under it (six digits): Geant4
   (`<data>/g4/<number>`), the chain (`<data>/strax/<number>-…`), the provenance and its figures
   (`<data>/provenance/<number>/`), the run document, live data and amstrax data. The run file's name is only a label.
-  **Numbers are given automatically**, like the DAQ's: a run file without `run_number` gets one when it is submitted
-  (`stbc/submit_production.sh`, or `xamssim number <run file>`) or first run, written into the run file. Under the
-  production account (xamsdata) that is the last production number + 1 (counting `run.runs_mc` and the central
-  folders; 900001 after a clean start); under your own account the next private number (99xxxx). Production run
-  files are therefore committed without a number; the number is copied back into the repository after submitting.
+  **Numbers are given automatically:** a run file without `run_number` gets one when it is submitted
+  (`stbc/submit_production.sh`, or `xamssim number <run file>`) or first run, written into the run file.
+  - *Production* (xamsdata): the number comes from the run database: the highest production number in `run.runs_mc`
+    + 1 (900001 when empty), reserved there at once as a document "simulation (reserved)" with the run file. The unique
+    index on `number` makes simultaneous submissions safe (a lost race takes the next number). A production run file
+    whose number is not in `runs_mc` is refused; production run files are committed without a number, and the number
+    is copied back into the repository after submitting.
+  - *Private* (your account): numbers are free (990000–999899): write one yourself or get the next free one of your
+    area. A changed run or another run file under the same private number replaces the old private run (its outputs
+    are deleted first). Production numbers are refused in private runs and the reverse.
   999901–999999: the examples in xams-sim `config/runs`.
-- **One run file = one run number = one simulation.** xams-sim refuses a number that another run file uses, a number
-  made from another run file or with other settings, and a run file that already ran under another number.
+- **Production: one run file = one run number = one simulation.** xams-sim refuses a number made from another run file
+  or with other settings, and a run file that already ran under another number. (Private runs are replaced instead.)
 - **A changed run is a new run:** a new run file (`<name>_r<k>.yaml`) with the next free number and
   `supersedes: <old number>`. The app's rerun button (outdated runs) does exactly that and submits it under the app's
   account. Under the same number only: reprocessing with amstrax and finishing a failed run.
