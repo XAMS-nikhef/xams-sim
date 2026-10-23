@@ -83,9 +83,13 @@ def entry(st, target, folder):
 
 
 t = time.time()
-st = amstrax.contexts.context_for_daq_reader(amstrax.contexts.xams(output_folder=raw, corrections_version=cv), rid)
-st.make(rid, "raw_records", progress_bar=False)
-print(f"raw_records ({raw}) in {time.time() - t:.0f} s", flush=True)
+st = amstrax.contexts.xams(output_folder=raw, corrections_version=cv)
+if st.is_stored(rid, "raw_records"):                          # a rerun: amstrax never remakes stored raw records
+    print(f"raw_records ({raw}) already stored: kept (remove them by hand to remake them from new live data)", flush=True)
+else:
+    st = amstrax.contexts.context_for_daq_reader(st, rid)
+    st.make(rid, "raw_records", progress_bar=False)
+    print(f"raw_records ({raw}) in {time.time() - t:.0f} s", flush=True)
 st = amstrax.contexts.xams(output_folder=proc, corrections_version=cv)
 st.storage += [strax.DataDirectory(raw, readonly=True, provide_run_metadata=True)]
 amstrax.xams_config.RUNDOC_DIRS.append(raw)                  # the run document file next to the raw records
