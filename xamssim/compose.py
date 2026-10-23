@@ -854,7 +854,23 @@ def live_settings(rec: dict, number) -> dict | None:
             "chunks written": n_chunks, "payload per record [bytes]": dc.get("strax_fragment_payload_bytes"),
             "compressor": dc.get("compressor"), "reader threads": dc.get("processing_threads"),
             "source rate [Hz] (decays on the timeline)": (rec or {}).get("physics", {}).get("source_rate_hz"),
-            "live data folder": dc.get("strax_output_path"), "run start / end": f"{doc.get('start')} / {doc.get('end')}"}
+            "live data folder": dc.get("strax_output_path"),
+            "run length (simulated time)": _run_length(doc.get("start"), doc.get("end"))}
+
+
+def _run_length(start, end) -> str:
+    """Length of a run from its run-document start / end (datetime or {'$date': ...} in the file)."""
+    import datetime as dt
+    def t(x):
+        x = x.get("$date") if isinstance(x, dict) else x
+        if isinstance(x, (int, float)):
+            return dt.datetime.fromtimestamp(x / 1e3, tz=dt.timezone.utc)
+        return dt.datetime.fromisoformat(str(x).replace("Z", "+00:00")) if x else None
+    try:
+        a, b = t(start), t(end)
+        return f"{(b - a).total_seconds():.0f} s" if a and b else ""
+    except Exception:
+        return ""
 
 
 def fig_spe(rec):
@@ -1040,19 +1056,32 @@ def outdated_reasons(rec: dict) -> list:
         res = resolve(rec["run_file"])
     except Exception as e:
         return [f"run file cannot be read now: {e}"]
-    if res.run != rec.get("run"):
+    def same(a, b):                                       # as stored in the provenance (JSON: dates as text)
+        return json.loads(json.dumps(a, default=str)) == json.loads(json.dumps(b, default=str))
+    if not same(res.run, rec.get("run")):
         out.append("run file changed since")
-    if res.state != rec.get("state"):
+    if not same(res.state, rec.get("state")):
         out.append(f"state {res.state_name} changed")
-    if res.source != rec.get("source"):
+    if not same(res.source, rec.get("source")):
         out.append(f"source {res.source_name} changed")
     old = {k: v.get("key") for k, v in (rec.get("maps") or {}).items()}
     new = res.map_keys()
     changed = sorted(k for k in new if old.get(k) not in (None, new[k]))
     if changed:
         out.append("maps changed: " + ", ".join(changed))
-    if (rec.get("geometry") or {}) != res.geometry:
+    if not same(rec.get("geometry") or {}, res.geometry):
         out.append("geometry changed")
+    daq = (rec.get("settings") or {}).get("xams_daq")
+    if daq:
+        try:
+            from .waveforms import load_daq
+            now = load_daq(res)
+            if not same(now.get("templates"), daq.get("templates")):
+                out.append("single-PE templates changed")
+            if not same({k: v for k, v in now.items() if k != "templates"}, {k: v for k, v in daq.items() if k != "templates"}):
+                out.append("DAQ settings changed")
+        except Exception:
+            pass
     return out
 
 
