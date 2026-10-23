@@ -598,7 +598,8 @@ account of the app decides private (own app) or production (xamsdata app); confi
 used to turn the simulated pulses into live data (user, 2026-10-23): per channel threshold, polarity, baseline, noise,
 gain and SPE template; digitizer (sampling, 14 bits, record length, pre-trigger / post samples, minimum pulse length);
 the live-data layout (chunk length and overlap, source rate, number of chunks, compressor); all from the run document /
-daq.yaml the run actually used.
+daq.yaml the run actually used. The cross-section and top view must also show the PTFE parts (user, 2026-10-23): the PTFE around
+the top and bottom PMTs and the PTFE bucket (field-cage wall), from geometry.yaml, as Geant4 builds them.
 
 ### S12. Overview and docs (2–3 days)
 - Validation against data: S9.
