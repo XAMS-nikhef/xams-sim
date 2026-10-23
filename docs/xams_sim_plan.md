@@ -594,7 +594,11 @@ notebooks = analysis and data comparisons. First test case: private run 990001 (
 the reason shown; it starts the same run file under the next free number (`supersedes` link), never overwrites. The
 account of the app decides private (own app) or production (xamsdata app); confirmation, at most 10 condor jobs; later
 "rerun all outdated". The overview shows the newest version per run file, older versions folded underneath
-(deletable). The detail page shows truth and calibrated corrections side by side.
+(deletable). The detail page shows truth and calibrated corrections side by side. It also shows the DAQ settings
+used to turn the simulated pulses into live data (user, 2026-10-23): per channel threshold, polarity, baseline, noise,
+gain and SPE template; digitizer (sampling, 14 bits, record length, pre-trigger / post samples, minimum pulse length);
+the live-data layout (chunk length and overlap, source rate, number of chunks, compressor); all from the run document /
+daq.yaml the run actually used.
 
 ### S12. Overview and docs (2–3 days)
 - Validation against data: S9.
