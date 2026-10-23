@@ -50,6 +50,7 @@ button:hover{filter:brightness(1.1)}
 .status.current{background:rgba(46,204,113,.15);color:var(--good)}
 .status.outdated{background:rgba(255,107,107,.15);color:var(--bad)}
 .status.unknown{background:rgba(241,196,15,.12);color:var(--warn)}
+.status.running{background:rgba(77,182,255,.15);color:#4db6ff}
 .figure{width:auto;max-width:100%;height:auto;border-radius:10px;display:block;margin:0 auto}
 .grid.figures{align-items:start}
 .grid.figures .figure{max-height:520px}

@@ -65,6 +65,7 @@ def _exported(number) -> dict:
 def simulations() -> dict:
     """All simulations in the data folder, one row each (plus the data / studies folders and the map overview)."""
     d = _collect()
+    busy = listing.in_progress()
     rows = []
     for r in d["runs"]:
         prods = r["products"]
@@ -72,12 +73,16 @@ def simulations() -> dict:
         status = ("outdated" if "old" in states else "unknown" if "?" in states or not r.get("study") else "current")
         if r["g4"] and r.get("g4_key_now") and r["g4"]["key"] != r["g4_key_now"]:
             status = "outdated"
+        making = busy.get(r["id"])
+        if making:                                   # being made now: neither outdated nor ready (no rerun)
+            status = "running"
         files = provenance.entries(r["id"])
         size = (r["g4"]["size"] if r["g4"] else 0) + sum(p["size"] for p in prods)
         rows.append(dict(id=r["id"], study=r.get("study", ""), number=r.get("number"), state=r.get("state", ""),
                          source=r.get("source", ""), n_events=r.get("n_events"),
                          g4_events=r["g4"]["events"] if r["g4"] else None,
-                         how_far=_how_far({p["type"] for p in prods}), status=status,   # status says whether it is outdated
+                         how_far=_how_far({p["type"] for p in prods}) + (f" (making {', '.join(making)})" if making else ""),
+                         status=status,   # current / outdated / unknown, or running while it is being made
                          size_mb=size / 1e6, last_run=files[-1].name[:15] if files else "", note=r.get("note", ""),
                          exported=_exported(r.get("number")), n_records=len(files)))
     return dict(rows=rows, data=str(DATA), studies=str(STUDIES), maps=d["maps"])

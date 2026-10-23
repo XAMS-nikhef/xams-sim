@@ -48,14 +48,31 @@ def run_files() -> dict:
 
 
 def strax_products() -> dict:
-    """run id -> [(data type, lineage hash, folder)]."""
+    """run id -> [(data type, lineage hash, folder)]; data being made (strax's `<hash>_temp` folders) under
+    in_progress()."""
     out: dict = {}
     if STRAX.exists():
         for d in sorted(STRAX.iterdir()):
             parts = d.name.rsplit("-", 2)
-            if d.is_dir() and len(parts) == 3:
+            if d.is_dir() and len(parts) == 3 and not parts[2].endswith("_temp"):
                 out.setdefault(parts[0], []).append((parts[1], parts[2], d))
     return out
+
+
+def in_progress() -> dict:
+    """run id -> what is being made now: data types with a strax `_temp` folder, or 'running' when only the run's
+    lock is there (Geant4, live data, amstrax). A lock left by a killed job also counts (until it is removed)."""
+    out: dict = {}
+    if STRAX.exists():
+        for d in STRAX.iterdir():
+            parts = d.name.rsplit("-", 2)
+            if d.is_dir() and len(parts) == 3 and parts[2].endswith("_temp"):
+                out.setdefault(parts[0], []).append(parts[1])
+    locks = DATA / "locks"
+    if locks.is_dir():
+        for f in locks.glob("*.lock"):
+            out.setdefault(f.stem, [])
+    return {k: (sorted(v) or ["running"]) for k, v in out.items()}
 
 
 def _stored_lifetimes(products) -> list:

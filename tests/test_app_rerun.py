@@ -59,3 +59,16 @@ def test_daq_settings():
     d = compose.daq_settings(rec)
     assert [c["channel"] for c in d["channels"]] == [0, 1] and d["digitizer"]["sampling [ns]"] == 4
     assert compose.daq_settings({"settings": {}}) is None
+
+
+def test_in_progress(tmp_path, monkeypatch):
+    from xamssim import listing
+    strax = tmp_path / "strax"
+    for name in ("900002-clustered_interactions-bv724qsicp_temp", "900001-xams_events-abc", "900003-xams_events-def"):
+        (strax / name).mkdir(parents=True)
+    (tmp_path / "locks").mkdir()
+    (tmp_path / "locks" / "900003.lock").write_text("1")
+    monkeypatch.setattr(listing, "STRAX", strax)
+    monkeypatch.setattr(listing, "DATA", tmp_path)
+    assert listing.in_progress() == {"900002": ["clustered_interactions"], "900003": ["running"]}
+    assert set(listing.strax_products()) == {"900001", "900003"}           # no _temp folders as products

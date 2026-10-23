@@ -128,7 +128,8 @@ document.querySelectorAll('.figrow img').forEach(function (img) { if (img.comple
 {% endif %}
 
 {% else %}
-<section class="panel"><span class="muted">no provenance for this simulation (written by xamssim chain since 2026-10-19)</span></section>
+<section class="panel"><span class="muted">{% if d.row and d.row.status == 'running' %}being made: the provenance record (and with it the
+  parameters and figures) is written when the chain step has finished{% else %}no provenance for this simulation (written by xamssim chain since 2026-10-19){% endif %}</span></section>
 {% endif %}
 
 <section class="grid two">
