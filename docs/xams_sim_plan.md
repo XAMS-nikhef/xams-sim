@@ -405,6 +405,9 @@ calibrate (gains without simulated SPE / LED data) stay at truth, marked as such
    as figures data vs MC (sim bands, data points).
 Order: after the waveform / S1 shape fixes (SPE templates v2), so that S1 shape and area are trustworthy first.
 
+**Not modelled (2026-10-23):** PMT behaviour that depends on what came before: gain drop / base recovery of the top
+PMT after large pulses, afterpulses. Data effects beyond the MC near large S2s are candidates for it.
+
 **SPE templates (2026-10-23):** v1 (aligned per pulse at its maximum, median) gave ch0 a step of 5 % before the peak
 (11 % of the area): simulated ch0 S1s rose ~40 ns early (MC 900202 vs data 7687: 11.1 % vs 2.9 % of the maximum
 40–12 ns before it; rise 24 vs 12 ns). v2 (`analysis_SR2026.2/steps/measure_daq.py`): LED windows aligned with a
