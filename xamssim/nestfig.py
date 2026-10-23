@@ -142,8 +142,8 @@ def figure(cs: list, kinds=("beta", "gamma"), emin: float = 0.3, emax: float = 1
         ax[1, j].set(xscale="log", xlabel="energy [keV" + ("nr]" if kind == "nr" else "]"), ylabel="Qy [electrons/keV]",
                      ylim=(0, None))
     ax[0, 0].legend(fontsize=7)
-    fig.suptitle("NEST light and charge yields (lines: mean; bands: ±1σ of the fluctuations per event; "
-                 "dotted: Cs-137 662 keV)", fontsize=9)
+    fig.suptitle("NEST light and charge yields\nlines: mean; bands: ±1σ of the fluctuations per event; "
+                 "dotted: Cs-137 662 keV", fontsize=9)
     fig.tight_layout()
     return fig
 
