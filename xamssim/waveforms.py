@@ -32,6 +32,8 @@ def load_daq(res: Resolved) -> dict:
         v = np.clip(np.asarray(t[f"ch{ch}"], float), 0, None)                 # negative noise wiggles out
         tpl[str(ch)] = (v / v.sum()).round(5).tolist()                        # area 1 in samples
     daq["templates"] = tpl
+    # sample of each template's maximum: peak_ch<N> in the file (SiPMs: 35, slow rise), else 10 (PMTs)
+    daq["template_peaks"] = {str(ch): int(t[f"peak_ch{ch}"]) if f"peak_ch{ch}" in t.files else 10 for ch in daq["channels"]}
     daq["channels"] = {str(k): v for k, v in daq["channels"].items()}
     return daq
 
@@ -62,7 +64,8 @@ class Digitizer:
             self.chans.append(dict(ch=int(ch), light=li, raw=c["raw"], thr=float(c["threshold"]),
                                    sign=-1 if c["polarity"] == "negative" else 1, base=float(c["baseline"]),
                                    noise=float(c["noise"]), post=int(c["post_samples"]), gain=float(c["gain"]),
-                                   tpl=np.asarray(daq["templates"][ch]), res=float(spe_res[li]), p=float(p_extra[li])))
+                                   tpl=np.asarray(daq["templates"][ch]), res=float(spe_res[li]), p=float(p_extra[li]),
+                                   peak=int(daq.get("template_peaks", {}).get(ch, 10))))
         sc = daq["scintillation"]
         self.ts, self.tt, self.fs = float(sc["singlet_ns"]), float(sc["triplet_ns"]), float(sc["singlet_fraction"])
         self.tts = float(daq["pmt_transit_spread_ns"])
@@ -101,8 +104,8 @@ class Digitizer:
 
     # --- one channel's waveform -> pulses (self-trigger) -> records
     def pulses(self, c: dict, t0: int, a: np.ndarray) -> list:
-        # ADC above the baseline; the templates have their maximum at index 10: shift so that it falls in the PE's bin
-        sig = np.convolve(a * c["gain"], c["tpl"])[10: 10 + len(a)]
+        # ADC above the baseline; shift by the template's peak sample so that its maximum falls in the PE's bin
+        sig = np.convolve(a * c["gain"], c["tpl"])[c["peak"]: c["peak"] + len(a)]
         cand = np.flatnonzero(sig > c["thr"] - 6 * c["noise"])
         if not len(cand):
             return []

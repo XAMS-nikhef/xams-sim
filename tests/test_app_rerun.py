@@ -11,7 +11,11 @@ RUN = "# test\nrun_number: {n}\ntags: [test]\nstate: sept\nsource: cs137_sept_mi
 def studies(tmp_path, monkeypatch):
     runs = tmp_path / "study" / "runs"
     runs.mkdir(parents=True)
+    from xamssim import runid
     monkeypatch.setattr(compose, "STUDIES", tmp_path)
+    monkeypatch.setattr(runid, "STUDIES", tmp_path)
+    monkeypatch.setattr(runid, "PROV", tmp_path / "provenance")
+    monkeypatch.setattr(runid, "DATA", tmp_path)
     monkeypatch.setattr(amstrax_io, "STORE", tmp_path / "store")
     return runs
 

@@ -12,6 +12,7 @@
 # Corrections: an MC global version of amstrax_files (default MC1: the cuts and settings of the data version, the
 # per-run corrections from the run's own run document: calibrated if stored, else the simulation's truth;
 # amstrax.contexts.for_mc_run puts the calibration version into the lineage). See xamssim corrections.
+# Reconstructions kept per run: the latest and, after a calibration, the truth one; older versions are deleted.
 set -o pipefail
 RUN=$(readlink -f "$1"); CV=${2:-MC1}
 X=/data/xenon/xams_v2
@@ -57,11 +58,33 @@ else:
 st = amstrax.contexts.xams(output_folder=proc, corrections_version=cv)
 st.storage += [strax.DataDirectory(raw, readonly=True, provide_run_metadata=True)]
 amstrax.xams_config.RUNDOC_DIRS.append(raw)                  # the run document file next to the raw records
-st = amstrax.contexts.for_mc_run(st, rid)                    # corrections from the run document, with their version
-cal = amstrax.xams_config.get_rundoc_value(rid, amstrax.xams_config.MC_CALIBRATION_VERSION, default=0)
+base = st
+st = amstrax.contexts.for_mc_run(base, rid)                  # latest: the run's current corrections (version 0 = truth)
+cal = int(amstrax.xams_config.get_rundoc_value(rid, amstrax.xams_config.MC_CALIBRATION_VERSION, default=0) or 0)
 print(f"corrections {cv}, MC calibration version {cal} ({'truth' if not cal else 'calibrated'})", flush=True)
 ev = st.get_array(rid, "event_info", progress_bar=False)
 print(f"event_info ({proc}): {len(ev)} events, {time.time() - t:.0f} s in total", flush=True)
+keep = [st]
+if cal:                                                       # after a calibration also the truth reconstruction
+    st_truth = amstrax.contexts.for_mc_run(base, rid, use="truth")
+    print(f"event_info truth: {len(st_truth.get_array(rid, 'event_info', progress_bar=False))} events", flush=True)
+    keep.append(st_truth)
+# keep at most the latest and the truth reconstruction: every other version of this run's processed products goes
+import shutil
+removed = []
+for d in sorted(os.listdir(proc)):
+    if not d.startswith(rid + "-"):
+        continue
+    if d.endswith("_temp"):
+        shutil.rmtree(os.path.join(proc, d)); removed.append(d); continue
+    dtype, h = d.split("-")[1], d.split("-")[-1]
+    try:
+        wanted = {str(s_.key_for(rid, dtype).lineage_hash) for s_ in keep}
+    except Exception:                                         # a type amstrax does not know (any more)
+        wanted = set()
+    if h not in wanted:
+        shutil.rmtree(os.path.join(proc, d)); removed.append(d)
+print(f"older reconstructions removed: {len(removed)}" + (f" ({', '.join(removed[:6])}{' ...' if len(removed) > 6 else ''})" if removed else ""), flush=True)
 data = [entry(st, t_, raw) for t_ in ("raw_records", "raw_records_sipm")]
 data += [entry(st, t_, proc) for t_ in ("peak_basics", "event_basics", "event_positions", "event_info")]
 json.dump(dict(data=data, corrections_version=cv), open(entries_file, "w"))

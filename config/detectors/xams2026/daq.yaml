@@ -13,6 +13,7 @@ digitizer:
                             #   v2 (2026-10-23): PMTs = fitted shape (Gaussian rise + two exponential tails) to the
                             #   matched-filter-aligned mean of LED single-PE windows (ch1-4: 7682, ch0: 7723); SiPMs as v1.
                             #   v1 (2026-10-20) had a 5 % step before the ch0 peak (S1s on ch0 rose ~40 ns early).
+                            #   SiPMs: 150 samples, peak at sample 35 (peak_ch6/7 in the file; PMTs 50 samples, peak 10).
                             #   Pinned per state / run period, not updated with every LED calibration.
 channels:                   # data channel number -> simulated light channel (xamssim.lightmap.CHANNEL_NAMES)
   # threshold ADC (R), polarity (R: 0x1n80), baseline ADC and noise rms ADC (M), samples after the last crossing (M),

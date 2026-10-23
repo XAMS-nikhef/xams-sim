@@ -116,10 +116,14 @@ def is_current(res: Resolved, out: Path, n: int, seed: int) -> bool:
 
 def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=None, dry_run: bool = False,
         force: bool = False) -> Path:
+    from .runid import check_identity, ensure_number
+    if not dry_run:
+        ensure_number(run_path)
     res = resolve(run_path)
+    rid = check_identity(res) if not dry_run else f"{res.run.get('run_number') or 0:06d}"
     n = int(n_events or res.run["n_events"])
     sd = int(res.run["seed"] if seed is None else seed)
-    out = (Path(out_dir) if out_dir else DATA / "g4" / Path(run_path).stem).resolve()
+    out = (Path(out_dir) if out_dir else DATA / "g4" / rid).resolve()       # filed by run number (runid.py)
     if not force and not dry_run and is_current(res, out, n, sd):
         print(f"Geant4 output current (Geant4 key {res.g4_key()}, {n} events, seed {sd}): {out} — not rerun "
               f"(--force reruns)")
@@ -131,7 +135,7 @@ def run(run_path, n_events: int | None = None, seed: int | None = None, out_dir=
         return out
     t0 = time.time()
     from .runlock import run_lock
-    with run_lock(Path(run_path).stem), open(out / "g4.log", "w") as log:
+    with run_lock(rid), open(out / "g4.log", "w") as log:
         # everything to g4.log; progress, warnings and errors also to the screen
         p = subprocess.Popen(cmd, cwd=out, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
         for line in p.stdout:

@@ -113,12 +113,25 @@ def diff(old: dict, new: dict, limit: int = 60) -> list:
     return rows[:limit] + ([("...", f"{len(rows) - limit} more", "")] if len(rows) > limit else [])
 
 
+def _run_id(run: str) -> str:
+    """Run id from a run number (any width) or a run file (its run_number); else the text itself."""
+    s = str(run)
+    if s.isdigit():
+        return f"{int(s):06d}"
+    if s.endswith((".yaml", ".yml")) and Path(s).exists():
+        from .runid import number_of
+        n = number_of(s)
+        if n is not None:
+            return f"{n:06d}"
+    return Path(s).stem
+
+
 SECTIONS = ("run", "state", "source", "detector", "geometry", "materials", "hv_case", "physics")
 
 
 def show(run: str, product: str | None = None, lineage_hash: str | None = None, n: int | None = None,
          full: bool = False, with_diff: bool = False) -> int:
-    run_id = Path(run).stem
+    run_id = _run_id(run)
     files = entries(run_id)
     if not files:
         print(f"no provenance for run '{run_id}' in {PROV / run_id} (written by xamssim chain since 2026-10-19)")

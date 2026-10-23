@@ -39,6 +39,24 @@
 </div>
 {% endfor %}
 </section>
+{% if 'top_view' in row %}
+{% if optical %}
+<section class="panel">
+  <div class="panel-title">Optical maps <a class="mono small" href="{{ url_for('optical_map', key=optical.key) }}">{{ optical.key }}</a>
+    <span class="muted small">Rayleigh {{ optical.optics.get('LXe Rayleigh length [cm]')|fmt }} cm ·
+      absorption {{ optical.optics.get('LXe absorption length [cm]')|fmt }} cm ·
+      PTFE R {{ optical.optics.get('PTFE reflectivity, liquid')|fmt }} (specular {{ optical.optics.get('PTFE specular fraction, liquid')|fmt }}) ·
+      steel R {{ optical.optics.get('stainless-steel reflectivity')|fmt }} ·
+      level {{ optical.level_mm|fmt }} mm — <a href="{{ url_for('optical_map', key=optical.key) }}">all parameters</a></span></div>
+  <div class="grid two figures">
+  {% for kind, (title, _) in map_figures.items() %}{% if optical.kinds.get(kind) %}
+    <div><div class="muted small">{{ title }}</div>
+    <img class="figure" loading="lazy" src="{{ url_for('map_figure', kind=kind, key=optical.key) }}" alt="{{ title }}" /></div>
+  {% endif %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endif %}
 {% endif %}{% endfor %}
 <script>
 function figAspect(img) {
@@ -80,12 +98,16 @@ document.querySelectorAll('.figrow img').forEach(function (img) { if (img.comple
 {% endif %}
 {% if reco and reco.products %}
 <section class="panel">
+  {% set view = reco_view if reco_view in reco.views else 'latest' %}
+  {% set shown = reco.views.get(view) %}
   <div class="panel-title">Reconstruction (amstrax) <span class="muted small">run {{ "%06d"|format(d.row.number) }}; stored data types, no database
-    {% if reco.n_decays %}· {{ reco.n_decays|fmt }} decays simulated{% endif %}</span></div>
+    {% if reco.n_decays %}· {{ reco.n_decays|fmt }} decays simulated{% endif %}</span>
+    {% for v, c in reco.views.items() %}<a class="nav-link small{% if v == view %} active{% endif %}" href="?reco={{ v }}">{{ v }}{% if v == 'latest' %} ({{ 'truth' if not c else 'v%d'|format(c) }}){% endif %}</a>{% endfor %}
+  </div>
   <div class="grid two">
     <table class="table">
       <thead><tr><th>data type</th><th>hash</th><th class="num">chunks</th><th class="num">rows</th><th class="num">size</th><th>calibration</th><th>made</th></tr></thead>
-      {% for p in reco.products %}<tr><td>{{ p.type }}</td><td class="mono">{{ p.hash }}</td><td class="num">{{ p.n_chunks }}</td>
+      {% for p in reco.products if p.calibration is none or p.calibration == shown %}<tr><td>{{ p.type }}</td><td class="mono">{{ p.hash }}</td><td class="num">{{ p.n_chunks }}</td>
         <td class="num">{{ p.rows }}</td><td class="num">{{ "%.1f"|format(p.size_mb) }} MB</td>
         <td>{% if p.calibration is not none %}{{ "truth" if p.calibration == 0 else "v%d"|format(p.calibration) }}{% endif %}</td><td class="mono small">{{ p.made }}</td></tr>{% endfor %}
     </table>
@@ -97,29 +119,14 @@ document.querySelectorAll('.figrow img').forEach(function (img) { if (img.comple
     </table>
   </div>
 </section>
-{% for e in reco.event_info %}
+{% for e in reco.event_info if e.calibration == shown or shown is none %}
 <section class="panel">
   <div class="panel-title">event_info {{ e.hash }} <span class="muted small">{{ e.rows }} events · calibration {{ "truth" if not e.calibration else "v%d"|format(e.calibration) }} · made once, the first view takes a while</span></div>
   <img class="figure" loading="lazy" src="{{ url_for('reconstruction_figure', run_id=run_id, ev_hash=e.hash) }}" alt="reconstruction" />
 </section>
 {% endfor %}
 {% endif %}
-{% if optical %}
-<section class="panel">
-  <div class="panel-title">Optical maps <a class="mono small" href="{{ url_for('optical_map', key=optical.key) }}">{{ optical.key }}</a>
-    <span class="muted small">Rayleigh {{ optical.optics.get('LXe Rayleigh length [cm]')|fmt }} cm ·
-      absorption {{ optical.optics.get('LXe absorption length [cm]')|fmt }} cm ·
-      PTFE R {{ optical.optics.get('PTFE reflectivity, liquid')|fmt }} (specular {{ optical.optics.get('PTFE specular fraction, liquid')|fmt }}) ·
-      steel R {{ optical.optics.get('stainless-steel reflectivity')|fmt }} ·
-      level {{ optical.level_mm|fmt }} mm — <a href="{{ url_for('optical_map', key=optical.key) }}">all parameters</a></span></div>
-  <div class="grid two figures">
-  {% for kind, (title, _) in map_figures.items() %}{% if optical.kinds.get(kind) %}
-    <div><div class="muted small">{{ title }}</div>
-    <img class="figure" loading="lazy" src="{{ url_for('map_figure', kind=kind, key=optical.key) }}" alt="{{ title }}" /></div>
-  {% endif %}{% endfor %}
-  </div>
-</section>
-{% endif %}
+
 {% else %}
 <section class="panel"><span class="muted">no provenance for this simulation (written by xamssim chain since 2026-10-19)</span></section>
 {% endif %}

@@ -252,7 +252,8 @@ class Resolved:
 
     def run_key(self) -> str:
         """Hash of everything that defines the simulated run (for provenance / strax run ids)."""
-        return short_hash({"run": self.run, "state": self.state, "source": self.source, "maps": self.map_keys()})
+        run = {k: v for k, v in self.run.items() if k not in ("tags", "supersedes")}      # labels, not the simulation
+        return short_hash({"run": run, "state": self.state, "source": self.source, "maps": self.map_keys()})
 
 
 def resolve(run_path) -> Resolved:

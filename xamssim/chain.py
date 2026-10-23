@@ -224,7 +224,8 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
 
 
 def g4_dir(res: Resolved) -> Path:
-    return DATA / "g4" / res.run_path.stem
+    from .runid import run_id
+    return DATA / "g4" / run_id(res)                     # filed by run number (runid.py)
 
 
 def context(run_path, g4_out=None, store=STORE, **overrides):
@@ -245,7 +246,8 @@ def context(run_path, g4_out=None, store=STORE, **overrides):
                        config=cfg)
     st.set_context_config({"check_available": ()})
     _check_g4(res, gdir)
-    return st, res.run_path.stem
+    from .runid import run_id
+    return st, run_id(res)
 
 
 def _check_g4(res: Resolved, gdir: Path) -> None:
@@ -277,7 +279,10 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
     import numpy as np
 
     from .config import PRODUCTS
+    from .runid import check_identity, ensure_number
+    ensure_number(run_path)
     res = resolve(run_path)
+    check_identity(res)
     stop = res.run.get("stop_after", "raw_records")
     if target is None:
         done = [p for p in PRODUCTS[: PRODUCTS.index(stop) + 1] if p in TARGETS]

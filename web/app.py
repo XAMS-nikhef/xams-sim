@@ -52,7 +52,8 @@ def simulation(run_id):
     return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, figure_rows=compose.FIGURE_ROWS, others=others,
                            optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES, dashboard=DASHBOARD,
                            daq=compose.daq_settings(rec) if rec else None, live=compose.live_settings(rec, number),
-                           reco=compose.reconstruction(number), reasons=reasons, page="overview")
+                           reco=compose.reconstruction(number), reco_view=request.args.get("reco", "latest"),
+                           reasons=reasons, page="overview")
 
 
 @app.route("/sim/<run_id>/reconstruction/<ev_hash>.png")
