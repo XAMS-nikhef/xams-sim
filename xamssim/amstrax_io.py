@@ -80,6 +80,13 @@ def truth_constants(res: Resolved, lifetime_us: float | None = None) -> dict:
                 channel_map={k: list(v_) for k, v_ in daq["channel_map"].items()})
 
 
+def condition(res: Resolved) -> str:
+    """Key of what the true corrections of a run depend on (state and maps): a calibration measured on one run applies
+    to all runs with the same condition (xamssim corrections)."""
+    from .config import short_hash
+    return short_hash({"state": {k: v for k, v in res.state.items() if k != "description"}, "maps": res.map_keys()})
+
+
 def processing_config(processing) -> dict:
     """Processing settings of an analysis (its processing.json: base_config + event_config)."""
     if processing is None:
@@ -203,12 +210,33 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
                     "made": dt.datetime.now(tz=dt.timezone.utc),       # when exported (the run's start is simulated time)
                     "state": res.state_name, "source": res.source_name, "source_position_mm": res.source.get("position_mm"),
                     "detector": res.detector, "n_events": res.run["n_events"], "seed": res.run["seed"],
-                    "truth": truth_constants(res, lifetime_us)},
+                    "supersedes": res.run.get("supersedes"), "maps": res.map_keys(), "condition": condition(res),
+                    # per-run corrections (xamssim.corrections): truth now, calibrated after a calibration on the
+                    # reconstructed MC; amstrax reads them with an MC global version (MC1) and for_mc_run
+                    "corrections": {"truth": truth_constants(res, lifetime_us)}},
         "data": data or [],
     }
+    _keep_calibration(sf, rid, doc)
     sf.write_run_metadata(rid, doc)
     from . import rundb
     rundb.register(doc, log=log)
+
+
+def _keep_calibration(sf, rid: str, doc: dict) -> None:
+    """A run number is one fixed simulation (plan S10): writing the run document again (finishing a run, reprocessing)
+    keeps its stored calibrations; a different simulation under an existing number is refused (a rerun gets a new
+    number)."""
+    from bson import json_util
+    f = Path(sf.path) / f"{rid}-metadata.json"                      # the file itself: strax returns it flattened
+    if not f.exists():
+        return
+    old = json.loads(f.read_text(), object_hook=json_util.object_hook)
+    was, now = old.get("xamssim", {}).get("run_key"), doc["xamssim"]["run_key"]
+    if was and was != now:
+        raise ConfigError(f"run {rid} already exists as another simulation (run key {was}, now {now}): a rerun gets a "
+                          "new run number (run_number in the run file, supersedes: the old one)")
+    kept = {k: v for k, v in (old.get("xamssim", {}).get("corrections") or {}).items() if k != "truth"}
+    doc["xamssim"]["corrections"].update(kept)
 
 
 def _write_truth(store: Path, res: Resolved, rid: str, sim_id: str, sim) -> None:

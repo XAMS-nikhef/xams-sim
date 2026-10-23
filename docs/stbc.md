@@ -79,7 +79,7 @@ Larger runs (or simulation + reconstruction in one go) on condor, at most 10 job
 /data/xenon/xams_v2/software/xams-sim/stbc/submit_production.sh runs/my_run.yaml
 ```
 
-This runs Geant4 → chain → live data → amstrax (raw records → event_info, corrections v5) and puts everything in your
+This runs Geant4 → chain → live data → amstrax (raw records → event_info, corrections MC1) and puts everything in your
 own area; logs in `XAMSSIM_DATA/logs/<run file name>/`. The script is the same for production; as your own account it
 writes nothing to the database ("private run: not recorded in the run database").
 
@@ -89,8 +89,8 @@ Only for runs that others need. As `xamsdata` (whose settings point to the centr
 
 1. **Run file** committed (so the production can always be traced to it), with a production run number (9002xx and
    up) and, while trying the flow, `tags: [test]`.
-2. **Corrections:** the run number needs entries in the correction files it is processed with (amstrax_files; for now
-   the v5 files, later MC files of their own).
+2. **Corrections:** nothing to do: an MC run takes its per-run corrections from its own run document (see
+   "Corrections of MC runs" below).
 3. **Submit** as `xamsdata`:
 
     ```bash
@@ -115,15 +115,51 @@ yourself (e.g. with other settings or corrections):
 ```python
 import strax, amstrax
 raw = "/data/xenon/xams_v2/mc_raw_records"          # private: your XAMSSIM_AMSTRAX_STORE
-st = amstrax.contexts.xams(output_folder="<your output folder>", corrections_version="v5")
+st = amstrax.contexts.xams(output_folder="<your output folder>", corrections_version="MC1")
 st.storage += [strax.DataDirectory(raw, readonly=True, provide_run_metadata=True)]
 amstrax.xams_config.RUNDOC_DIRS.append(raw)          # the run document file next to the raw records
-events = st.get_array("900201", "event_info")
+st = amstrax.contexts.for_mc_run(st, "990001")       # the run's corrections (truth / calibrated) with their version
+events = st.get_array("990001", "event_info")
 ```
 
 - Raw records that do not exist yet are made from the live data with `amstrax.contexts.context_for_daq_reader(st,
   "<run>")` (as the production job does).
-- The run document (channel map, thresholds, DAQ settings) comes from the file next to the raw records or, for
-  production runs, from `run.runs_mc`; nothing of the simulation's own calibration is applied: the corrections come
-  from amstrax_files, as for data.
-- `EventDisplay(900201, corrections_version="v5")` of the analysis works the same way.
+- The run document (channel map, thresholds, DAQ settings, corrections) comes from the file next to the raw records
+  or, for production runs, from `run.runs_mc`.
+
+## Corrections of MC runs
+
+The cuts and settings come from amstrax_files, as for data: the MC global version `MC1` is the data version v5 with one
+difference. The per-run corrections (electron lifetime, gains, gate and cathode drift times) come from the run's own
+run document:
+
+- `xamssim.corrections.truth`: the simulation's own values, written when the run is made;
+- `xamssim.corrections.calibrated`: measured on the reconstructed MC with the calibration steps used for data, with a
+  version (1, 2, …), the run it was measured on, method and date. Used when present, else the truth.
+
+A data–MC comparison uses calibrated MC (both treated the same way); truth minus calibrated is the bias of the
+calibration method (closure test). Real data never depend on any of this.
+
+Two passes:
+
+1. the job reconstructs with the truth (calibration version 0);
+2. calibrate on the reconstructed MC (your analysis steps) and store the values, e.g. `cal.json` =
+   `{"elife": 151200, "drift_time_gate": 4416, "method": "elife fit + drift edges", "analysis_commit": "a1b2c3d"}`:
+
+    ```bash
+    xamssim corrections 990001                                         # show truth / calibrated
+    xamssim corrections --calibrated cal.json --from-run 990001 990001 # this run
+    xamssim corrections --calibrated cal.json --from-run 990001 --state sept   # or all runs of the condition
+    ```
+
+    (`--runs A-B`, `--tag T` select too; `--dry-run` shows first.) A calibration applies only to runs of the same
+    condition (state and maps): others are refused. Production runs (as `xamsdata`) are updated in `run.runs_mc` too;
+3. reconstruct again: the same job, or the snippet above. The new calibration version gives new products next to the
+   old ones; nothing is overwritten.
+
+## Reruns
+
+A run number is one fixed simulation and is never overwritten. To rerun a run file (new code, maps, more events, …),
+give it the next free number and `supersedes: <old number>`; `xamssim live` refuses an existing number with a different
+simulation. Under the same number only: reprocessing with amstrax and finishing a failed run (its calibrations are
+kept). Outdated runs are removed when no longer needed.

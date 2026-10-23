@@ -378,6 +378,12 @@ hours (run 900001: 19 048 chunks at 100 Hz, 6 h through amstrax).
 Decisions from the user: which data runs are the reference; which parameters are fixed (measured) and which may be
 tuned; whether the delayed-electron model is part of "correct" now or later for the paper.
 
+**Closure test of the calibration (2026-10-23):** every MC run has true and calibrated corrections; their difference
+is the bias of the data calibration method (elife fit, drift-time edges, …), to correct for or carry as a systematic.
+Condition: per correction the truth must be defined as the calibration measures it (e.g. gate drift time: the edge of
+the drift-time distribution, not the drift map at 0.5 mm below the gate: 900201 3904 vs 4416 ns). Corrections MC cannot
+calibrate (gains without simulated SPE / LED data) stay at truth, marked as such.
+
 ### S10. MC runs as runs: run database, central storage, STBC, dashboard (1–2 weeks) — **planned 2026-10-20**
 
 Goal: one process flow for data and MC. A simulated run is a run like a data run: a number (900000–999999), a run
@@ -451,19 +457,28 @@ run number different; another user on STBC can process and read an MC run; the d
   production. Under the same number only: reprocessing with amstrax (new corrections / amstrax version: new products
   next to the old, new lineage) and finishing a failed, incomplete run. Outdated runs are removed when no longer needed
   (`xamssim rundb --delete` by range / tag + files); refer to standard runs by run file and tag, not by number.
-- *Corrections of MC runs:* the per-run values live in the run document, not in amstrax_files:
-  `xamssim.corrections.truth` (from the simulation, written when the run is made; now `xamssim.truth`) and
-  `xamssim.corrections.calibrated` (determined from the reconstructed MC with the data calibration steps, with method,
-  analysis commit, date and a calibration version). amstrax_files holds the recipe: a global MC version
-  (`_global_mc_vN.json`, same cuts and settings as the data version it is compared with; per-run corrections as
-  `rundoc://?path=...calibrated...,...truth...`) and detector maps shared by MC runs (pos_rec_map: by default the data
-  map, an MC-made map for checks). The calibration version goes into the correction address so that each calibration
-  gets its own lineage (products side by side, nothing silently reused). The per-run 9xxxxx entries in the v5 files go
-  (TODO.md). Until then: private jobs fall back to the truth values (production_job.sh, 2026-10-23).
+- *Corrections of MC runs (implemented 2026-10-23):* amstrax_files holds the *recipe*, the run document the *values*.
+  - amstrax_files: the MC global version `_global_MC1.json` = data v5 (all cuts and settings, `pos_rec_params_v0`, the
+    data position map `pos_rec_map_v0`, now with range 901000–999999) except the per-run corrections elife,
+    gain_to_pe_array, drift_time_gate, drift_time_cathode, which are `rundoc://` addresses into the run document
+    (calibrated, else truth). Each new data version gets a matching MC version; data never follow MC.
+  - Run document: `xamssim.corrections.truth` (written by `xamssim live`), `.calibrated` (values + version, from_run,
+    method, analysis_commit, date), `.history`; `xamssim.condition` (key of state + maps), `xamssim.maps`,
+    `xamssim.supersedes`.
+  - amstrax: `contexts.for_mc_run(st, run)` puts the run's calibration version into the addresses (own lineage per
+    calibration, products side by side); the fetch refuses a version that is not the run's current one (amstrax#353).
+  - `xamssim corrections <run>` shows truth vs calibrated; `--calibrated cal.json --from-run N` stores a calibration
+    for runs selected by number, `--runs A-B`, `--state`, `--tag` (the "range" of amstrax_files), refusing runs of
+    another condition; production runs also in `runs_mc`.
+  - `xamssim live` refuses an existing run number with another simulation (run key) and keeps stored calibrations
+    when the same run is written again.
+  - The production job (`stbc/production_job.sh`) reconstructs with MC1 + `for_mc_run`; the earlier private fallback
+    to truth values is gone (it is now the general rule).
+  - Later: the 9xxxxx entries in the v5 data files and `_global_v5`'s reason to exist for MC go (TODO.md); 900201 and
+    990001 were made before (900201 on v5 entries; 990001 to be rewritten).
 - *Two passes, as for data:* reconstruct with truth (pass 1) → calibrate on the reconstructed MC
-  (`analysis_SR2026.2/steps`) → reconstruct with the calibrated values (pass 2) = the version compared with data (S9).
-  Noted: 900201 has gate / cathode drift times 4416 / 37751 ns in amstrax_files against truth 3904 / 37238 ns
-  (different definitions; check in S9).
+  (`analysis_SR2026.2/steps`) → `xamssim corrections --calibrated` → reconstruct (pass 2) = the version compared with
+  data (S9). Truth minus calibrated = the bias of the calibration method (closure test, S9).
 
 ### S11. Simulation app: overview and composer (2–3 weeks, in phases) — **planned 2026-10-20, worked out 2026-10-21**
 

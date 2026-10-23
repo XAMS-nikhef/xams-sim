@@ -202,6 +202,24 @@ def cmd_rundb(a) -> int:
     return 0
 
 
+def cmd_corrections(a) -> int:
+    import json
+
+    from . import corrections
+    if not a.calibrated:
+        for n in a.run:
+            corrections.show(n)
+        return 0
+    if a.from_run is None:
+        print("--calibrated needs --from-run (the run the calibration was measured on)", file=sys.stderr)
+        return 2
+    rng = tuple(int(x) for x in a.runs.split("-")) if a.runs else None
+    numbers = sorted(set(a.run) | (set(corrections.runs(rng, a.state, a.tag)) if (rng or a.state or a.tag) else set()))
+    values = json.loads(open(a.calibrated).read())
+    corrections.set_calibrated(values, a.from_run, numbers, dry_run=a.dry_run)
+    return 0
+
+
 def cmd_show(a) -> int:
     from .provenance import show
     return show(a.run, product=a.product, lineage_hash=a.hash, n=a.n, full=a.full, with_diff=a.diff)
@@ -272,6 +290,18 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_live)
+    p = sub.add_parser("corrections", help="per-run corrections of simulated runs (truth, calibrated) in their run "
+                                           "document: show, or store a calibration with --calibrated")
+    p.add_argument("run", nargs="*", type=int, help="run number(s)")
+    p.add_argument("--calibrated", metavar="JSON", help="calibration values (elife, gain_to_pe_array, drift_time_gate, "
+                                                        "drift_time_cathode; optional method, analysis_commit)")
+    p.add_argument("--from-run", type=int, help="the run the calibration was measured on")
+    p.add_argument("--runs", metavar="A-B", help="also all runs in this number range")
+    p.add_argument("--state", help="also all runs of this state")
+    p.add_argument("--tag", help="also all runs with this tag")
+    p.add_argument("--dry-run", action="store_true", help="only show what would be stored")
+    p.set_defaults(func=cmd_corrections)
+
     p = sub.add_parser("rundb", help="run documents of simulated runs in run.runs_mc (S10): list, or delete with --delete")
     p.add_argument("--range", help="run numbers LO-HI (default all of 900000-999999)")
     p.add_argument("--tag", help="only documents with this tag (e.g. test)")
