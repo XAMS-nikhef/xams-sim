@@ -1105,8 +1105,10 @@ def rerun_plan(run_id: str) -> dict:
     if old is None:
         raise ValueError("only runs with a run number can be rerun from the app")
     from .runid import next_free
-    lo, hi = PRIVATE_NUMBERS if PRIVATE_NUMBERS[0] <= old <= PRIVATE_NUMBERS[1] else PRODUCTION_NUMBERS
-    new = max(next_free((lo, hi)), old + 1)
+    private = PRIVATE_NUMBERS[0] <= old <= PRIVATE_NUMBERS[1]
+    # private: the next free private number now; production: none in the file, the submission reserves the next one
+    # in run.runs_mc (runid.ensure_number)
+    new = max(next_free(PRIVATE_NUMBERS), old + 1) if private else None
     src = Path(rec["run_file"])
     stem = re.sub(r"_r\d+$", "", src.stem)
     k = 2
@@ -1116,12 +1118,14 @@ def rerun_plan(run_id: str) -> dict:
     text = src.read_text() if src.exists() else ""
     if not text:
         raise FileNotFoundError(f"run file {src} not found")
-    text = re.sub(r"^run_number:.*$", f"run_number: {new}", text, count=1, flags=re.M)
     text = re.sub(r"^supersedes:.*\n", "", text, flags=re.M)
-    text = text.replace(f"run_number: {new}", f"run_number: {new}\nsupersedes: {old}", 1)
+    if new is not None:
+        text = re.sub(r"^run_number:.*$", f"run_number: {new}\nsupersedes: {old}", text, count=1, flags=re.M)
+    else:
+        text = re.sub(r"^run_number:.*$", f"supersedes: {old}", text, count=1, flags=re.M)
     head = f"# Rerun of {src.name} (run {old}) with the code and maps of {time.strftime('%Y-%m-%d')}; same settings and seed.\n"
     return dict(run_id=run_id, old=old, new=new, src=str(src), dst=str(dst), text=head + text,
-                reasons=outdated_reasons(rec), private=lo == PRIVATE_NUMBERS[0])
+                reasons=outdated_reasons(rec), private=private)
 
 
 def rerun(run_id: str) -> dict:

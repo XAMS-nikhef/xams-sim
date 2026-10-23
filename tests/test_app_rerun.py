@@ -35,7 +35,8 @@ def test_private_and_production_numbers(studies, monkeypatch):
     assert p["new"] == 990008 and p["private"] and p["dst"].endswith("a_r2.yaml")
     assert "run_number: 990008\nsupersedes: 990002" in p["text"] and p["text"].count("run_number") == 1
     q = plan_for(monkeypatch, studies, 900203, name="b")
-    assert q["new"] == 900204 and not q["private"]          # 990007 is in the private block, not counted
+    assert q["new"] is None and not q["private"]            # production: the number comes at submission
+    assert "run_number" not in q["text"] and "supersedes: 900203" in q["text"]
 
 
 def test_rerun_needs_submit_switch(studies, monkeypatch):

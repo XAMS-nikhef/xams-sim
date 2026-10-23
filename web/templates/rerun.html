@@ -10,7 +10,7 @@
   <table class="kv">
     <tr><td class="muted">why</td><td>{% if plan.reasons %}{{ plan.reasons|join("; ") }}{% else %}the code (plugin versions) changed{% endif %}</td></tr>
     <tr><td class="muted">old run</td><td class="mono">{{ "%06d"|format(plan.old) }}</td></tr>
-    <tr><td class="muted">new run</td><td class="mono">{{ "%06d"|format(plan.new) }} ({{ "private" if plan.private else "production" }})</td></tr>
+    <tr><td class="muted">new run</td><td class="mono">{% if plan.new %}{{ "%06d"|format(plan.new) }} (private){% else %}next production number, taken from the run database when it is submitted{% endif %}</td></tr>
     <tr><td class="muted">new run file</td><td class="mono">{{ plan.dst }}</td></tr>
   </table>
   <pre class="mono small">{{ plan.text }}</pre>
