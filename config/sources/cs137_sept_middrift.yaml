@@ -1,0 +1,9 @@
+# Cs-137 at the azimuth of the September 2026 standard position (data: 165 ± 15°, cs137_sept_standard.yaml), on the outer
+# cryostat vessel (r ~129 mm, assumed), at mid drift height: z = -26 mm (halfway between gate z = 0 and cathode
+# z = -51.8 mm). Height chosen by the user (2026-10-23) for the Cs-137 productions 900202-900204; the depth profile of
+# the September data pointed lower (z = -110 ± 30 mm, cs137_sept_standard.yaml): compare in S9.
+description: "Cs-137 at the September azimuth (~169°, r ~129 mm on the outer vessel), mid drift height z = -26 mm"
+isotope: Cs-137
+activity_bq: null
+position_mm: [-127.0, 25.0, -26.0]
+collimator: null
