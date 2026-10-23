@@ -47,7 +47,7 @@ private run therefore cannot end up in the database, whichever command you use.
 5. **Private app** (optional): the simulation app on your own data, as your account on stbc-i1, in a screen:
 
     ```bash
-    XAMSSIM_WEB_SCREEN=xamssim_web_private XAMSSIM_WEB_PORT=8077 XAMSSIM_WEB_LOG=$HOME/xamssim_web_private.log \
+    XAMSSIM_WEB_SCREEN=xamssim_web_private XAMSSIM_WEB_PORT=8077 XAMSSIM_WEB_LOG=/data/xenon/xams_v2/users/<you>/xamssim/logs/xamssim_web_private.log \
         /data/xenon/xams_v2/software/xams-sim/web/start_stbc.sh
     ```
 
