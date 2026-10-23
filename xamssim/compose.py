@@ -887,11 +887,11 @@ def fig_spe(rec):
         t = np.asarray(d["templates"][ch], float)
         c = d["channels"][ch]
         amp = t * float(c["gain"])                                 # ADC per sample of one PE
-        x = (np.arange(len(t)) - 10) * dt
+        x = (np.arange(len(t)) - int(d.get("template_peaks", {}).get(ch, 10))) * dt
         ax.step(x, amp, where="mid", color="#4db6ff", lw=1.3)
         ax.axhline(float(c["threshold"]), color="#ff6b6b", lw=0.8, ls=":")
         ax.axhspan(-float(c["noise"]), float(c["noise"]), color="#8a96a8", alpha=0.25, lw=0)
-        ax.set(title=f"ch{ch} ({c['light']})", xlabel="time from max [ns]", xlim=(-40, 120))
+        ax.set(title=f"ch{ch} ({c['light']})", xlabel="time from max [ns]", xlim=(min(-40, x[0]), max(120, min(x[-1], 400))))
         ax.text(0.97, 0.95, f"gain {c['gain']:g}\nnoise {c['noise']:g} ADC\nthreshold {c['threshold']:g}",
                 transform=ax.transAxes, ha="right", va="top", fontsize=7, color="#dce7ff")
     np.atleast_1d(axs)[0].set_ylabel("one PE [ADC per 4 ns sample]")
@@ -929,11 +929,14 @@ def _stored(number) -> list:
             md = next(iter(d.glob("*metadata.json")), None)
             meta = json.loads(md.read_text()) if md else {}
             chunks = meta.get("chunks", [])
-            cal = None
+            cal = None                    # MC corrections in the lineage: vN (calibration=N) or truth (truth-only)
             for plugin, (name, version, cfg) in (meta.get("lineage") or {}).items():
                 for v in (cfg or {}).values():
-                    if isinstance(v, str) and "calibration=" in v and "xamssim.corrections" in v:
-                        cal = int(v.split("calibration=")[1].split("&")[0])
+                    if isinstance(v, str) and "xamssim.corrections" in v:
+                        if "calibration=" in v:
+                            cal = int(v.split("calibration=")[1].split("&")[0])
+                        elif ".calibrated." not in v:
+                            cal = 0
             out.append(dict(type=dtype, hash=h, folder=str(folder), n_chunks=len(chunks),
                             rows=sum(c.get("n", 0) for c in chunks), size_mb=sum(f.stat().st_size for f in d.iterdir()) / 1e6,
                             made=time.strftime("%Y-%m-%d %H:%M", time.localtime(meta["writing_ended"])) if meta.get("writing_ended") else "",
@@ -955,7 +958,14 @@ def reconstruction(number) -> dict | None:
              for k in keys]
     cal = corr.get("calibrated") or {}
     ev = [p for p in prods if p["type"] == "event_info"]
-    return dict(products=prods, corrections=table, calibration_version=cal.get("version", 0),
+    # the two kept reconstructions (plan S10): latest = the newest calibration version present, truth = version 0
+    versions = sorted({p["calibration"] for p in ev if p["calibration"] is not None})
+    views = {}
+    if versions:
+        views["latest"] = versions[-1]
+        if 0 in versions:
+            views["truth"] = 0
+    return dict(products=prods, corrections=table, calibration_version=cal.get("version", 0), views=views,
                 calibration=dict(from_run=cal.get("from_run"), method=cal.get("method"), date=cal.get("date")) if cal else None,
                 event_info=ev, n_decays=doc.get("xamssim", {}).get("n_events"))
 
@@ -1042,8 +1052,7 @@ def reconstruction_figure(run_id: str, number, ev_hash: str) -> Path:
 # app runs as (private app: private run; production app: production run). The old run stays until it is deleted.
 # Submitting from the app needs XAMSSIM_WEB_SUBMIT=1 (set by web/start_stbc.sh on STBC); otherwise the app only shows
 # what it would do.
-PRIVATE_NUMBERS = (990000, 999999)
-PRODUCTION_NUMBERS = (900000, 989999)
+from .runid import PRIVATE as PRIVATE_NUMBERS, PRODUCTION as PRODUCTION_NUMBERS  # noqa: E402
 SUBMIT = Path(__file__).resolve().parents[1] / "stbc" / "submit_production.sh"
 
 
@@ -1085,20 +1094,6 @@ def outdated_reasons(rec: dict) -> list:
     return out
 
 
-def _numbers_in_use() -> set:
-    """Run numbers in run files under the studies folder and in the raw-records store."""
-    import re
-    from . import amstrax_io
-    used = set()
-    for f in Path(STUDIES).glob("**/runs/*.yaml"):
-        m = re.search(r"^run_number:\s*(\d+)", f.read_text(), re.M)
-        if m:
-            used.add(int(m.group(1)))
-    if amstrax_io.STORE is not None and Path(amstrax_io.STORE).is_dir():
-        used |= {int(p.name[:6]) for p in Path(amstrax_io.STORE).glob("[0-9]" * 6 + "-metadata.json")}
-    return used
-
-
 def rerun_plan(run_id: str) -> dict:
     """What a rerun of a simulation would do: reasons, new number, new run file and its text."""
     import re
@@ -1109,11 +1104,9 @@ def rerun_plan(run_id: str) -> dict:
     old = (rec.get("run") or {}).get("run_number")
     if old is None:
         raise ValueError("only runs with a run number can be rerun from the app")
+    from .runid import next_free
     lo, hi = PRIVATE_NUMBERS if PRIVATE_NUMBERS[0] <= old <= PRIVATE_NUMBERS[1] else PRODUCTION_NUMBERS
-    used = _numbers_in_use()
-    new = max([n for n in used if lo <= n <= hi] + [old]) + 1
-    if new > hi:
-        raise ValueError(f"no free run number in {lo}-{hi}")
+    new = max(next_free((lo, hi)), old + 1)
     src = Path(rec["run_file"])
     stem = re.sub(r"_r\d+$", "", src.stem)
     k = 2

@@ -37,10 +37,13 @@ def _mb(n: int) -> str:
 
 
 def run_files() -> dict:
-    """run id -> run file paths (studies in the simulations folder, examples in xams-sim/config/runs)."""
+    """run id (six-digit run number) -> run file paths (studies in the simulations folder, examples in
+    xams-sim/config/runs); run files without a number yet under '<name> (no number)'."""
+    from . import runid
     out: dict = {}
-    for f in sorted(list(STUDIES.glob("*/runs/*.yaml")) + list((ROOT / "config" / "runs").glob("*.yaml"))):
-        out.setdefault(f.stem, []).append(f)
+    for f in runid.run_files():
+        n = runid.number_of(f)
+        out.setdefault(f"{n:06d}" if n is not None else f"{f.stem} (no number)", []).append(f)
     return out
 
 
@@ -120,9 +123,9 @@ def collect(flt: str = "") -> dict:
             except ConfigError as e:
                 r["note"] = f"run file invalid: {str(e)[:120]}"
         elif len(r["files"]) > 1:
-            r["note"] = "run id in several run files: " + ", ".join(str(f.relative_to(STUDIES.parent)) for f in r["files"])
+            r["note"] = "run number in several run files: " + ", ".join(str(f.relative_to(STUDIES.parent)) for f in r["files"])
         else:
-            r["note"] = "no run file with this name"
+            r["note"] = "no run file with this run number"
         for dtype, h, d in prods:
             state = "current" if h in cur.get(dtype, set()) else ("?" if dtype not in cur else "old")
             r["products"].append(dict(type=dtype, hash=h, state=state, size=_size(d), dir=d))

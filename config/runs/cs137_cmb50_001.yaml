@@ -1,4 +1,5 @@
 # One simulation run = this file. State and source are references; everything else comes from config/.
+run_number: 999901               # example of the repository (999901-999999 reserved for examples)
 state: cmb50
 source: cs137_raised
 n_events: 200000

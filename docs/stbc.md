@@ -157,9 +157,25 @@ Two passes:
 3. reconstruct again: the same job, or the snippet above. The new calibration version gives new products next to the
    old ones; nothing is overwritten.
 
-## Reruns
+## Run numbers, run files and reruns
 
-A run number is one fixed simulation and is never overwritten. To rerun a run file (new code, maps, more events, …),
-give it the next free number and `supersedes: <old number>`; `xamssim live` refuses an existing number with a different
-simulation. Under the same number only: reprocessing with amstrax and finishing a failed run (its calibrations are
-kept). Outdated runs are removed when no longer needed.
+- **Every simulation has a run number**, and everything it makes is filed under it (six digits): Geant4
+  (`<data>/g4/<number>`), the chain (`<data>/strax/<number>-…`), the provenance and its figures
+  (`<data>/provenance/<number>/`), the run document, live data and amstrax data. The run file's name is only a label.
+  A run file without `run_number` gets the next free private number (99xxxx) written into it on its first run;
+  production numbers (900000–989999) are set by hand. 999901–999999: the examples in xams-sim `config/runs`.
+- **One run file = one run number = one simulation.** xams-sim refuses a number that another run file uses, a number
+  made from another run file or with other settings, and a run file that already ran under another number.
+- **A changed run is a new run:** a new run file (`<name>_r<k>.yaml`) with the next free number and
+  `supersedes: <old number>`. The app's rerun button (outdated runs) does exactly that and submits it under the app's
+  account. Under the same number only: reprocessing with amstrax and finishing a failed run.
+- **Production run files** live in `/data/xenon/xams_v2/mc/run_files/<study>/` (owned by xamsdata, its
+  `XAMSSIM_STUDIES`), copied from the simulations repository; the production app writes its reruns there (commit
+  them into the repository from a checkout with access).
+
+## Reconstructions kept
+
+Per run at most two: the **latest** (the run's current calibration; before any calibration the truth values) and,
+after a calibration, the **truth** one (the simulation's own values, the reference for the closure test). The job
+deletes every other version of the run's processed products (raw records are never touched). The app shows one at a
+time (switch "latest | truth").

@@ -138,10 +138,10 @@ def cmd_particle(a) -> int:
 
 def cmd_chain(a) -> int:
     from .chain import run
-    from pathlib import Path
+    from .runid import ensure_number
 
     from .runlock import run_lock
-    with run_lock(Path(a.run).stem):
+    with run_lock(f"{ensure_number(a.run):06d}"):
         return run(a.run, target=a.target, g4_out=a.g4, lifetime_us=a.lifetime_us)
 
 
@@ -149,7 +149,8 @@ def cmd_amstrax(a) -> int:
     from . import amstrax_io
     from pathlib import Path
     from .runlock import run_lock
-    with run_lock(Path(a.run).stem):
+    from .runid import number_of
+    with run_lock(f"{number_of(a.run) or 0:06d}"):
         rid = amstrax_io.export(a.run, lifetime_us=a.lifetime_us)
     print(f"run {rid} ({Path(a.run).stem}) in {amstrax_io.STORE}: raw records, run document, truth file; process it "
           f"with the analysis like a data run, e.g. EventDisplay({int(rid)}, ...)")
@@ -161,7 +162,8 @@ def cmd_live(a) -> int:
 
     from . import live
     from .runlock import run_lock
-    with run_lock(Path(a.run).stem):
+    from .runid import number_of
+    with run_lock(f"{number_of(a.run) or 0:06d}"):
         rid = live.write(a.run, lifetime_us=a.lifetime_us)
     print(f"run {rid} ({Path(a.run).stem}): live data, run document, truth file; amstrax makes raw_records from them with "
           f"its DAQReader (amstrax.contexts.context_for_daq_reader)")
