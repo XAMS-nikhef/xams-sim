@@ -222,6 +222,13 @@ def cmd_corrections(a) -> int:
     return 0
 
 
+def cmd_number(a) -> int:
+    from .runid import ensure_number
+    for r in a.run:
+        print(ensure_number(r))
+    return 0
+
+
 def cmd_show(a) -> int:
     from .provenance import show
     return show(a.run, product=a.product, lineage_hash=a.hash, n=a.n, full=a.full, with_diff=a.diff)
@@ -292,6 +299,11 @@ def main(argv=None) -> int:
     p.add_argument("run")
     p.add_argument("--lifetime-us", type=float, help="electron lifetime [µs] if the state has none (as for the chain)")
     p.set_defaults(func=cmd_live)
+    p = sub.add_parser("number", help="the run number of run files; one without gets the next one written into it "
+                                      "(production account: last production number + 1; else private 99xxxx)")
+    p.add_argument("run", nargs="+", help="run file(s)")
+    p.set_defaults(func=cmd_number)
+
     p = sub.add_parser("corrections", help="per-run corrections of simulated runs (truth, calibrated) in their run "
                                            "document: show, or store a calibration with --calibrated")
     p.add_argument("run", nargs="*", type=int, help="run number(s)")

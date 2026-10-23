@@ -162,8 +162,12 @@ Two passes:
 - **Every simulation has a run number**, and everything it makes is filed under it (six digits): Geant4
   (`<data>/g4/<number>`), the chain (`<data>/strax/<number>-…`), the provenance and its figures
   (`<data>/provenance/<number>/`), the run document, live data and amstrax data. The run file's name is only a label.
-  A run file without `run_number` gets the next free private number (99xxxx) written into it on its first run;
-  production numbers (900000–989999) are set by hand. 999901–999999: the examples in xams-sim `config/runs`.
+  **Numbers are given automatically**, like the DAQ's: a run file without `run_number` gets one when it is submitted
+  (`stbc/submit_production.sh`, or `xamssim number <run file>`) or first run, written into the run file. Under the
+  production account (xamsdata) that is the last production number + 1 (counting `run.runs_mc` and the central
+  folders; 900001 after a clean start); under your own account the next private number (99xxxx). Production run
+  files are therefore committed without a number; the number is copied back into the repository after submitting.
+  999901–999999: the examples in xams-sim `config/runs`.
 - **One run file = one run number = one simulation.** xams-sim refuses a number that another run file uses, a number
   made from another run file or with other settings, and a run file that already ran under another number.
 - **A changed run is a new run:** a new run file (`<name>_r<k>.yaml`) with the next free number and

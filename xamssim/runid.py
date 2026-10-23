@@ -4,8 +4,10 @@ Every simulation has a run number (900000-999999); the run id of everything it m
 the Geant4 output (<data>/g4/<id>), the chain's strax data (<data>/strax/<id>-<type>-<hash>), the provenance
 (<data>/provenance/<id>/), the run document and the amstrax data. The run file's name is only a label.
 
-    ensure_number(run file)   a run file without run_number gets the next free *private* number (99xxxx), written into
-                              the file on its first run; production numbers (900000-989999) are always set by hand
+    ensure_number(run file)   a run file without run_number gets the next number, written into the file: under a
+                              production account (with the run-database writer account) the last production number
+                              + 1 (900001 after a clean start, sequential like the DAQ's run numbers), otherwise the
+                              next private number (99xxxx). Done when a run is submitted or first run, under a lock.
     check_identity(res)       one run file = one run number = one simulation: refuses a number that another run file
                               uses, a number whose provenance belongs to another run file or to other settings (run
                               key), and a run file that was run before under another number. A changed run is a new
@@ -63,6 +65,11 @@ def numbers_in_use() -> dict:
     if amstrax_io.STORE is not None and Path(amstrax_io.STORE).is_dir():
         for f in Path(amstrax_io.STORE).glob("[0-9]" * 6 + "-metadata.json"):
             out.setdefault(int(f.name[:6]), [])
+    from . import rundb                                          # production: the numbers in run.runs_mc
+    if rundb.configured():
+        col = rundb.collection()
+        for d in col.find({}, {"number": 1}):
+            out.setdefault(int(d["number"]), [])
     return out
 
 
@@ -75,20 +82,34 @@ def next_free(block: tuple = PRIVATE) -> int:
     return n
 
 
-def ensure_number(run_path) -> int:
-    """The run file's number; a run file without one gets the next free private number written into it."""
+def ensure_number(run_path, production: bool | None = None) -> int:
+    """The run file's number; a run file without one gets the next number written into it: production (the last
+    production number + 1) under an account with the run-database writer account, else private. Under a lock, so that
+    two submissions never take the same number."""
+    import fcntl
     run_path = Path(run_path)
     n = number_of(run_path)
     if n is not None:
         return n
-    n = next_free(PRIVATE)
-    lines = run_path.read_text().splitlines(keepends=True)
-    i = 0
-    while i < len(lines) and (lines[i].startswith("#") or not lines[i].strip()):   # after the leading comments
-        i += 1
-    lines.insert(i, f"run_number: {n}               # assigned by xamssim {dt.date.today()} (private)\n")
-    run_path.write_text("".join(lines))
-    print(f"{run_path.name}: no run number -> {n} (private), written into the run file")
+    if production is None:
+        from . import rundb
+        production = rundb.configured()
+    kind = "production" if production else "private"
+    lock = DATA / "locks" / "run_numbers.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock, "w") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        n = number_of(run_path)                                  # numbered meanwhile by another process
+        if n is not None:
+            return n
+        n = next_free(PRODUCTION if production else PRIVATE)
+        lines = run_path.read_text().splitlines(keepends=True)
+        i = 0
+        while i < len(lines) and (lines[i].startswith("#") or not lines[i].strip()):   # after the leading comments
+            i += 1
+        lines.insert(i, f"run_number: {n}               # assigned by xamssim {dt.date.today()} ({kind})\n")
+        run_path.write_text("".join(lines))
+    print(f"{run_path.name}: no run number -> {n} ({kind}), written into the run file")
     return n
 
 

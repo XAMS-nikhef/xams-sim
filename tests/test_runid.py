@@ -18,6 +18,8 @@ def area(tmp_path, monkeypatch):
     monkeypatch.setattr(runid, "DATA", tmp_path / "data")
     monkeypatch.setattr(runid, "PROV", tmp_path / "data" / "provenance")
     monkeypatch.setattr(amstrax_io, "STORE", None)
+    from xamssim import rundb
+    monkeypatch.setattr(rundb, "configured", lambda: False)
     return tmp_path / "study" / "runs"
 
 
@@ -62,3 +64,28 @@ def test_identity(area):
     prov("990004", h)                                              # this run file was run before as 990004
     with pytest.raises(ConfigError, match="run before as run 990004"):
         runid.check_identity(res(h))
+
+
+def test_production_numbers(area, monkeypatch):
+    """Production account: the last production number + 1 (run.runs_mc and the files), 900001 after a clean start."""
+    from xamssim import rundb
+
+    class Col:
+        def __init__(self, numbers):
+            self.numbers = numbers
+
+        def find(self, q, proj):
+            return [{"number": n} for n in self.numbers]
+
+    monkeypatch.setattr(rundb, "configured", lambda: True)
+    monkeypatch.setattr(rundb, "collection", lambda: Col([]))
+    f = area / "a.yaml"
+    f.write_text(RUN)
+    assert runid.ensure_number(f) == 900001 and "(production)" in f.read_text()
+    monkeypatch.setattr(rundb, "collection", lambda: Col([900001, 900002, 990004]))   # private numbers do not count
+    g = area / "b.yaml"
+    g.write_text(RUN)
+    assert runid.ensure_number(g) == 900003
+    h = area / "c.yaml"
+    h.write_text(RUN)
+    assert runid.ensure_number(h, production=False) == 990005
