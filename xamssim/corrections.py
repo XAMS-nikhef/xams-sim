@@ -130,10 +130,13 @@ def set_calibrated(values: dict, from_run: int, numbers: list[int], dry_run: boo
     if not numbers:
         raise ConfigError("no runs selected")
     docs = [load(n) for n in numbers]
-    wrong = [d["number"] for d in docs if d.get("xamssim", {}).get("condition") != cond]
-    if wrong:
-        raise ConfigError(f"runs {wrong} have another condition (state / maps) than run {from_run}: "
-                          "its calibration does not apply to them")
+    old = [d["number"] for d in docs if d.get("xamssim", {}).get("condition") is None]
+    wrong = [d["number"] for d in docs if d.get("xamssim", {}).get("condition") not in (None, cond)]
+    if old or wrong:
+        raise ConfigError(" and ".join(
+            ([f"runs {old} have no condition (made before 2026-10-23)"] if old else [])
+            + ([f"runs {wrong} have another condition (state / maps) than run {from_run}"] if wrong else []))
+            + ": the calibration does not apply to them; narrow the selection (--runs, --tag) or name the runs")
     now = dt.datetime.now(tz=dt.timezone.utc)
     col = None if dry_run else rundb.collection()
     for d in docs:

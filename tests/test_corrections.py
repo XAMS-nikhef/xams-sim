@@ -67,6 +67,9 @@ def test_old_documents(store):
     assert corrections.corrections(corrections.load(990009))["truth"] == TRUTH
     with pytest.raises(ConfigError, match="no xamssim.condition"):
         corrections.set_calibrated({"elife": 1.0}, 990009, [990009], log=lambda *a: None)
+    write(store, 990010)
+    with pytest.raises(ConfigError, match="no condition"):
+        corrections.set_calibrated({"elife": 1.0}, 990010, [990009, 990010], log=lambda *a: None)
 
 
 def test_run_number_is_one_simulation(tmp_path):
