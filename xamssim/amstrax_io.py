@@ -260,8 +260,8 @@ _TO_AMSTRAX = {"x": (10.0, "mm"), "y": (10.0, "mm"), "z": (10.0, "mm"), "drift_t
 def _truth_units(e: np.ndarray) -> np.ndarray:
     """xams_events with x, y, z in mm and drift_time in ns (titles updated)."""
     descr = []
-    for title_name, fmt in e.dtype.descr:
-        title, name = title_name if isinstance(title_name, tuple) else (None, title_name)
+    for name in e.dtype.names:
+        fmt, title = e.dtype.fields[name][0], (e.dtype.fields[name][2:] or (None,))[0]   # fmt keeps array shapes
         if name in _TO_AMSTRAX and title:
             unit = _TO_AMSTRAX[name][1]
             title = title.replace("[cm]", f"[{unit}]").replace("[µs]", f"[{unit}]")
