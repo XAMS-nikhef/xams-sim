@@ -405,6 +405,17 @@ calibrate (gains without simulated SPE / LED data) stay at truth, marked as such
    as figures data vs MC (sim bands, data points).
 Order: after the waveform / S1 shape fixes (SPE templates v2), so that S1 shape and area are trustworthy first.
 
+**Position reconstruction study (2026-10-23, started).** `xamssim posrec` (fast toy, seconds): uniform positions →
+drift map (gate crossing, diffusion) → S2 light pattern → photon statistics → (u, v) → data map and an MC-built map
+(written in amstrax's format as a candidate pos_rec_map). First result (sept): the data map reproduces the radial
+squeeze seen in the full chain (−2.2 mm at r 20, −5.6 mm at r 29 mm; worse at y < 0 and x < 0); the MC map is
+unbiased to r ≈ 27 mm (u, v saturate near the wall); resolution for large S2s 0.55 mm (MC map) vs 2.3 mm (data map).
+Next: (1) the mesh check in data (user): with a correct map, large S2s in data show the gate-mesh lattice (pitch
+2.6 mm, 29.4°) with the same pitch everywhere, also at large r; apply the MC map to data and look; (2) validate the
+light pattern against data (u, v distribution, edge at the PTFE wall); (3) a finer drift map near the gate to predict
+the lattice in MC; (4) the full chain with a uniform internal source as end-to-end check; (5) if adopted, the MC map
+as a new pos_rec_map version (data decision).
+
 **Not modelled (2026-10-23):** PMT behaviour that depends on what came before: gain drop / base recovery of the top
 PMT after large pulses, afterpulses. Data effects beyond the MC near large S2s are candidates for it.
 
