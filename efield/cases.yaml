@@ -17,6 +17,8 @@ field_cage:
 
 
 cases:
+  zero:  {A: 0,    G: 0,     C: 0,     BS: 0,     TS: 0,    PMT_T: -900,  PMT_B: -950,  SIPM: 0, export: [],
+          note: "zero field (SR-2026.3 phase 2, 26-10-2026): all electrodes 0 V; no field map needed (state zero_field)"}
   sept:  {A: 2500, G: -2500, C: -3250, BS: -1000, TS: -100, PMT_T: -950,  PMT_B: -800,  SIPM: 0, export: [planes, sipm],
           note: "SR-2026.2 (Sept 2026, Δ750 V)"}
   refa:  {A: 1550, G: -1200, C: -1700, BS: -1000, TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],

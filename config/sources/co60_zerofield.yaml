@@ -1,0 +1,8 @@
+# Co-60 at the September azimuth and distance (as cs137_sept_middrift.yaml: ~169°, r ~129 mm on the outer vessel), at the
+# height of the zero-field runs of 26-10-2026: z = -25 mm (photopeak events of Cs, Na and Co centred at z ≈ -25 mm in
+# the S1 top-fraction depth, analysis_SR2026.3 source_depth; azimuth: September default, user 2026-10-26).
+description: "Co-60, September azimuth (~169°, r ~129 mm), z = -25 mm (zero-field runs 26-10-2026)"
+isotope: Co-60
+activity_bq: null
+position_mm: [-127.0, 25.0, -25.0]
+collimator: null

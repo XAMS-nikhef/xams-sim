@@ -28,8 +28,10 @@ CS137_KEV = 661.657
 
 
 def drift_field(res: Resolved) -> tuple[float, float]:
-    """Mean and spread of |E| [V/cm] in the drift region of a state's field map."""
+    """Mean and spread of |E| [V/cm] in the drift region of a state's field map (0, 0 for a zero-field state)."""
     from .fieldmap import path
+    if res.zero_field:
+        return 0.0, 0.0
     return drift_field_map(res.geometry, path(res))
 
 

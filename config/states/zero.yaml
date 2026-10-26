@@ -1,0 +1,11 @@
+# Detector state: zero field, SR-2026.3 phase 2 (fill of 26-10-2026, runs 7762-7783): all electrodes at 0 V, S1 only.
+# Sources: analysis_SR2026.3/config/runs/2026-10-26.csv, sc_snapshot of the runs, run plan next_fill (phase 2).
+description: "zero field (SR-2026.3, 26-10-2026): all electrodes 0 V; PMTs -900 / -950 V; S1 only"
+detector: xams2026           # config/detectors/xams2026/geometry.yaml
+hv_case: zero                # key in efield/cases.yaml (all 0 V)
+zero_field: true             # no field map, drift, extraction or S2; quanta from physics.zero_field_yields
+daq: sr2026_3                # detectors/xams2026/daq_sr2026_3.yaml + its single-PE templates (PMT HV, gains P1, RevB)
+liquid_level_mm: 4.0         # above the gate: as planned for this fill (to be confirmed)
+pressure_bar: 2.0            # assumed; not used without S2
+sensors:
+  pmt_hv_v: {top: -900, bottom: -950}

@@ -287,6 +287,23 @@ def fig_cross_section(rec):
     return fig
 
 
+def _zero_field(rec) -> bool:
+    return bool((rec.get("state") or {}).get("zero_field"))
+
+
+def _note_figure(rec, text):
+    """A small figure with a note instead of a map that does not exist for this simulation (e.g. zero field)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(8, 2.2), facecolor="#111b2e")
+    ax.set_facecolor("#111b2e")
+    ax.axis("off")
+    ax.text(0.5, 0.5, f"{rec['run_id']}: {text}", ha="center", va="center", color="#dce7ff", fontsize=11,
+            transform=ax.transAxes)
+    return fig
+
+
 def fig_field(rec):
     """|E| with field lines (state's field map) and where drifting electrons end (drift map), slice y = 0."""
     import matplotlib
@@ -295,6 +312,8 @@ def fig_field(rec):
     from matplotlib.colors import ListedColormap, LogNorm
 
     from .maps import MAPS, find
+    if _zero_field(rec):
+        return _note_figure(rec, "zero field (all electrodes 0 V): no field map, no drift, no S2")
     fm = rec["maps"].get("field", {})
     e = find("field", fm.get("key", ""))
     if e is None:
@@ -458,6 +477,8 @@ def fig_field_axis(rec):
     import matplotlib.pyplot as plt
 
     from .maps import MAPS, find
+    if _zero_field(rec):
+        return _note_figure(rec, "zero field (all electrodes 0 V): no field map, no drift, no S2")
     fm = rec["maps"].get("field", {})
     e = find("field", fm.get("key", ""))
     if e is None:
@@ -921,6 +942,10 @@ def _nest_inputs(rec) -> tuple:
     """(drift field mean, spread [V/cm], LXe density, physics.nest, line energy [keV], isotope) of a provenance record."""
     from .maps import MAPS, find
     from .nestfig import drift_field_map
+    rho = float(rec["materials"]["materials"]["liquid_xenon"]["density_g_cm3"])
+    iso = (rec.get("source") or {}).get("isotope") or "Cs-137"
+    if _zero_field(rec):
+        return 0.0, 0.0, rho, (rec.get("physics") or {}).get("nest") or {}, LINES_KEV.get(iso, LINES_KEV["Cs-137"]), iso
     fm = rec["maps"].get("field", {})
     e = find("field", fm.get("key", ""))
     if e is None:
@@ -954,13 +979,27 @@ def fig_nest(rec):
     for ax in axs[:2]:
         _style(ax)
     run, default = Nest(nest), Nest()
-    beta = run.curves("beta", field, rho, energies, 150)
-    gamma = run.curves("gamma", field, rho, energies, 2)
+    zero = _zero_field(rec)
+    ph = rec.get("physics") or {}
+    zy, frac = ph.get("zero_field_yields", "nest_gamma"), float(ph.get("zero_field_light_fraction", 0.9))
+    if zero:
+        # at 0 V/cm NEST's beta-ER is undefined: the chain uses gamma-ER per cluster (nest_gamma) or a fixed light
+        # fraction of the total quanta (proportional), see plugins/zero.py
+        g0 = run.curves("gamma", 0.0, rho, energies, 150)
+        nq = g0["ly"] + g0["qy"]
+        prop = {"ly": frac * nq, "qy": (1 - frac) * nq, "ly_sd": 0 * nq, "qy_sd": 0 * nq}
+        beta, gamma = (g0, prop) if zy == "nest_gamma" else (prop, g0)
+        used = "γ-ER at 0 V/cm" if zy == "nest_gamma" else f"proportional, light fraction {frac:g}"
+        other = f"proportional, light fraction {frac:g}" if zy == "nest_gamma" else "γ-ER at 0 V/cm"
+    else:
+        beta = run.curves("beta", field, rho, energies, 150)
+        gamma = run.curves("gamma", field, rho, energies, 2)
+        used, other = "β-ER", "γ-ER (reference: whole γ in one deposit)"
     for ax, k, lab in ((axs[0], "ly", "Ly [photons/keV]"), (axs[1], "qy", "Qy [electrons/keV]")):
-        ax.plot(energies, beta[k], color="#4db6ff", lw=1.6, label="β-ER (used by the chain)")
+        ax.plot(energies, beta[k], color="#4db6ff", lw=1.6, label=f"{used} (used by the chain)")
         ax.fill_between(energies, beta[k] - beta[k + "_sd"], beta[k] + beta[k + "_sd"], color="#4db6ff", alpha=0.2, lw=0)
-        ax.plot(energies, gamma[k], color="#f39c12", lw=1.0, label="γ-ER (reference: whole γ in one deposit)")
-        if nest:
+        ax.plot(energies, gamma[k], color="#f39c12", lw=1.0, label=other)
+        if nest and not zero:
             ax.plot(energies, default.curves("beta", field, rho, energies, 2)[k], color="#dce7ff", lw=0.9, ls="--",
                     label="β-ER, NEST defaults")
         ax.axvline(line, color="#8a96a8", lw=0.7, ls=":")
@@ -976,8 +1015,12 @@ def fig_nest(rec):
     changed = set((nest.get("widths") or {}))
     er = [k for k in WIDTH_KEYS if k.endswith("ER")]
     rows = [(f"{iso} {line:.0f} keV, 1 deposit", "photons  σ/μ", "electrons  σ/μ", "corr")]
-    for kind, name in (("gamma", "γ-ER"), ("beta", "β-ER")):
-        ph, el = run.quanta(run.yields(kind, line, field, rho), 2000)
+    for kind, name in ((("gamma", "γ-ER"), ("prop", f"prop. {frac:g}")) if zero else (("gamma", "γ-ER"), ("beta", "β-ER"))):
+        y = run.yields("gamma" if kind == "prop" else kind, line, field, rho)
+        if kind == "prop":
+            n_ = y.PhotonYield + y.ElectronYield
+            y.PhotonYield, y.ElectronYield = frac * n_, (1 - frac) * n_
+        ph, el = run.quanta(y, 2000)
         q = quanta_stats(ph, el)
         rows.append(("NEST " + name, f"{q['photons']:7.0f}  {q['photons_rel_sd']:.3f}", f"{q['electrons']:7.0f}  {q['electrons_rel_sd']:.3f}",
                      f"{q['corr']:+.2f}"))
@@ -1059,7 +1102,17 @@ def fig_nest_photopeak(rec):
     field, sd, rho, nest, line, iso = _nest_inputs(rec)
     e = _event_quanta(rec)
     run = Nest(nest)
-    ref = {k: quanta_stats(*run.quanta(run.yields(k, line, field, rho), 3000)) for k in ("beta", "gamma")}
+    zero = _zero_field(rec)
+    frac = float((rec.get("physics") or {}).get("zero_field_light_fraction", 0.9))
+
+    def ref_yields(k):                                   # zero field: beta-ER undefined -> fixed light fraction
+        y = run.yields("gamma" if (zero and k == "beta") else k, line, field, rho)
+        if zero and k == "beta":
+            n_ = y.PhotonYield + y.ElectronYield
+            y.PhotonYield, y.ElectronYield = frac * n_, (1 - frac) * n_
+        return y
+    ref = {k: quanta_stats(*run.quanta(ref_yields(k), 3000)) for k in ("beta", "gamma")}
+    rname = {"beta": f"prop. {frac:g}" if zero else "β-ER", "gamma": "γ-ER" + (" 0 V/cm" if zero else "")}
     pk = (np.abs(e["energy_drift"] - line) < 2.0) & (e["energy_outside"] < 0.5)
     groups = [("1 cluster", e["n_clusters"] == 1, "#4db6ff"), ("2 clusters", e["n_clusters"] == 2, "#2ecc71"),
               ("3 clusters", e["n_clusters"] == 3, "#f39c12"), ("≥ 4 clusters", e["n_clusters"] >= 4, "#ff6b6b")]
@@ -1081,7 +1134,7 @@ def fig_nest_photopeak(rec):
                 ax.hist(e["photons"][cen & m], bins=bins, histtype="step", color=col, lw=1.0, label=f"{lab} ({(cen & m).sum()})")
     for k, ls in (("beta", ":"), ("gamma", "--")):
         ax.axvline(ref[k]["photons"], color="#8a96a8", lw=0.8, ls=ls)
-        ax.text(ref[k]["photons"], ax.get_ylim()[1] * 0.97, f" NEST {'β' if k == 'beta' else 'γ'}-ER, 1 deposit",
+        ax.text(ref[k]["photons"], ax.get_ylim()[1] * 0.97, f" NEST {rname[k]}, 1 deposit",
                 color="#8a96a8", fontsize=7, rotation=90, va="top", ha="right")
     ax.set(xlabel="photons per event (sum over its clusters)", ylabel="events",
            title=f"central volume (r < {CENTRAL['r_mm']:g} mm, {CENTRAL['dz_mm']:g} mm from gate / cathode)")
@@ -1090,14 +1143,22 @@ def fig_nest_photopeak(rec):
     # (2) one-cluster events: photons vs local field, with NEST beta-ER in one deposit
     ax = axs[1]
     one = pk & (e["n_clusters"] == 1)
-    if one.sum() > 10:
+    if zero and one.sum() > 10:                          # no field to vary: photons of the 1-cluster events
+        ax.hist(e["photons"][one], bins=50, histtype="step", color="#4db6ff", lw=1.2)
+        for k, ls in (("gamma", "--"), ("beta", ":")):
+            ax.axvline(ref[k]["photons"], color="#ff6b6b", lw=1.0, ls=ls, label=f"NEST {rname[k]}, 1 deposit")
+        ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+        ax.set(xlabel="photons", ylabel="events", title=f"1-cluster events at 0 V/cm ({one.sum()})")
+    elif one.sum() > 10:
         flo, fhi = np.percentile(e["field"][one], [1, 99])
         ax.hist2d(e["field"][one], e["photons"][one], bins=[np.linspace(flo, fhi, 40), 50], cmap="viridis", cmin=1)
         fs = np.linspace(flo, fhi, 25)
         ax.plot(fs, [run.yields("beta", line, f_, rho).PhotonYield for f_ in fs], color="#ff6b6b", lw=1.4,
                 label="NEST β-ER, 1 deposit (mean)")
         ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
-    ax.set(xlabel="local field at the cluster [V/cm]", ylabel="photons", title=f"1-cluster events, all positions ({one.sum()})")
+    if not zero:
+        ax.set(xlabel="local field at the cluster [V/cm]", ylabel="photons",
+               title=f"1-cluster events, all positions ({one.sum()})")
     ax.title.set_fontsize(9)
     # (3) the numbers
     rows = [("", "events", "photons  σ/μ", "electrons  σ/μ")]
@@ -1110,7 +1171,7 @@ def fig_nest_photopeak(rec):
                              f"{q['photons']:7.0f}  {q['photons_rel_sd']:.3f}", f"{q['electrons']:7.0f}  {q['electrons_rel_sd']:.3f}"))
     for k in ("beta", "gamma"):
         q = ref[k]
-        rows.append((f"NEST {'β' if k == 'beta' else 'γ'}-ER, 1 deposit", "—", f"{q['photons']:7.0f}  {q['photons_rel_sd']:.3f}",
+        rows.append((f"NEST {rname[k]}, 1 deposit", "—", f"{q['photons']:7.0f}  {q['photons_rel_sd']:.3f}",
                      f"{q['electrons']:7.0f}  {q['electrons_rel_sd']:.3f}"))
     y = 0.99
     for i, r_ in enumerate(rows):
