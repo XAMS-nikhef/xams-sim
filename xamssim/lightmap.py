@@ -7,6 +7,12 @@ outside the cylinder take the value of the nearest bin inside.
 
     s1_light    S1: photons in the liquid, (x, y, z) grid of 2 x 2 x 2 mm from the bottom screen to the liquid surface
     s2_pattern  S2: photons in the gas gap (liquid surface to anode, uniform in z), (x, y) grid of 1 x 1 mm
+    s1_outer    S1 of the liquid outside the TPC: in the PTFE bucket (to its wall, from its bottom to the surface)
+                without the TPC cylinder (field-cage radius, bottom screen to surface): between the PTFE wall and
+                the bucket, above the PTFE top edge, under the TPC. (x, y, z) grid of 4 x 4 x 4 mm; photons uniform in
+                the liquid xenon of that region (source shape "liquid", rejection with the Geant4 navigator); emitted
+                per voxel from its liquid fraction (Geant4 section scans: material per point). Only for clusters there
+                (volume "outer liquid" of the chain: S1 only, no electrons at the gate).
 
 Per voxel and channel: detected / emitted (emitted from the uniform source density and the part of the voxel inside the
 cylinder). Channels: CHANNELS (sensor id of xamsg4: 0 bottom PMT, 1-4 top-PMT sectors = ch1-ch4, 6 / 7 SiPMs at the
@@ -45,6 +51,10 @@ PHOTONS_S1, PHOTONS_S2 = 5e7, 1e8
 MODEL = (f"lightmap v2: Geant4 optical, S1 {PHOTONS_S1:.0e} / S2 {PHOTONS_S2:.0e} photons, bins {S1_STEP_MM} / "
          f"{S2_STEP_MM} mm, smoothed sigma {SMOOTH_MM} mm in x, y")      # part of the light key (config.map_inputs)
 FILES = {"s1_light": "s1.npz", "s2_pattern": "s2.npz"}
+OUTER_STEP_MM, OUTER_SMOOTH_MM, PHOTONS_OUTER = 4.0, 4.0, 2e8
+OUTER_MODEL = (f"outer liquid v1: Geant4 optical, source 'liquid' (LXe of the bucket without the TPC cylinder), "
+               f"{PHOTONS_OUTER:.0e} photons, bins {OUTER_STEP_MM} mm, liquid fraction from section scans, smoothed "
+               f"sigma {OUTER_SMOOTH_MM} mm within the liquid")         # part of the s1_outer key (config.map_inputs)
 
 
 def _region(res: Resolved) -> dict:
@@ -52,6 +62,113 @@ def _region(res: Resolved) -> dict:
     g = geometry_numbers(res)
     z_anode = next(m["z_mm"] for m in res.geometry["meshes"] if m["name"] == "anode")
     return dict(r=g["r_cage"], s1_z=(g["z_bottom_screen"], g["z_surface"]), s2_z=(g["z_surface"], z_anode))
+
+
+def outer_region(res: Resolved) -> dict:
+    """The liquid outside the TPC: bucket radius and liquid z range (bucket bottom to surface), the excluded TPC
+    cylinder (field-cage radius, bottom screen to surface). As XamsGeometry.cc builds it."""
+    from .driftmap import geometry_numbers
+    g = geometry_numbers(res)
+    b = res.geometry["ptfe_bucket"]
+    z_rim = g["z_surface"] + b["weir_below_rim_mm"]
+    z_lo = z_rim - b["height_mm"] + (b.get("bottom_thickness_mm") or 10.0)
+    return dict(r=b["inner_diameter_mm"] / 2, z=(z_lo, g["z_surface"]),
+                excl_r=g["r_cage"], excl_z=(g["z_bottom_screen"], g["z_surface"]))
+
+
+def _liquid_fraction(res: Resolved, cfg: Path, work: Path, xe, ye, ze, reg: dict, sub_z: int = 4, step: float = 0.5):
+    """Part of each (x, y, z) voxel that is liquid xenon of the outer region: Geant4 section scans (xy planes, sub_z per
+    voxel layer, points every `step` mm), material LXe and outside the excluded TPC cylinder."""
+    lines = ["/run/verbose 0", "/run/initialize"]
+    zs = []
+    for k in range(len(ze) - 1):
+        for j in range(sub_z):
+            z = ze[k] + (j + 0.5) * (ze[k + 1] - ze[k]) / sub_z
+            zs.append(z)
+            lines.append(f"/xamsg4/section {work / f'sec_{len(zs) - 1}.bin'} xy {z:.4f} {xe[0] + step / 2:.4f} "
+                         f"{xe[-1] - step / 2:.4f} {ye[0] + step / 2:.4f} {ye[-1] - step / 2:.4f} {step}")
+    mac = work / "sections.mac"
+    mac.write_text("\n".join(lines + [""]))
+    with open(work / "sections.log", "w") as f:
+        rc = subprocess.run(g4bin.command(["-c", cfg, "-o", work / "sec_dummy.bin", "-s", 1, "-d", mac]),
+                            cwd=g4bin.BUILD, stdout=f, stderr=subprocess.STDOUT).returncode
+    if rc:
+        raise RuntimeError(f"Geant4 section scans failed: see {work / 'sections.log'}")
+    nx, ny, nz = len(xe) - 1, len(ye) - 1, len(ze) - 1
+    frac = np.zeros((nx, ny, nz))
+    for i, z in enumerate(zs):
+        f = work / f"sec_{i}.bin"
+        meta = json.loads(Path(str(f) + ".json").read_text())
+        m = np.fromfile(f, dtype=np.uint16).reshape(meta["nv"], meta["nu"]).T          # (u = x, v = y)
+        lxe = np.array([meta["materials"].get(meta["volumes"][str(k)]) == "LXe" for k in range(len(meta["volumes"]))])
+        u = meta["umin"] + step * np.arange(meta["nu"])
+        v = meta["vmin"] + step * np.arange(meta["nv"])
+        ok = lxe[m]
+        if reg["excl_z"][0] < z < reg["excl_z"][1]:
+            ok &= np.hypot(u[:, None], v[None, :]) >= reg["excl_r"]
+        ix = np.clip(np.searchsorted(xe, u) - 1, 0, nx - 1)
+        iy = np.clip(np.searchsorted(ye, v) - 1, 0, ny - 1)
+        cnt = np.zeros((nx, ny))
+        np.add.at(cnt, (ix[:, None].repeat(len(v), 1), iy[None, :].repeat(len(u), 0)), ok.astype(float))
+        npts = np.zeros((nx, ny))
+        np.add.at(npts, (ix[:, None].repeat(len(v), 1), iy[None, :].repeat(len(u), 0)), 1.0)
+        frac[:, :, i // sub_z] += cnt / np.maximum(npts, 1) / sub_z
+    return frac
+
+
+def compute_outer(res: Resolved, photons: float = PHOTONS_OUTER, jobs: int = 8, seed: int = 5000,
+                  work: Path | None = None, log=print) -> dict:
+    """The s1_outer map (see the module doc)."""
+    from scipy.ndimage import distance_transform_edt, gaussian_filter
+    reg = outer_region(res)
+    r, step = reg["r"], OUTER_STEP_MM
+    work = work or (MAPS / "_work_outer")
+    if work.exists():
+        shutil.rmtree(work)
+    work.mkdir(parents=True)
+    try:
+        files = _run_geant4(res, work, "liquid", int(photons), reg["z"], r, jobs, seed, log,
+                            extra=[f"/xamsg4/source/exclude_r {reg['excl_r']} mm",
+                                   f"/xamsg4/source/exclude_zmin {reg['excl_z'][0]} mm",
+                                   f"/xamsg4/source/exclude_zmax {reg['excl_z'][1]} mm"])
+        det = _detected(files)
+        xe = ye = _edges(-r, r, step)
+        ze = _edges(reg["z"][0], reg["z"][1], step)
+        ze[-1] = reg["z"][1]
+        frac = _liquid_fraction(res, work / "config.json", work, xe, ye, ze, reg)
+        vol = frac * step * step * np.diff(ze)[None, None, :]
+        emitted = photons * vol / vol.sum()
+        good = frac >= 0.3
+        w = good.astype(float)
+        p = np.zeros((N_CHANNELS,) + frac.shape)
+        sig = OUTER_SMOOTH_MM / step
+        _, idx = distance_transform_edt(~good, return_indices=True)
+        for i, ch in enumerate(CHANNELS):
+            d = det[det["sensor"] == ch]
+            h, _ = np.histogramdd(np.stack([d["x0"], d["y0"], d["z0"]], axis=1), bins=(xe, ye, ze))
+            raw = np.where(good, h / np.maximum(emitted, 1e-12), 0.0)
+            # smoothing within the liquid only (normalised convolution), then voxels that are hardly liquid take the
+            # value of the nearest liquid voxel (lookups near PTFE / steel)
+            sm = gaussian_filter(raw * w, sig, mode="nearest") / np.maximum(gaussian_filter(w, sig, mode="nearest"), 1e-9)
+            p[i] = sm[tuple(idx)]
+        tot = len(det) / photons
+        by = ", ".join(f"{nm} {(det['sensor'] == ch).sum() / photons:.4f}" for nm, ch in zip(CHANNEL_NAMES, CHANNELS))
+        log(f"  s1_outer: detected {tot:.4f} of the photons ({by}); liquid volume {vol.sum() / 1e3:.0f} cm3")
+        return dict(x=0.5 * (xe[1:] + xe[:-1]), y=0.5 * (ye[1:] + ye[:-1]), z=0.5 * (ze[1:] + ze[:-1]),
+                    p=p.astype(np.float32), liquid=frac.astype(np.float32), channels=np.array(CHANNELS),
+                    channel_names=np.array(CHANNEL_NAMES), photons=photons, r_mm=r, step_mm=step,
+                    exclude_r_mm=reg["excl_r"], exclude_z_mm=np.array(reg["excl_z"]))
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def export_outer(res: Resolved, photons: float = PHOTONS_OUTER, jobs: int = 8) -> dict:
+    d = compute_outer(res, photons, jobs)
+    key = res.map_keys()["s1_outer"]
+    rel = f"s1_outer/{key}/s1_outer.npz"
+    (MAPS / rel).parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(MAPS / rel, **d)
+    return register(res, "s1_outer", [rel], producer_version=None)
 
 
 def _edges(lo, hi, step):
@@ -83,7 +200,8 @@ def _smooth(p, step):
     return gaussian_filter(p, sig, mode="nearest")
 
 
-def _run_geant4(res: Resolved, work: Path, shape: str, n: int, z: tuple, r: float, jobs: int, seed: int, log) -> list:
+def _run_geant4(res: Resolved, work: Path, shape: str, n: int, z: tuple, r: float, jobs: int, seed: int, log,
+                extra=()) -> list:
     """Geant4 optical runs in `jobs` parts; returns the record files."""
     cfg = work / "config.json"
     if not cfg.exists():
@@ -97,8 +215,8 @@ def _run_geant4(res: Resolved, work: Path, shape: str, n: int, z: tuple, r: floa
         mac = stem.with_suffix(".mac")
         lines = ["/run/verbose 0", "/run/printProgress 0", "/run/initialize", f"/xamsg4/source/shape {shape}",
                  f"/xamsg4/source/rmax {r} mm"]
-        if shape == "cylinder":
-            lines += [f"/xamsg4/source/zmin {z[0]} mm", f"/xamsg4/source/zmax {z[1]} mm"]
+        if shape in ("cylinder", "liquid"):
+            lines += [f"/xamsg4/source/zmin {z[0]} mm", f"/xamsg4/source/zmax {z[1]} mm", *extra]
         mac.write_text("\n".join(lines + [f"/run/beamOn {nk}", ""]))
         out = Path(str(stem) + ".bin")
         files.append((out, nk))

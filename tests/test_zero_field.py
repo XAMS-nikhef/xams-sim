@@ -18,7 +18,7 @@ def run_file(tmp_path, **physics):
 
 def test_config(tmp_path):
     res = config.resolve(run_file(tmp_path))
-    assert res.zero_field and set(res.map_keys()) == {"s1_light", "s2_pattern"}        # no field / drift / EL maps
+    assert res.zero_field and set(res.map_keys()) == {"s1_light", "s2_pattern", "s1_outer"}   # no field / drift / EL maps
     assert all(res.hv_case[k] == 0 for k in ("A", "G", "C", "BS", "TS"))
     from xamssim.waveforms import daq_file, load_daq
     assert daq_file(res).name == "daq_sr2026_3.yaml"
@@ -40,7 +40,8 @@ def test_chain(tmp_path, model):
     st, rid = chain.context(run, g4_out=tmp_path / "g4", store=tmp_path / "strax")
     s = st.get_array(rid, "microphysics_summary")
     assert np.all(s["e_field"] == 0)
-    assert sorted(s["vol_id"]) == [1, 1, 1, 2, 3, 4]                              # geometric volumes, as with field
+    assert sorted(s["vol_id"]) == [1, 1, 1, 2, 3, 4, 5]                           # geometric volumes, as with field
+    assert np.all(s[s["vol_id"] == 5]["electrons"] == 0)                             # outer liquid: no electrons
     er = (s["vol_id"] == 1) & (s["ed"] > 1)
     frac = s["photons"][er] / (s["photons"][er] + s["electrons"][er])
     if model == "nest_gamma":
@@ -58,3 +59,13 @@ def test_truth_constants(tmp_path):
     tc = truth_constants(config.resolve(run_file(tmp_path)))
     assert tc["drift_time_gate"] is None and tc["elife"] is None and tc["electron_drift_velocity"] is None
     assert tc["gain_to_pe_array"][0] == pytest.approx(1 / 53.0) and tc["channel_map"]["top"] == [1, 4]
+
+
+def test_outer_liquid_volume():
+    from xamssim.plugins.volumes import outer_liquid
+    c = np.zeros(5, dtype=[("x", float), ("y", float), ("z", float)])
+    c["x"] = [1.0, 4.0, 4.0, 6.0, 4.0]                     # cm: inside, outer, outer (but in the gas), outside bucket, outer
+    c["z"] = [-2.0, -2.0, 1.0, -2.0, -10.0]
+    inside = np.array([True, False, False, False, False])
+    m = outer_liquid(c, inside, r_bucket_cm=5.6, z_bottom_cm=-11.3, z_liquid_cm=0.4)
+    assert m.tolist() == [False, True, False, False, True]

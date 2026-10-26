@@ -432,6 +432,15 @@ templates (`daq_sr2026_3.yaml`: Science_Rev2.5 of run 7762, top PMTs at 0.5 Vpp,
 collection of the simulation (g1 ≈ 0.08) is ~2.5× that of the detector (≈ 0.032); the S1 top fraction agrees. To be
 understood first (light maps / optics, PMT detection efficiency in sensors.yaml, the data's PE scale with gains P1).
 
+**Outer liquid (2026-10-26).** Geant4 puts 3.3× more LXe deposits of an external source in the liquid outside the
+PTFE cylinder (up to the bucket wall, under the TPC) than inside; the chain dropped those decays (preselection r < field
+cage). Now: map kind `s1_outer` (Geant4 source "liquid": uniform in the LXe of the bucket without the TPC cylinder,
+4 mm voxels, emitted per voxel from the liquid fraction of Geant4 section scans; `xamssim maps --export outer`, ~5 min),
+volume 5 "outer liquid" (S1 only, no electrons), S1 light from `s1_outer` there, preselection out to the bucket when
+the map exists. First look (zero-field Cs, Mac): the outer light reaches the PMTs rarely (0.33 %, mostly the bottom
+PMT), so pure outer events give S1 < 150 PE; but 36 % of the S1s > 150 PE are mixed (TPC + outer), sitting below their
+total energy (photopeak low side, Compton continuum). The data's high-top-fraction S1s (18 %) are not explained by it.
+
 **Position reconstruction study (2026-10-23, started).** `xamssim posrec` (fast toy, seconds): uniform positions →
 drift map (gate crossing, diffusion) → S2 light pattern → photon statistics → (u, v) → data map and an MC-built map
 (written in amstrax's format as a candidate pos_rec_map). First result (sept): the data map reproduces the radial

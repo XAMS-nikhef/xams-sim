@@ -41,7 +41,7 @@ def _dtype(what):
 class XamsS1Light(FuseBasePlugin):
     """S1 photoelectrons per channel per cluster."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     depends_on = "microphysics_summary"
     provides = "s1_photoelectrons"
     data_kind = "interactions_in_roi"
@@ -49,11 +49,14 @@ class XamsS1Light(FuseBasePlugin):
     dtype = _dtype("S1")
 
     xams_s1_map = straxen.URLConfig(type=str, help="S1 light map of the state (<data>/maps/s1_light/<key>/s1.npz)")
+    xams_s1_outer_map = straxen.URLConfig(type=str, default="", help="S1 light map of the liquid outside the TPC "
+                                          "(<data>/maps/s1_outer/<key>/s1_outer.npz); '' = no light from there")
     detection_efficiency = straxen.URLConfig(type=(list, tuple), help="detection efficiency relative to the map, per channel (sensors.yaml)")
 
     def setup(self):
         super().setup()
         self.map = LightMap(self.xams_s1_map)
+        self.outer = LightMap(self.xams_s1_outer_map) if self.xams_s1_outer_map else None
 
     def compute(self, interactions_in_roi):
         d = interactions_in_roi
@@ -61,7 +64,12 @@ class XamsS1Light(FuseBasePlugin):
         out["time"], out["endtime"] = d["time"], d["endtime"]
         if not len(d):
             return out
-        p = self.map(d["x"] * 10.0, d["y"] * 10.0, d["z"] * 10.0) * np.asarray(self.detection_efficiency, float)
+        pos = (d["x"] * 10.0, d["y"] * 10.0, d["z"] * 10.0)
+        p = self.map(*pos)
+        o = d["vol_id"] == 5                                # outer liquid: its own map (or no light without one)
+        if o.any():
+            p[o] = self.outer(*(q[o] for q in pos)) if self.outer is not None else 0.0
+        p = p * np.asarray(self.detection_efficiency, float)
         out["s1_p"] = p
         out["s1_pe"] = _multinomial(self.rng, d["photons"], p)
         out["s1_pe_total"] = out["s1_pe"].sum(axis=1)

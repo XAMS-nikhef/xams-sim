@@ -14,6 +14,7 @@
     xamssim maps     --state cmb50 --export drift          drift map in the composite field (field + mesh cells)
     xamssim maps     --state cmb50 --export el             extraction / EL map from the gate + anode cell (licence)
     xamssim maps     --state cmb50 --export light          S1 / S2 light maps per channel (Geant4 optical, ~5 min)
+    xamssim maps     --state cmb50 --export outer          S1 light map of the liquid outside the TPC (~15 min)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
     xamssim show     <run> [--hash H] [--diff] [--full]    with which parameters the run's data were made
     xamssim amstrax  <run> [--lifetime-us T]               simulated raw records -> amstrax store (process like data)
@@ -71,7 +72,7 @@ def cmd_status(a) -> int:
 
 
 # --make: the order in which missing maps are made (drift needs the field and the mesh cells)
-MAKE_ORDER = ("field", "mesh_cells", "drift", "extraction_el", "s1_light", "s2_pattern")
+MAKE_ORDER = ("field", "mesh_cells", "drift", "extraction_el", "s1_light", "s2_pattern", "s1_outer")
 
 
 def _make_maps(res, dry_run: bool) -> int:
@@ -84,6 +85,8 @@ def _make_maps(res, dry_run: bool) -> int:
     rows = {r["kind"]: r for r in status(res)}
     todo, seen = [], set()
     for kind in MAKE_ORDER:
+        if kind not in rows:                              # not used by this state (zero field: no field maps)
+            continue
         r = rows[kind]
         if not r["present"] and r["make"] not in seen:
             todo.append((kind, r["make"]))
@@ -109,8 +112,9 @@ def cmd_maps(a) -> int:
         from . import fieldmap
         from . import cellmap, driftmap, elmap, lightmap
         light = lambda r: lightmap.export(r, a.photons_s1, a.photons_s2, a.jobs)  # noqa: E731
+        outer = lambda r: lightmap.export_outer(r, jobs=a.jobs)  # noqa: E731
         e = {"field": fieldmap.export, "cells": cellmap.export, "drift": driftmap.export, "el": elmap.export,
-             "light": light}[a.export](res)
+             "light": light, "outer": outer}[a.export](res)
         for x in (e if isinstance(e, list) else [e]):                    # light: s1_light and s2_pattern
             print(f"registered {x['kind']} {x['key']}: maps/{x['files'][0]}  ({x['producer_version']})")
     print(f"state {a.state} (hv_case {res.state['hv_case']}, level {res.state['liquid_level_mm']} mm)")
@@ -288,7 +292,7 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_status)
     p = sub.add_parser("maps", help="map status for one detector state")
     p.add_argument("--state", required=True)
-    p.add_argument("--export", choices=["field", "cells", "drift", "el", "light"],
+    p.add_argument("--export", choices=["field", "cells", "drift", "el", "light", "outer"],
                    help="make a map and register it (field: 3D field from the solved COMSOL model, needs the licence; "
                         "cells: mesh-cell fields of gate and cathode from the solved cell models, needs the licence; "
                         "drift: electron end points and drift times in the composite field; "

@@ -6,6 +6,8 @@
 #include <G4UIcommand.hh>
 #include <G4UIdirectory.hh>
 #include <G4UIparameter.hh>
+#include <G4LogicalVolume.hh>
+#include <G4Material.hh>
 #include <G4VPhysicalVolume.hh>
 
 #include <cstdint>
@@ -42,6 +44,7 @@ void SectionScan::Scan(const std::string& args) {
   const int nv = static_cast<int>((vmax - vmin) / step) + 1;
   std::vector<uint16_t> map(static_cast<size_t>(nu) * nv);
   std::map<std::string, uint16_t> names;
+  std::map<std::string, std::string> materials;
   for (int iv = 0; iv < nv; ++iv) {
     const double v = vmin + iv * step;
     for (int iu = 0; iu < nu; ++iu) {
@@ -52,6 +55,7 @@ void SectionScan::Scan(const std::string& args) {
       else p = {u * mm, v * mm, off * mm};
       const auto* pv = nav->LocateGlobalPointAndSetup(p, nullptr, false, true);
       const std::string n = pv ? pv->GetName() : "outside";
+      if (pv && !materials.count(n)) materials[n] = pv->GetLogicalVolume()->GetMaterial()->GetName();
       auto it = names.find(n);
       uint16_t idx;
       if (it == names.end()) {
@@ -67,6 +71,7 @@ void SectionScan::Scan(const std::string& args) {
   nlohmann::json meta = {{"plane", plane}, {"offset_mm", off}, {"umin", umin}, {"umax", umax}, {"vmin", vmin},
                          {"vmax", vmax}, {"step_mm", step}, {"nu", nu}, {"nv", nv}};
   for (const auto& [n, i] : names) meta["volumes"][std::to_string(i)] = n;
+  for (const auto& [n, m] : materials) meta["materials"][n] = m;
   std::ofstream(file + ".json") << meta.dump(1) << "\n";
   G4cout << "section " << plane << " written to " << file << " (" << nu << " x " << nv << ")" << G4endl;
 }

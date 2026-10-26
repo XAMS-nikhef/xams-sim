@@ -40,6 +40,9 @@ KINDS = {
                      export_step="S6", needed_for="photoelectrons"),
     "s2_pattern": dict(producer="optical (Geant4 optical scan)", make="xamssim maps --state {state} --export light",
                        export_step="S6", needed_for="photoelectrons"),
+    "s1_outer": dict(producer="optical (Geant4 optical, liquid outside the TPC)",
+                     make="xamssim maps --state {state} --export outer", export_step="S6 (2026-10-26)",
+                     needed_for="photoelectrons"),
 }
 
 

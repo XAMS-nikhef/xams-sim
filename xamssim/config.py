@@ -216,8 +216,10 @@ class Resolved:
         cells = {"mesh_common": self.geometry.get("mesh_common"), "meshes": self.geometry.get("meshes"),
                  "hv": {k: hv[k] for k in ("A", "G", "C", "BS", "TS")}, "liquid_level_mm": level, "permittivity": eps,
                  "model": "quarter cell, gate and cathode (efield/comsol/make_cell.py)"}
+        from .lightmap import OUTER_MODEL
+        outer = {**light, "model": OUTER_MODEL, "bucket": self.geometry.get("ptfe_bucket")}
         if self.zero_field:                                  # no field: only the light maps are needed
-            return {"s1_light": light, "s2_pattern": light}
+            return {"s1_light": light, "s2_pattern": light, "s1_outer": outer}
         return {
             "field": field,
             "drift": {**field, "liquid": {"temperature_k": mats["liquid_xenon"].get("temperature_k"),
@@ -236,6 +238,7 @@ class Resolved:
                               "model": "elmap v1: stack cell, anode aligned"},
             "s1_light": light,
             "s2_pattern": light,
+            "s1_outer": outer,
         }
 
     def map_keys(self) -> dict:
