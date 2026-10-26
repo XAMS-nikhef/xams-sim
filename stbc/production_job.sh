@@ -26,14 +26,18 @@ umask 022
 ( xamssim particle "$RUN" && xamssim chain "$RUN" --target raw_records && xamssim live "$RUN" ) || { echo "simulation failed"; exit 1; }
 RID=$(sed -nE 's/^run_number:[[:space:]]*([0-9]+).*/\1/p' "$RUN" | head -1)
 RID=$(printf "%06d" "$RID")
+# zero-field state (S1 only, no S2): amstrax up to peak_basics (events need an S2)
+ZF=$(python -c "from xamssim.config import resolve; print(int(resolve('$RUN').zero_field))" 2>/dev/null || echo 0)
 ENTRIES=$(mktemp /tmp/xamssim_entries_${RID}_XXXX.json)
 source $X/setup_py312.sh || exit 1
-python - "$RID" "$CV" "$RAW" "$PROC" "$ENTRIES" <<'PY'
+python - "$RID" "$CV" "$RAW" "$PROC" "$ENTRIES" "$ZF" <<'PY'
 import datetime, getpass, json, os, socket, sys, time, warnings
 import strax
 import amstrax
 warnings.filterwarnings("ignore")
-rid, cv, raw, proc, entries_file = sys.argv[1:]
+rid, cv, raw, proc, entries_file, zf = sys.argv[1:]
+zf = zf == "1"
+TOP = "peak_basics" if zf else "event_info"                   # zero field: no S2, no events
 
 
 def entry(st, target, folder):
@@ -63,12 +67,12 @@ base = st
 st = amstrax.contexts.for_mc_run(base, rid)                  # latest: the run's current corrections (version 0 = truth)
 cal = int(amstrax.xams_config.get_rundoc_value(rid, amstrax.xams_config.MC_CALIBRATION_VERSION, default=0) or 0)
 print(f"corrections {cv}, MC calibration version {cal} ({'truth' if not cal else 'calibrated'})", flush=True)
-ev = st.get_array(rid, "event_info", progress_bar=False)
-print(f"event_info ({proc}): {len(ev)} events, {time.time() - t:.0f} s in total", flush=True)
+ev = st.get_array(rid, TOP, progress_bar=False)
+print(f"{TOP} ({proc}): {len(ev)} rows, {time.time() - t:.0f} s in total", flush=True)
 keep = [st]
 if cal:                                                       # after a calibration also the truth reconstruction
     st_truth = amstrax.contexts.for_mc_run(base, rid, use="truth")
-    print(f"event_info truth: {len(st_truth.get_array(rid, 'event_info', progress_bar=False))} events", flush=True)
+    print(f"{TOP} truth: {len(st_truth.get_array(rid, TOP, progress_bar=False))} rows", flush=True)
     keep.append(st_truth)
 # keep at most the latest and the truth reconstruction: every other version of this run's processed products goes
 import shutil
@@ -87,7 +91,7 @@ for d in sorted(os.listdir(proc)):
         shutil.rmtree(os.path.join(proc, d)); removed.append(d)
 print(f"older reconstructions removed: {len(removed)}" + (f" ({', '.join(removed[:6])}{' ...' if len(removed) > 6 else ''})" if removed else ""), flush=True)
 data = [entry(st, t_, raw) for t_ in ("raw_records", "raw_records_sipm")]
-data += [entry(st, t_, proc) for t_ in ("peak_basics", "event_basics", "event_positions", "event_info")]
+data += [entry(st, t_, proc) for t_ in (("peak_basics",) if zf else ("peak_basics", "event_basics", "event_positions", "event_info"))]
 json.dump(dict(data=data, corrections_version=cv), open(entries_file, "w"))
 PY
 rc=$?
