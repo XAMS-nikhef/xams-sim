@@ -261,6 +261,10 @@ def context(run_path, g4_out=None, store=STORE, **overrides):
     from . import warn_if_stale
     warn_if_stale()
     warnings.filterwarnings("ignore", module="straxen|utilix|fuse")
+    # NEST (C++) raises the floating-point "invalid" flag for clusters of ~0.01 keV (sub-threshold electron fragments,
+    # A = Z = 0); the quanta it returns are valid (0 photons, a few electrons), numpy only reports the flag after the
+    # vectorized call (fuse NestYields and plugins/zero.py alike, about once per job). Checked 2026-10-26 on 990013.
+    warnings.filterwarnings("ignore", message="invalid value encountered in get_quanta", category=RuntimeWarning)
     res = resolve(run_path)
     gdir = Path(g4_out) if g4_out else g4_dir(res)
     if not (gdir / "deposits.json").exists():

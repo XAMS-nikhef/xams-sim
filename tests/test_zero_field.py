@@ -51,3 +51,10 @@ def test_chain(tmp_path, model):
     assert np.all(dr["n_electron_interface"] == 0) and np.allclose(dr["x_obs"], s["x"])
     ex = st.get_array(rid, "extracted_electrons")
     assert np.all(ex["n_s2_photons"] == 0)
+
+
+def test_truth_constants(tmp_path):
+    from xamssim.amstrax_io import truth_constants
+    tc = truth_constants(config.resolve(run_file(tmp_path)))
+    assert tc["drift_time_gate"] is None and tc["elife"] is None and tc["electron_drift_velocity"] is None
+    assert tc["gain_to_pe_array"][0] == pytest.approx(1 / 53.0) and tc["channel_map"]["top"] == [1, 4]

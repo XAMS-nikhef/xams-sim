@@ -61,6 +61,10 @@ def truth_constants(res: Resolved, lifetime_us: float | None = None) -> dict:
     daq = load_daq(res)
     chans = {int(k): v for k, v in daq["channels"].items()}
     tau = lifetime_us or res.state.get("electron_lifetime_us")
+    common = dict(gain_to_pe_array=[1.0 / chans[c]["gain"] if c in chans else 0.0 for c in range(8)],
+                  channel_map={k: list(v_) for k, v_ in daq["channel_map"].items()})
+    if res.zero_field:                                   # no drift: no lifetime, drift velocity or drift times
+        return dict(common, elife=None, electron_drift_velocity=None, drift_time_gate=None, drift_time_cathode=None)
     dm = np.load(driftmap.path(res))
     g = driftmap.geometry_numbers(res)
     x0 = int(np.argmin(np.abs(dm["x"])))
@@ -69,10 +73,8 @@ def truth_constants(res: Resolved, lifetime_us: float | None = None) -> dict:
     t_gate = float(np.interp(zg - 0.5, dm["z"], t))
     t_cath = float(np.interp(zc + 0.5, dm["z"], t))
     v = (zg - zc - 1.0) / max(t_cath - t_gate, 1e-6)                        # mm/µs between gate and cathode
-    return dict(gain_to_pe_array=[1.0 / chans[c]["gain"] if c in chans else 0.0 for c in range(8)],
-                elife=float(tau) * 1e3 if tau else None, electron_drift_velocity=v * 1e-4,      # ns, cm/ns
-                drift_time_gate=t_gate * 1e3, drift_time_cathode=t_cath * 1e3,
-                channel_map={k: list(v_) for k, v_ in daq["channel_map"].items()})
+    return dict(common, elife=float(tau) * 1e3 if tau else None, electron_drift_velocity=v * 1e-4,      # ns, cm/ns
+                drift_time_gate=t_gate * 1e3, drift_time_cathode=t_cath * 1e3)
 
 
 def condition(res: Resolved) -> str:
