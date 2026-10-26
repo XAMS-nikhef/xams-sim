@@ -1182,8 +1182,10 @@ def fig_nest_photopeak(rec):
     t.text(0.0, y - 0.02,
            f"{iso} {line:.0f} keV, full energy in the drift region (|E − line| < 2 keV, nothing outside); quanta as\n"
            f"made by NEST, before drift and light collection. Run field {field:.0f} ± {sd:.0f} V/cm, {_nest_tag(nest)}.\n"
-           "Each cluster gets NEST β-ER at its local field: 1-cluster events follow NEST β-ER; more and smaller\n"
-           "clusters give more light; the field varies most near wall, gate and cathode. Real or not: data.",
+           + ("Zero field: each cluster gets NEST γ-ER at 0 V/cm (or a fixed light fraction): nearly all quanta are\n"
+              "light; more clusters still shift the mean slightly. Real or not: data." if zero else
+              "Each cluster gets NEST β-ER at its local field: 1-cluster events follow NEST β-ER; more and smaller\n"
+              "clusters give more light; the field varies most near wall, gate and cathode. Real or not: data."),
            transform=t.transAxes, va="top", fontsize=7.5, color="#8a96a8")
     fig.suptitle(f"{rec['run_id']}: what makes the width of the {iso} line in quanta (simulation bookkeeping)",
                  color="#dce7ff", fontsize=10)

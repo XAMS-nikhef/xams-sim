@@ -9,7 +9,9 @@ cylinder (behind it there is no field and no light: no volume).
     2       below_cathode  drift down to the bottom screen                                    liquid
     3       gas_phase      (cluster in the gas, above the surface)                           gas
     4       above_gate     reach the surface without crossing the gate                       liquid
-    0       outside        outside the field-cage radius or the drift map                   (dropped)
+    5       outer_liquid   liquid in the PTFE bucket outside the TPC (outside the field-cage  liquid
+                           radius or below the drift map): S1 light only (s1_outer map), no electrons
+    0       outside        gas outside the TPC, or outside the bucket                       (dropped)
 
 NEST gets the electrons of every cluster (create_S2 = True); what happens to them is decided by the drift
 (XamsElectronDrift: survival from the end point and the lifetime). Ids 1-3 are fuse's (fuse.common.VOLUMES_IDS).
@@ -27,15 +29,15 @@ from ..driftmap import BOTTOM, SIPM, SURFACE, WALL, DriftMap
 
 export, __all__ = strax.exporter()
 
-XAMS_VOLUME_IDS = {**VOLUMES_IDS, "above_gate": 4}
-VOLUME_NAMES = {1: "drift region", 2: "below cathode", 3: "gas", 4: "above gate"}
+XAMS_VOLUME_IDS = {**VOLUMES_IDS, "above_gate": 4, "outer_liquid": 5}
+VOLUME_NAMES = {1: "drift region", 2: "below cathode", 3: "gas", 4: "above gate", 5: "outer liquid"}
 
 
 @export
 class XamsVolumeProperties(FuseBasePlugin):
     """vol_id and xe_density per cluster, from the drift map of the state and the liquid surface."""
 
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
     depends_on = "clustered_interactions"
     provides = "volume_properties"
     dtype = volume_properties_fields + strax.time_fields
@@ -45,6 +47,8 @@ class XamsVolumeProperties(FuseBasePlugin):
     density_liquid_g_cm3 = straxen.URLConfig(type=(int, float), help="liquid xenon density (materials.yaml)")
     density_gas_g_cm3 = straxen.URLConfig(type=(int, float), help="gas xenon density (materials.yaml)")
     xams_drift_map = straxen.URLConfig(type=str, help="drift map of the state (<data>/maps/drift/<key>/drift_xyz.npz)")
+    r_bucket_cm = straxen.URLConfig(type=(int, float), help="inner radius of the PTFE bucket [cm] (outer liquid)")
+    z_liquid_bottom_cm = straxen.URLConfig(type=(int, float), help="bottom of the liquid in the bucket [cm]")
 
     def setup(self):
         super().setup()
@@ -69,17 +73,24 @@ class XamsVolumeProperties(FuseBasePlugin):
         vid[liq & (end == SURFACE) & crossed] = 1
         vid[liq & (end == SURFACE) & ~crossed] = 4
         vid[liq & (end == BOTTOM)] = 2
+        outer = outer_liquid(c, inside, self.r_bucket_cm, self.z_liquid_bottom_cm, self.z_liquid_cm)
+        vid[outer] = 5
         out["vol_id"] = vid
-        out["xe_density"] = np.where(gas, self.density_gas_g_cm3, np.where(liq, self.density_liquid_g_cm3, 0.0))
-        out["create_S2"] = vid > 0
+        out["xe_density"] = np.where(gas, self.density_gas_g_cm3, np.where(liq | outer, self.density_liquid_g_cm3, 0.0))
+        out["create_S2"] = (vid > 0) & (vid != 5)
         return out
+
+
+def outer_liquid(c, inside, r_bucket_cm, z_bottom_cm, z_liquid_cm):
+    """Clusters in the liquid of the PTFE bucket that are not in the TPC volumes (`inside`)."""
+    return ~inside & (np.hypot(c["x"], c["y"]) < r_bucket_cm) & (c["z"] > z_bottom_cm) & (c["z"] < z_liquid_cm)
 
 
 @export
 class XamsVolumeSelection(strax.CutPlugin):
-    """Keep clusters in the four XAMS volumes (vol_id 1-4)."""
+    """Keep clusters in the XAMS volumes (vol_id 1-5)."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     depends_on = "volume_properties"
     provides = "volume_selection"
     cut_name = "volume_selection"

@@ -5,7 +5,11 @@
 #include <G4Event.hh>
 #include <G4GenericMessenger.hh>
 #include <G4OpticalPhoton.hh>
+#include <G4Material.hh>
+#include <G4Navigator.hh>
 #include <G4ParticleGun.hh>
+#include <G4TransportationManager.hh>
+#include <G4VPhysicalVolume.hh>
 #include <G4PhysicalConstants.hh>
 #include <G4SystemOfUnits.hh>
 #include <Randomize.hh>
@@ -19,12 +23,15 @@ PrimaryGeneratorAction::PrimaryGeneratorAction() : fGun(std::make_unique<G4Parti
   fGun->SetParticleEnergy(kPhotonEnergy);
 
   fMessenger = std::make_unique<G4GenericMessenger>(this, "/xamsg4/source/", "photon source");
-  fMessenger->DeclareProperty("shape", fShape, "point | cylinder | beam | beam_disc | s1 | s2");
+  fMessenger->DeclareProperty("shape", fShape, "point | cylinder | beam | beam_disc | s1 | s2 | liquid");
   fMessenger->DeclareProperty("direction", fDirection, "beam direction (beam shape only)");
   fMessenger->DeclarePropertyWithUnit("position", "mm", fPosition, "point source position");
   fMessenger->DeclarePropertyWithUnit("rmax", "mm", fRmax, "cylinder radius");
   fMessenger->DeclarePropertyWithUnit("zmin", "mm", fZmin, "cylinder lower z");
   fMessenger->DeclarePropertyWithUnit("zmax", "mm", fZmax, "cylinder upper z");
+  fMessenger->DeclarePropertyWithUnit("exclude_r", "mm", fExclR, "liquid: radius of the excluded cylinder");
+  fMessenger->DeclarePropertyWithUnit("exclude_zmin", "mm", fExclZmin, "liquid: lower z of the excluded cylinder");
+  fMessenger->DeclarePropertyWithUnit("exclude_zmax", "mm", fExclZmax, "liquid: upper z of the excluded cylinder");
 }
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction() = default;
@@ -58,6 +65,18 @@ G4ThreeVector PrimaryGeneratorAction::SamplePosition() {
     const G4double r = fRmax * std::sqrt(G4UniformRand());
     const G4double phi = twopi * G4UniformRand();
     return {r * std::cos(phi), r * std::sin(phi), fZmin + (fZmax - fZmin) * G4UniformRand()};
+  }
+  if (fShape == "liquid") {  // uniform in LXe, outside the excluded cylinder (rejection sampling)
+    auto* nav = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking();
+    for (int k = 0; k < 100000; ++k) {
+      const G4double r = fRmax * std::sqrt(G4UniformRand());
+      const G4double phi = twopi * G4UniformRand();
+      const G4ThreeVector p(r * std::cos(phi), r * std::sin(phi), fZmin + (fZmax - fZmin) * G4UniformRand());
+      if (r < fExclR && p.z() > fExclZmin && p.z() < fExclZmax) continue;
+      const auto* pv = nav->LocateGlobalPointAndSetup(p, nullptr, false, true);
+      if (pv && pv->GetLogicalVolume()->GetMaterial()->GetName() == "LXe") return p;
+    }
+    G4Exception("SamplePosition", "SRC001", FatalException, "liquid source: no LXe position found");
   }
   if (fShape == "beam_disc") {  // random point in a disc of radius rmax around position (in x-y)
     const G4double r = fRmax * std::sqrt(G4UniformRand());

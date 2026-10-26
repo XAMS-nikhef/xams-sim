@@ -108,12 +108,26 @@ def physics(res: Resolved) -> dict:
 
 
 def volumes(res: Resolved) -> dict:
-    """The two boundaries XamsVolumeProperties needs (cm): liquid surface and field-cage radius; the regions inside
-    come from the drift map."""
+    """The boundaries XamsVolumeProperties needs (cm): liquid surface and field-cage radius (the regions inside come
+    from the drift map), and the PTFE bucket (outer liquid: radius and liquid bottom)."""
+    from .lightmap import outer_region
     g = res.geometry
     z_gate = next(m["z_mm"] for m in g["meshes"] if m["name"] == "gate")
+    o = outer_region(res)
     return dict(z_liquid_cm=(z_gate + res.state["liquid_level_mm"]) / 10,
-                r_field_cage_cm=g["ptfe_cylinder"]["inner_diameter_mm"] / 20)
+                r_field_cage_cm=g["ptfe_cylinder"]["inner_diameter_mm"] / 20,
+                r_bucket_cm=o["r"] / 10, z_liquid_bottom_cm=o["z"][0] / 10)
+
+
+def _outer_settings(res: Resolved) -> dict:
+    """The outer-liquid light map if it exists; then the decays with deposits anywhere in the bucket are kept
+    (preselection radius = bucket), else only those inside the field cage (as before 2026-10-26)."""
+    from . import lightmap
+    v = volumes(res)
+    try:
+        return dict(xams_s1_outer_map=str(lightmap.path(res, "s1_outer")), preselect_r_max_cm=v["r_bucket_cm"])
+    except FileNotFoundError:
+        return dict(preselect_r_max_cm=v["r_field_cage_cm"])
 
 
 def plugins(clustering: str, zero_field: bool = False) -> list:
@@ -202,7 +216,6 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
     if res.zero_field:                                    # S1 only: no field, drift, extraction / EL (plugins/zero.py)
         return dict(
             path=str(g4_dir), file_name="deposits", g4_output_hash=g4_output_hash or g4io.output_hash(g4_dir),
-            preselect_r_max_cm=volumes(res)["r_field_cage_cm"],
             source_rate=p["source_rate_hz"], n_interactions_per_chunk=1e5, first_chunk_left=10,
             **(dict(time_threshold=p["time_threshold_ns"], gamma_distance_threshold=p["gamma_distance_threshold_cm"],
                     brem_distance_threshold=p["brem_distance_threshold_cm"]) if p["clustering"] == "lineage" else
@@ -214,11 +227,11 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
             electron_lifetime_us=1e9,                     # cS2 in xams_events (no S2 here)
             z_bottom_cm=next(m["z_mm"] for m in res.geometry["meshes"] if m["name"] == "bottom_screen") / 10,
             **_light_settings(res),
+            **_outer_settings(res),
             **_sensor_settings(res),
         )
     return dict(
         path=str(g4_dir), file_name="deposits", g4_output_hash=g4_output_hash or g4io.output_hash(g4_dir),
-        preselect_r_max_cm=volumes(res)["r_field_cage_cm"],
         source_rate=p["source_rate_hz"], n_interactions_per_chunk=1e5,
         first_chunk_left=10,                     # ns before the first event; fuse default 1 ms gives a negative chunk start
                                                  # if the first event is earlier, 0 fails when MergeLineage's energy-
@@ -242,8 +255,9 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         cloud_samples=int(p["cloud_samples"]), cloud_track_sigma_mm=float(p["cloud_track_sigma_mm"]),
         # extraction and EL (S5)
         **_el_settings(res, xams_el_map),
-        # light (S6)
+        # light (S6), incl. the liquid outside the TPC (s1_outer) and the preselection radius that goes with it
         **_light_settings(res),
+        **_outer_settings(res),
         # sensors, events (S7)
         **_sensor_settings(res),
     )

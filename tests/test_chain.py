@@ -193,7 +193,10 @@ def test_fieldmap_3d(tmp_path):
 def test_volumes_and_physics():
     res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
     v = chain.volumes(res)
-    assert set(v) == {"z_liquid_cm", "r_field_cage_cm"} and v["r_field_cage_cm"] == pytest.approx(3.1)
+    assert set(v) == {"z_liquid_cm", "r_field_cage_cm", "r_bucket_cm", "z_liquid_bottom_cm"}
+    assert v["r_field_cage_cm"] == pytest.approx(3.1) and v["r_bucket_cm"] == pytest.approx(5.6)
+    # bucket: rim = surface + weir 1.78 mm, height 129, bottom 10 mm -> liquid from surface - 117.22 mm
+    assert v["z_liquid_bottom_cm"] == pytest.approx(v["z_liquid_cm"] - 11.722)
     assert v["z_liquid_cm"] == pytest.approx(res.state["liquid_level_mm"] / 10)
     assert chain.physics(res)["clustering"] == "lineage"
     res.run["physics"] = {"clustering": "lineage", "bogus": 1}
@@ -210,9 +213,10 @@ def test_chain_end_to_end(tmp_path):
                             xams_efield_map=str(flat_map(tmp_path / "f.npz")), xams_drift_map=str(dpath),
                             electron_lifetime_us=300.0)                  # cmb50: lifetime not measured yet
     s = st.get_array(rid, "microphysics_summary")
-    assert set(s["eventid"]) == {0, 1, 2, 3, 4}                                # event 5: outside the field cage, dropped
+    assert set(s["eventid"]) == {0, 1, 2, 3, 4, 5}                             # event 5: outside the field cage
     vol = dict(zip(s["eventid"], s["vol_id"]))
-    assert sorted(s["vol_id"]) == [1, 1, 1, 2, 3, 4] and vol[3] == 4 and vol[4] == 3
+    assert sorted(s["vol_id"]) == [1, 1, 1, 2, 3, 4, 5] and vol[3] == 4 and vol[4] == 3
+    assert vol[5] == 5 and s[s["vol_id"] == 5]["electrons"][0] == 0             # outer liquid: S1 only, no electrons
     assert s[s["vol_id"] == 3]["xe_density"][0] < 0.1                          # gas density
     assert np.all(s[np.isin(s["vol_id"], [3, 4])]["electrons"] > 0)            # electrons kept above the gate and in gas
     assert np.allclose(s["e_field"], 145.0)

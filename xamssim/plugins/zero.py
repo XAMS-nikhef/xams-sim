@@ -32,6 +32,7 @@ from fuse.plugins.micro_physics.yields import NestYields
 from fuse.dtypes import volume_properties_fields
 
 from .drift import XamsElectronDrift
+from .volumes import outer_liquid
 from .extraction import XamsExtractionEL
 
 export, __all__ = strax.exporter()
@@ -45,7 +46,7 @@ ZERO_FIELD_YIELDS = ("nest_gamma", "proportional")
 class XamsZeroFieldVolumes(FuseBasePlugin):
     """vol_id and xe_density per cluster from the geometry (no field lines at zero field)."""
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     depends_on = "clustered_interactions"
     provides = "volume_properties"
     dtype = volume_properties_fields + strax.time_fields
@@ -57,6 +58,8 @@ class XamsZeroFieldVolumes(FuseBasePlugin):
     z_gate_cm = straxen.URLConfig(type=(int, float), help="gate z [cm]")
     z_cathode_cm = straxen.URLConfig(type=(int, float), help="cathode z [cm]")
     z_bottom_cm = straxen.URLConfig(type=(int, float), help="bottom screen z [cm]: lower end of the volumes")
+    r_bucket_cm = straxen.URLConfig(type=(int, float), help="inner radius of the PTFE bucket [cm] (outer liquid)")
+    z_liquid_bottom_cm = straxen.URLConfig(type=(int, float), help="bottom of the liquid in the bucket [cm]")
 
     def compute(self, clustered_interactions):
         c = clustered_interactions
@@ -72,9 +75,11 @@ class XamsZeroFieldVolumes(FuseBasePlugin):
         vid[inside & ~gas & (z >= self.z_gate_cm)] = 4
         vid[inside & (z < self.z_gate_cm) & (z >= self.z_cathode_cm)] = 1
         vid[inside & (z < self.z_cathode_cm)] = 2
+        outer = outer_liquid(c, inside, self.r_bucket_cm, self.z_liquid_bottom_cm, self.z_liquid_cm)
+        vid[outer] = 5
         out["vol_id"] = vid
-        out["xe_density"] = np.where(gas, self.density_gas_g_cm3, np.where(inside, self.density_liquid_g_cm3, 0.0))
-        out["create_S2"] = vid > 0
+        out["xe_density"] = np.where(gas, self.density_gas_g_cm3, np.where(inside | outer, self.density_liquid_g_cm3, 0.0))
+        out["create_S2"] = (vid > 0) & (vid != 5)
         return out
 
 
