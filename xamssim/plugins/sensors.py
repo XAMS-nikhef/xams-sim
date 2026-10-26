@@ -75,7 +75,7 @@ class XamsSensorResponse(FuseBasePlugin):
 class XamsEvents(FuseBasePlugin):
     """One row per decay: S1, main and alternative S2, corrected areas, position."""
 
-    __version__ = "0.3.0"
+    __version__ = "0.5.0"
     depends_on = ("peak_areas", "microphysics_summary", "drifted_electrons", "s1_photoelectrons", "s2_photoelectrons")
     provides = "xams_events"
     data_kind = "xams_events"
@@ -88,7 +88,7 @@ class XamsEvents(FuseBasePlugin):
         (("S1 area [PE]", "s1_area"), np.float32),
         (("S1 area per channel [PE]", "s1_area_ch"), np.float32, (N_CHANNELS,)),
         (("S1 area fraction top (PMTs)", "s1_aft"), np.float32),
-        (("Corrected S1 [PE]: S1 / relative light yield at the clusters", "cs1"), np.float32),
+        (("Corrected S1 [PE]: S1 / relative light yield at the clusters (TPC clusters; not the outer liquid)", "cs1"), np.float32),
         (("Main S2 area [PE]", "s2_area"), np.float32),
         (("Main S2 area per channel [PE]", "s2_area_ch"), np.float32, (N_CHANNELS,)),
         (("Main S2 area fraction top (PMTs)", "s2_aft"), np.float32),
@@ -109,16 +109,19 @@ class XamsEvents(FuseBasePlugin):
     xams_s2_map = straxen.URLConfig(type=str, help="S2 pattern map (relative S2 light collection for cS2)")
     z_gate_cm = straxen.URLConfig(type=(int, float), help="gate z [cm]")
     z_cathode_cm = straxen.URLConfig(type=(int, float), help="cathode z [cm]")
+    detection_efficiency = straxen.URLConfig(type=(list, tuple), help="detection efficiency relative to the maps, per "
+                                             "channel (sensors.yaml): in the references too, as in s1_p / s2_p")
 
     def setup(self):
         super().setup()
+        eff = np.asarray(self.detection_efficiency, float)[PMT][:, None, None]
         m = np.load(self.xams_s1_map)
-        tot = m["p"][PMT].sum(axis=0)                                      # (x, y, z) PMT channels
+        tot = (m["p"][PMT] * eff[..., None]).sum(axis=0)                   # (x, y, z) PMT channels
         zsel = (m["z"] > self.z_cathode_cm * 10) & (m["z"] < self.z_gate_cm * 10)
         w = m["inside"][:, :, None] * zsel[None, None, :]
         self.ly_ref = float((tot * w).sum() / w.sum())                    # mean detection over the drift region
         m2 = np.load(self.xams_s2_map)
-        self.s2_ref = float((m2["p"][PMT].sum(axis=0) * m2["inside"]).sum() / m2["inside"].sum())   # PMTs, mean over the gate area
+        self.s2_ref = float(((m2["p"][PMT] * eff).sum(axis=0) * m2["inside"]).sum() / m2["inside"].sum())   # PMTs, mean over the gate area
 
     def compute(self, interactions_in_roi):
         d = interactions_in_roi
@@ -139,7 +142,8 @@ class XamsEvents(FuseBasePlugin):
         for c in range(N_CHANNELS):
             out["s1_area_ch"][:, c] = np.bincount(inv, weights=d["s1_area_ch"][:, c])
         rel = d["s1_p"][:, PMT].sum(axis=1) / self.ly_ref
-        out["cs1"] = np.bincount(inv, weights=np.where(rel > 0, d["s1_area"] / np.where(rel > 0, rel, 1), 0.0))
+        tpc = (rel > 0) & (d["vol_id"] != 5)                 # outer liquid: in the S1, not in the (TPC) corrected S1
+        out["cs1"] = np.bincount(inv, weights=np.where(tpc, d["s1_area"] / np.where(tpc, rel, 1), 0.0))
         pm = out["s1_area_ch"][:, PMT].sum(axis=1)
         out["s1_aft"] = np.where(pm > 0, out["s1_area_ch"][:, TOP].sum(axis=1) / np.where(pm > 0, pm, 1), np.nan)
         # S2s per decay: group the clusters with S2 around the brightest one

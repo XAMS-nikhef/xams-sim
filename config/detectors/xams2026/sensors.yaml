@@ -3,18 +3,25 @@
 # Channel names: xamssim.lightmap.CHANNEL_NAMES. Separate from geometry.yaml: changing it renews only the sensor step.
 # efficiency (default 1): detection efficiency relative to the light maps, per channel, for all light (light step).
 # Sources: A = analysis_SR2026.2 outputs/step1_led.json (LED fits, median of the fits with chi2/ndf < 3, runs 7603 ...)
+# PMT efficiency 0.36 (2026-10-26): a BRIDGE for the absolute light scale of the light maps, which give ~2.8x too much
+#   S1 light: zero-field Cs-137 (SR-2026.3 runs 7762-7765, 2.24 PE/keV) vs MC 990016 (light x 0.36 -> 2.22 PE/keV;
+#   the S1 vs top-fraction ridge matches within ~10-20 % over depth). Applied in the light step (before the waveforms:
+#   no artificial saturation, right photon statistics). With field (SR-2026.2) the data asked for ~0.6 (S1 field
+#   quenching mismatch, open). Remove when the light maps have the right absolute scale (TODO "Absolute light scale of
+#   the optical maps": optics refit with absolute targets, new maps).
 channels:
-  bottom:  {kind: pmt,  spe_resolution: 0.51}   # A: 10 fits, 0.24-0.59
-  top_ch1: {kind: pmt,  spe_resolution: 0.38}   # A: 4 fits, 0.33-0.40
-  top_ch2: {kind: pmt,  spe_resolution: 0.44}   # A: 4 fits, 0.36-0.59
-  top_ch3: {kind: pmt,  spe_resolution: 0.40}   # A: 4 fits, 0.35-0.45
-  top_ch4: {kind: pmt,  spe_resolution: 0.37}   # A: 4 fits, 0.34-0.49
+  bottom:  {kind: pmt,  spe_resolution: 0.51, efficiency: 0.36}   # A: 10 fits, 0.24-0.59
+  top_ch1: {kind: pmt,  spe_resolution: 0.38, efficiency: 0.36}   # A: 4 fits, 0.33-0.40
+  top_ch2: {kind: pmt,  spe_resolution: 0.44, efficiency: 0.36}   # A: 4 fits, 0.36-0.59
+  top_ch3: {kind: pmt,  spe_resolution: 0.40, efficiency: 0.36}   # A: 4 fits, 0.35-0.45
+  top_ch4: {kind: pmt,  spe_resolution: 0.37, efficiency: 0.36}   # A: 4 fits, 0.34-0.49
   # SiPMs: VUV-blocking filter (not in the optical model) -> detection efficiency relative to the light maps (which count
   # every photon reaching the SiPM, PDE 1), one value for all light, fitted 2026-10-20 to SR-2026.2 (paper_data/sipm.npz)
   # on S2: (SiPMs / bottom PMT) data 1.8e-4 / MC 3.5e-2. S1 then gives SiPMs / PMTs 2.5e-4 vs 1.7e-3 in the data (7x low;
   # S1 SiPM signal ~1 PE in the data): open.
-  sipm_1:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.0051}   # spe_resolution assumed
-  sipm_2:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.0051}
+  # 2026-10-26: x 0.36 with the PMT bridge (0.0051 -> 0.00184), so the fitted SiPM / bottom-PMT ratio is kept.
+  sipm_1:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.00184}   # spe_resolution assumed
+  sipm_2:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.00184}
 pmt:
   double_pe_probability: 0.2    # assumed: VUV photons on R11410-type photocathodes (literature ~0.2); not measured in XAMS
 sipm:
