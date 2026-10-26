@@ -413,6 +413,13 @@ region, median 2 clusters): the chain's line in quanta lies between NEST β-ER a
 sum photons + electrons as narrow as NEST, 0.45 %). Open: where the extra width comes from (the split of 662 keV over
 clusters of different energy with a non-linear yield, recombination fluctuations per cluster) and whether it explains
 the wide cS1–cS2 photopeak in data and MC.
+*Decomposition (2026-10-26, 900002):* one-cluster events reproduce NEST β-ER in one deposit (mean 19 923 vs 20 051;
+σ/μ 0.066 in the central volume r < 15 mm, 10 mm from gate / cathode, vs NEST 0.068); their extra width at all
+positions (0.103) is the local field (106–230 V/cm, 5–95 %; up to 600 V/cm near the gate), i.e. edge effects. In the
+centre each cluster-number group has NEST's width (0.066–0.075) but the means shift with the number of clusters
+(photons 20.0k, 22.6k, 24.5k, 25.8k for 1, 2, 3, ≥ 4): the line width of 0.11 is that mixture (β-ER per cluster: more
+and smaller clusters give more light). The clustering is wired correctly; whether the cluster-number effect is real is
+a question for data (photopeak of single-S2 vs multi-S2 events). The app's results figure shows this decomposition.
 
 **Position reconstruction study (2026-10-23, started).** `xamssim posrec` (fast toy, seconds): uniform positions →
 drift map (gate crossing, diffusion) → S2 light pattern → photon statistics → (u, v) → data map and an MC-built map
@@ -646,9 +653,10 @@ the top and bottom PMTs and the PTFE bucket (field-cage wall), from geometry.yam
 yield vs energy at the run's drift field with its `physics.nest` — β-ER (what the chain uses, ±1σ band per event),
 γ-ER as reference, NEST defaults dashed when the run changes them — plus nestpy version, settings (changed ones marked),
 drift field and the source line in quanta for one deposit (γ-ER and β-ER); after the field tiles, before the optical
-maps. Results figure "Line in quanta: chain vs NEST": photons vs electrons of the full-energy events summed over their
-clusters (from the stored `microphysics_summary`, no change to `xams_events`) against NEST γ-ER and β-ER in one deposit,
-with a table (means, widths, correlation, width of the sum). Line energy from the source isotope (`LINES_KEV`).
+maps. Results figure "Line in quanta: clusters and field" (changed the same day from a bare chain-vs-NEST comparison):
+photons of the full-energy events summed over their clusters (from the stored `microphysics_summary`, no change to
+`xams_events`) split by the number of clusters in the central volume, the one-cluster events against the local field
+with NEST β-ER, and a table; NEST in one deposit (β-ER, γ-ER) only as thin references. Line energy from the source isotope (`LINES_KEV`).
 **Figures made in the job:** `xamssim figures <run>` makes all fixed figures of a run (configuration, results,
 reconstruction); `stbc/production_job.sh` calls it at the end, so a page opens without waiting (first rendering on
 STBC is seconds per figure: field map 50 MB, clusters of 10⁷ decays).
