@@ -404,6 +404,15 @@ calibrate (gains without simulated SPE / LED data) stay at truth, marked as such
 4. *Scan:* one parameter at a time, a small set of run files in a study folder (`simulations/<date>_nest_*`); results
    as figures data vs MC (sim bands, data points).
 Order: after the waveform / S1 shape fixes (SPE templates v2), so that S1 shape and area are trustworthy first.
+*β-ER vs γ-ER (2026-10-26):* the chain gives every ER cluster NEST's β-ER yields, also for γ sources: Geant4 makes the
+γ's Compton and photo electrons, fuse treats them as betas; NEST's γ-ER model (a whole γ in one deposit, fitted to
+measured γ lines) per cluster would count the γ physics twice. γ-ER stays the reference: for a γ line, the chain's
+sum over the clusters should come out near it. First check (production MC, Cs-137 662 keV, full energy in the drift
+region, median 2 clusters): the chain's line in quanta lies between NEST β-ER and γ-ER in one deposit and is much wider
+(900002 sept: photons 23 177, σ/μ 0.128 vs γ-ER 25 095, 0.073; 900003 cmb50_a36: 25 571, 0.110 vs 27 789, 0.069; the
+sum photons + electrons as narrow as NEST, 0.45 %). Open: where the extra width comes from (the split of 662 keV over
+clusters of different energy with a non-linear yield, recombination fluctuations per cluster) and whether it explains
+the wide cS1–cS2 photopeak in data and MC.
 
 **Position reconstruction study (2026-10-23, started).** `xamssim posrec` (fast toy, seconds): uniform positions →
 drift map (gate crossing, diffusion) → S2 light pattern → photon statistics → (u, v) → data map and an MC-built map
@@ -632,6 +641,17 @@ gain and SPE template; digitizer (sampling, 14 bits, record length, pre-trigger 
 the live-data layout (chunk length and overlap, source rate, number of chunks, compressor); all from the run document /
 daq.yaml the run actually used. The cross-section and top view must also show the PTFE parts (user, 2026-10-23): the PTFE around
 the top and bottom PMTs and the PTFE bucket (field-cage wall), from geometry.yaml, as Geant4 builds them.
+
+**NEST on the detail page (decided and built 2026-10-26).** Configuration figure "NEST yields": light and charge
+yield vs energy at the run's drift field with its `physics.nest` — β-ER (what the chain uses, ±1σ band per event),
+γ-ER as reference, NEST defaults dashed when the run changes them — plus nestpy version, settings (changed ones marked),
+drift field and the source line in quanta for one deposit (γ-ER and β-ER); after the field tiles, before the optical
+maps. Results figure "Line in quanta: chain vs NEST": photons vs electrons of the full-energy events summed over their
+clusters (from the stored `microphysics_summary`, no change to `xams_events`) against NEST γ-ER and β-ER in one deposit,
+with a table (means, widths, correlation, width of the sum). Line energy from the source isotope (`LINES_KEV`).
+**Figures made in the job:** `xamssim figures <run>` makes all fixed figures of a run (configuration, results,
+reconstruction); `stbc/production_job.sh` calls it at the end, so a page opens without waiting (first rendering on
+STBC is seconds per figure: field map 50 MB, clusters of 10⁷ decays).
 
 ### S12. Overview and docs (2–3 days)
 - Validation against data: S9.

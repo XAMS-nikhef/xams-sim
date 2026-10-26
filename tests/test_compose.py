@@ -1,4 +1,6 @@
 """S10: the simulation app's core (read-only part)."""
+import pytest
+
 from xamssim import compose
 
 
@@ -41,3 +43,13 @@ def test_optics_table_labels_known_keys_first_and_keeps_the_rest():
 
 def test_map_figures_cover_both_optical_maps():
     assert set(compose.MAP_FIGURES) == set(compose.OPTICAL_KINDS)
+
+
+def test_nest_figures_registered_and_tag():
+    rows = [r for row in compose.FIGURE_ROWS for r in row]
+    assert "nest" in compose.FIGURES and rows.index("nest") > rows.index("field_axis")    # after the field tiles
+    assert "nest_photopeak" in compose.RESULT_FIGURES
+    assert compose._nest_tag({}) == "NEST defaults"
+    assert compose._nest_tag({"widths": {"A_ER": 0.08}}) == "A_ER 0.08"
+    assert "yield parameters set" in compose._nest_tag({"er_yields": [1.0] * 10})
+    assert compose.LINES_KEV["Cs-137"] == pytest.approx(661.657)

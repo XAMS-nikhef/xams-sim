@@ -9,6 +9,7 @@
 # 1 xams-sim: Geant4 -> chain to raw records -> live data + run document (+ run.runs_mc for production)
 # 2 amstrax as for data (setup_py312.sh): live data -> raw_records -> peak_basics ... event_info
 # 3 production only: the processing recorded in run.runs_mc (data[] entries, processing_status)
+# 4 the app's figures of the run (xamssim figures), so its detail page opens at once
 # Corrections: an MC global version of amstrax_files (default MC1: the cuts and settings of the data version, the
 # per-run corrections from the run's own run document: calibrated if stored, else the simulation's truth;
 # amstrax.contexts.for_mc_run puts the calibration version into the lineage). See xamssim corrections.
@@ -95,5 +96,7 @@ if [ $rc -eq 0 ]; then
     ( source $X/setup_xamssim.sh >/dev/null && if python -c "import xamssim.rundb as r; raise SystemExit(0 if r.configured() else 1)"; then
           xamssim rundb --record "$((10#$RID))" --entries "$ENTRIES"; else echo "private run: not recorded in the run database"; fi ) || rc=1
 fi
+# 4 the app's figures of this run (configuration, results, reconstruction) now, so its page opens without waiting
+( source $X/setup_xamssim.sh >/dev/null && xamssim figures "$RID" ) || echo "figures: not all made (the app makes them on first view)"
 rm -f "$ENTRIES"
 echo "exit $rc, $(date)"; exit $rc
