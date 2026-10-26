@@ -421,6 +421,17 @@ centre each cluster-number group has NEST's width (0.066–0.075) but the means 
 and smaller clusters give more light). The clustering is wired correctly; whether the cluster-number effect is real is
 a question for data (photopeak of single-S2 vs multi-S2 events). The app's results figure shows this decomposition.
 
+**Zero field (2026-10-26, prepared, not run).** State `zero` (all 0 V, `zero_field: true`): plugins/zero.py replaces
+field, yields, drift, extraction and the volume classification (geometric: no field lines); S1 only. NEST's β-ER is
+undefined at 0 V/cm (log10 of the field in its parameters, nestpy 2.0.6 up to NEST master 2026-09), so
+`physics.zero_field_yields`: `nest_gamma` (γ-ER at 0 V/cm per electron-recoil cluster, ~90 % light) or `proportional`
+(fixed light fraction, a bracket). DAQ per run period: a state's `daq: <period>` selects `daq_<period>.yaml` + its
+templates (`daq_sr2026_3.yaml`: Science_Rev2.5 of run 7762, top PMTs at 0.5 Vpp, gains P1, templates from LED runs
+7759–7761). Study `simulations/2026-10-26_zerofield` (Cs, Na, Co × two yield models, 10⁷ decays each). First check
+(2 000 Cs decays on the Mac): the simulated S1 is ~5.6 PE/keV against 2.24 PE/keV in the data, i.e. the light
+collection of the simulation (g1 ≈ 0.08) is ~2.5× that of the detector (≈ 0.032); the S1 top fraction agrees. To be
+understood first (light maps / optics, PMT detection efficiency in sensors.yaml, the data's PE scale with gains P1).
+
 **Position reconstruction study (2026-10-23, started).** `xamssim posrec` (fast toy, seconds): uniform positions →
 drift map (gate crossing, diffusion) → S2 light pattern → photon statistics → (u, v) → data map and an MC-built map
 (written in amstrax's format as a candidate pos_rec_map). First result (sept): the data map reproduces the radial

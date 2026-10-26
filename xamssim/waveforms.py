@@ -13,6 +13,8 @@ the last crossing, merged, at least min_pulse_samples long; each pulse cut into 
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import strax
 import yaml
@@ -22,10 +24,24 @@ from .config import Resolved, geometry_path
 ADC_MAX = 2 ** 14 - 1
 
 
-def load_daq(res: Resolved) -> dict:
-    """daq.yaml of the state's detector with the single-PE templates (lists, so that the content enters the lineage)."""
+def daq_file(res: Resolved) -> Path:
+    """The DAQ settings of the state's run period: detectors/<d>/daq_<period>.yaml for a state with `daq: <period>`,
+    else daq.yaml (SR-2026.2)."""
     d = geometry_path(res.detector).parent
-    daq = yaml.safe_load(open(d / "daq.yaml"))
+    period = res.state.get("daq")
+    f = d / (f"daq_{period}.yaml" if period else "daq.yaml")
+    if not f.exists():
+        from .config import ConfigError
+        raise ConfigError(f"state '{res.state_name}': no DAQ settings {f}")
+    return f
+
+
+def load_daq(res: Resolved) -> dict:
+    """The DAQ settings of the state (daq_file) with the single-PE templates (lists, so that the content enters the
+    lineage)."""
+    f = daq_file(res)
+    d = f.parent
+    daq = yaml.safe_load(open(f))
     t = np.load(d / daq["digitizer"]["spe_templates"])
     tpl = {}
     for ch in daq["channels"]:

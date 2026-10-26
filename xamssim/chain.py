@@ -55,6 +55,8 @@ PHYSICS_DEFAULTS = {
     "cloud_samples": 16,               # drift: points per cluster for the cloud splitting (1: whole cluster one fate)
     "cloud_track_sigma_mm": 0.2,       # drift: size of the ionization track (Gaussian sigma) for the cloud splitting
     "nest": {},                        # NEST settings (NEST_KEYS); {} = NEST's defaults
+    "zero_field_yields": "nest_gamma",  # zero-field states only: nest_gamma | proportional (plugins/zero.py)
+    "zero_field_light_fraction": 0.9,  # zero_field_yields = proportional: photons / (photons + electrons) per cluster
 }
 
 # physics.nest of a run file (fuse NestYields): yield parameter lists (-1 = NEST's defaults, as nestpy's
@@ -95,6 +97,11 @@ def physics(res: Resolved) -> dict:
     if unknown:
         raise ConfigError(f"{res.run_path}: unknown physics options {sorted(unknown)} (known: {sorted(PHYSICS_DEFAULTS)})")
     out = {**PHYSICS_DEFAULTS, **p}
+    from .plugins.zero import ZERO_FIELD_YIELDS
+    if out["zero_field_yields"] not in ZERO_FIELD_YIELDS:
+        raise ConfigError(f"{res.run_path}: physics.zero_field_yields must be one of {ZERO_FIELD_YIELDS}")
+    if not 0.0 <= float(out["zero_field_light_fraction"]) <= 1.0:
+        raise ConfigError(f"{res.run_path}: physics.zero_field_light_fraction must be between 0 and 1")
     if out["clustering"] not in ("lineage", "dbscan"):
         raise ConfigError(f"{res.run_path}: physics.clustering must be lineage or dbscan, not '{out['clustering']}'")
     return out
@@ -109,24 +116,26 @@ def volumes(res: Resolved) -> dict:
                 r_field_cage_cm=g["ptfe_cylinder"]["inner_diameter_mm"] / 20)
 
 
-def plugins(clustering: str) -> list:
+def plugins(clustering: str, zero_field: bool = False) -> list:
+    """The chain's plugins; a zero-field state swaps field, yields, drift and extraction for plugins/zero.py."""
     import fuse
 
     from .plugins import (XamsElectricField, XamsElectronDrift, XamsEvents, XamsExtractionEL, XamsG4Input,
-                          XamsRawRecords, XamsS1Light, XamsS2Light, XamsSensorResponse, XamsVolumeProperties,
-                          XamsVolumeSelection)
+                          XamsNoDrift, XamsNoExtraction, XamsRawRecords, XamsS1Light, XamsS2Light, XamsSensorResponse,
+                          XamsVolumeProperties, XamsVolumeSelection, XamsZeroField, XamsZeroFieldVolumes,
+                          XamsZeroFieldYields)
     mp = fuse.micro_physics
     clus = ([mp.LineageClustering, mp.MergeLineage] if clustering == "lineage" else [mp.FindCluster, mp.MergeCluster])
     return [XamsG4Input, 
             *clus, 
-            XamsVolumeProperties, 
+            XamsZeroFieldVolumes if zero_field else XamsVolumeProperties,
             XamsVolumeSelection,
             mp.cuts_and_selections.DefaultSimulation, 
-            XamsElectricField, 
-            mp.NestYields, 
+            XamsZeroField if zero_field else XamsElectricField,
+            XamsZeroFieldYields if zero_field else mp.NestYields,
             mp.MicroPhysicsSummary,
-            XamsElectronDrift,
-            XamsExtractionEL,
+            XamsNoDrift if zero_field else XamsElectronDrift,
+            XamsNoExtraction if zero_field else XamsExtractionEL,
             XamsS1Light,
             XamsS2Light,
             XamsSensorResponse,
@@ -190,6 +199,23 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
     p = physics(res)
     mats = res.materials["materials"]
     lxe, gxe = mats["liquid_xenon"]["density_g_cm3"], mats["gas_xenon"]["density_g_cm3"]
+    if res.zero_field:                                    # S1 only: no field, drift, extraction / EL (plugins/zero.py)
+        return dict(
+            path=str(g4_dir), file_name="deposits", g4_output_hash=g4_output_hash or g4io.output_hash(g4_dir),
+            preselect_r_max_cm=volumes(res)["r_field_cage_cm"],
+            source_rate=p["source_rate_hz"], n_interactions_per_chunk=1e5, first_chunk_left=10,
+            **(dict(time_threshold=p["time_threshold_ns"], gamma_distance_threshold=p["gamma_distance_threshold_cm"],
+                    brem_distance_threshold=p["brem_distance_threshold_cm"]) if p["clustering"] == "lineage" else
+               dict(micro_separation=p["micro_separation_cm"], micro_separation_time=p["micro_separation_time_ns"],
+                    tag_cluster_by="energy")),
+            **volumes(res), density_liquid_g_cm3=lxe, density_gas_g_cm3=gxe,
+            **nest_settings(res),
+            zero_field_yields=p["zero_field_yields"], zero_field_light_fraction=float(p["zero_field_light_fraction"]),
+            electron_lifetime_us=1e9,                     # cS2 in xams_events (no S2 here)
+            z_bottom_cm=next(m["z_mm"] for m in res.geometry["meshes"] if m["name"] == "bottom_screen") / 10,
+            **_light_settings(res),
+            **_sensor_settings(res),
+        )
     return dict(
         path=str(g4_dir), file_name="deposits", g4_output_hash=g4_output_hash or g4io.output_hash(g4_dir),
         preselect_r_max_cm=volumes(res)["r_field_cage_cm"],
@@ -242,7 +268,7 @@ def context(run_path, g4_out=None, store=STORE, **overrides):
     cfg = settings(res, gdir, xams_efield_map=overrides.get("xams_efield_map"),
                    xams_drift_map=overrides.get("xams_drift_map"), xams_el_map=overrides.get("xams_el_map"))
     cfg.update(overrides)
-    st = strax.Context(storage=[strax.DataDirectory(str(store))], register=plugins(physics(res)["clustering"]),
+    st = strax.Context(storage=[strax.DataDirectory(str(store))], register=plugins(physics(res)["clustering"], res.zero_field),
                        config=cfg)
     st.set_context_config({"check_available": ()})
     _check_g4(res, gdir)
@@ -291,7 +317,8 @@ def run(run_path, target: str | None = None, g4_out=None, lifetime_us: float | N
             print(f"stop_after '{stop}' not implemented yet; processing up to '{target}'")
     if target not in TARGETS:
         raise ConfigError(f"target '{target}' not implemented (available: {list(TARGETS)})")
-    if PRODUCTS.index(target) >= PRODUCTS.index("drifted_electrons") and not (lifetime_us or res.state.get("electron_lifetime_us")):
+    if PRODUCTS.index(target) >= PRODUCTS.index("drifted_electrons") and not res.zero_field \
+            and not (lifetime_us or res.state.get("electron_lifetime_us")):
         raise ConfigError(f"state '{res.state_name}' has no electron_lifetime_us (needed for the drift): set it in the "
                           f"state or give --lifetime-us")
     over = {"electron_lifetime_us": float(lifetime_us)} if lifetime_us else {}

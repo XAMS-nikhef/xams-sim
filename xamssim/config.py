@@ -68,7 +68,7 @@ SCHEMA = {
              "run_number": int, "tags": list, "supersedes": int},
             {"state", "source", "n_events", "seed"}),
     "state": ({"description": str, "detector": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
-               "electron_lifetime_us": OPT_NUM, "sensors": dict},
+               "electron_lifetime_us": OPT_NUM, "sensors": dict, "zero_field": bool, "daq": str},
               {"detector", "hv_case", "liquid_level_mm"}),
     "source": ({"isotope": str, "activity_bq": OPT_NUM, "position_mm": (list, type(None)), "collimator": (dict, str, type(None)),
                 "type": str, "energy_keV": OPT_NUM, "direction": str, "half_angle_deg": NUM, "z_target_mm": NUM,
@@ -198,6 +198,11 @@ class Resolved:
     def sensors(self) -> dict:
         return load_sensors(self.detector)
 
+    @property
+    def zero_field(self) -> bool:
+        """All electrodes at 0 V (state zero_field: true): no field, drift, extraction or S2; S1 only."""
+        return bool(self.state.get("zero_field"))
+
     def map_inputs(self) -> dict:
         level = self.state["liquid_level_mm"]
         mats = self.materials["materials"]
@@ -211,6 +216,8 @@ class Resolved:
         cells = {"mesh_common": self.geometry.get("mesh_common"), "meshes": self.geometry.get("meshes"),
                  "hv": {k: hv[k] for k in ("A", "G", "C", "BS", "TS")}, "liquid_level_mm": level, "permittivity": eps,
                  "model": "quarter cell, gate and cathode (efield/comsol/make_cell.py)"}
+        if self.zero_field:                                  # no field: only the light maps are needed
+            return {"s1_light": light, "s2_pattern": light}
         return {
             "field": field,
             "drift": {**field, "liquid": {"temperature_k": mats["liquid_xenon"].get("temperature_k"),

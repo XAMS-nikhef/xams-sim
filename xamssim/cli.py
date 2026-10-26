@@ -45,6 +45,7 @@ def _print_maps(res, kinds) -> int:
 
 
 def cmd_status(a) -> int:
+    from .chain import physics as chain_physics
     res = resolve(a.run)
     run, st, src, hv = res.run, res.state, res.source, res.hv_case
     stop = run.get("stop_after", "raw_records")
@@ -60,8 +61,12 @@ def cmd_status(a) -> int:
           f"{res.geometry.get('meta', {}).get('version')}), config/materials.yaml")
     print(f"chain      Geant4 particle mode -> {' -> '.join(('clustered_interactions', 'quanta', 'drifted_electrons', 'extracted_electrons', 's2_photons', 'photoelectrons', 'raw_records'))}")
     print("           (Geant4 particle mode: xamssim particle; up to raw_records: xamssim chain; amstrax: xamssim.amstrax_io)")
-    missing = _print_maps(res, needed(stop))
-    print(f"{missing} of {len(needed(stop))} maps needed for '{stop}' missing")
+    if res.zero_field:
+        print(f"zero field yields {chain_physics(res)['zero_field_yields']} (light fraction "
+              f"{chain_physics(res)['zero_field_light_fraction']} if proportional); no field, drift, extraction or S2")
+    kinds = [k for k in needed(stop) if k in res.map_keys()]
+    missing = _print_maps(res, kinds)
+    print(f"{missing} of {len(kinds)} maps needed for '{stop}' missing")
     return 0
 
 

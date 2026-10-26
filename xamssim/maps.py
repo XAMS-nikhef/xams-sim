@@ -104,6 +104,8 @@ def status(res: Resolved, kinds: list | None = None) -> list:
     keys = res.map_keys()
     rows = []
     for kind in kinds or list(KINDS):
+        if kind not in keys:                              # not used by this state (zero field: light maps only)
+            continue
         e = find(kind, keys[kind], man)
         k = KINDS[kind]
         rows.append(dict(kind=kind, key=keys[kind], present=e is not None, files=e["files"] if e else [],
