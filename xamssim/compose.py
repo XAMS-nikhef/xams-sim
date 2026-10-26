@@ -600,7 +600,7 @@ def fig_results(rec):
 RESULT_FIGURES = {"results": ("Results (xams_events)", fig_results)}
 
 
-FIGURE_VERSION = 8              # part of the figure file names: raise it when a figure changes, so old ones are remade
+FIGURE_VERSION = 9              # part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
            "field": ("Field and drift", fig_field),
            "top_view": ("Top view", fig_top_view),
@@ -1004,10 +1004,14 @@ def fig_nest(rec):
     return fig
 
 
+CENTRAL = dict(r_mm=15.0, dz_mm=10.0)        # central volume of the quanta figure: r and distance to gate / cathode
+
+
 def _event_quanta(rec) -> np.ndarray:
-    """Per decay: energy and NEST photons / electrons summed over its clusters in the drift region (vol_id 1), and the
-    energy outside it, from the chain's stored microphysics_summary (always saved, with vol_id; xams_events
-    itself does not keep the quanta)."""
+    """Per decay: energy and NEST photons / electrons summed over its clusters in the drift region (vol_id 1), the
+    energy outside it, the number of clusters, the energy-weighted local field and whether all its clusters lie in the
+    central volume (CENTRAL), from the chain's stored microphysics_summary (always saved, with vol_id, e_field and
+    the cluster positions; xams_events itself does not keep the quanta)."""
     import contextlib
     import io
 
@@ -1019,24 +1023,34 @@ def _event_quanta(rec) -> np.ndarray:
         if not st.is_stored(sid, "microphysics_summary"):
             raise FileNotFoundError(f"no microphysics_summary of {sid} (xamssim chain {rec['run_file']})")
         d = st.get_array(sid, "microphysics_summary", progress_bar=False)
+    zm = {m["name"]: m["z_mm"] for m in rec["geometry"]["meshes"]}
     ev, inv = np.unique(d["eventid"], return_inverse=True)
-    drift = d["vol_id"] == 1
+    drift = (d["vol_id"] == 1) & (d["ed"] > 0)
+    w = d["ed"] * drift
+    z, r = d["z"] * 10, np.hypot(d["x"], d["y"]) * 10                                   # cm -> mm
+    inside = (r < CENTRAL["r_mm"]) & (z < zm["gate"] - CENTRAL["dz_mm"]) & (z > zm["cathode"] + CENTRAL["dz_mm"])
     out = np.zeros(len(ev), dtype=[("eventid", np.int64), ("energy_drift", float), ("energy_outside", float),
-                                   ("photons", float), ("electrons", float), ("n_clusters", np.int32)])
+                                   ("photons", float), ("electrons", float), ("n_clusters", np.int32),
+                                   ("field", float), ("central", bool)])
     out["eventid"] = ev
-    out["energy_drift"] = np.bincount(inv, weights=d["ed"] * drift)
-    out["energy_outside"] = np.bincount(inv, weights=d["ed"] * ~drift)
+    out["energy_drift"] = np.bincount(inv, weights=w)
+    out["energy_outside"] = np.bincount(inv, weights=d["ed"] * ~(d["vol_id"] == 1))
     out["photons"] = np.bincount(inv, weights=np.maximum(d["photons"], 0) * drift)
     out["electrons"] = np.bincount(inv, weights=np.maximum(d["electrons"], 0) * drift)
     out["n_clusters"] = np.bincount(inv, weights=drift.astype(float)).astype(np.int32)
+    out["field"] = np.bincount(inv, weights=w * d["e_field"]) / np.maximum(out["energy_drift"], 1e-9)
+    out["central"] = np.bincount(inv, weights=(drift & ~inside).astype(float)) == 0
     return out
 
 
 def fig_nest_photopeak(rec):
-    """The line in quanta from the chain: photons and electrons summed over the clusters of each full-energy event in
-    the drift region (_event_quanta), against NEST in one deposit (gamma-ER and beta-ER) at the
-    run's drift field. Agreement with gamma-ER = the cluster approach (beta-ER per cluster) reproduces NEST's gamma
-    line."""
+    """What makes the width of the simulated line in quanta (photons and electrons NEST makes, before drift,
+    extraction and light collection), for the full-energy events of the source line in the drift region:
+    (1) photons per event split by the number of clusters (each cluster gets NEST's beta-ER yields, so more and smaller
+    clusters give more light), in the central volume; (2) photons of the one-cluster events against the local field
+    (the field of the state's map varies, most near wall, gate and cathode) with NEST beta-ER for one deposit;
+    (3) the numbers, with NEST in one deposit (beta-ER, gamma-ER) as thin references. A bookkeeping of the simulation,
+    not a verdict: whether the field and cluster-number effects are real is a question for data."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -1044,60 +1058,80 @@ def fig_nest_photopeak(rec):
     from .nestfig import Nest, quanta_stats
     field, sd, rho, nest, line, iso = _nest_inputs(rec)
     e = _event_quanta(rec)
-    fig, axs = plt.subplots(1, 2, figsize=(15, 5.2), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1, 1.1]))
-    _style(axs[0])
-    axs[1].set_facecolor("#111b2e")
-    axs[1].axis("off")
-    peak = (np.abs(e["energy_drift"] - line) < 2.0) & (e["energy_outside"] < 0.5)
     run = Nest(nest)
-    ref = {}
-    for kind in ("gamma", "beta"):
-        ph, el = run.quanta(run.yields(kind, line, field, rho), 3000)
-        ref[kind] = (ph, el, quanta_stats(ph, el))
+    ref = {k: quanta_stats(*run.quanta(run.yields(k, line, field, rho), 3000)) for k in ("beta", "gamma")}
+    pk = (np.abs(e["energy_drift"] - line) < 2.0) & (e["energy_outside"] < 0.5)
+    groups = [("1 cluster", e["n_clusters"] == 1, "#4db6ff"), ("2 clusters", e["n_clusters"] == 2, "#2ecc71"),
+              ("3 clusters", e["n_clusters"] == 3, "#f39c12"), ("≥ 4 clusters", e["n_clusters"] >= 4, "#ff6b6b")]
+    fig, axs = plt.subplots(1, 3, figsize=(18, 5.2), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1, 1, 1.15]))
+    for ax in axs[:2]:
+        _style(ax)
+    t = axs[2]
+    t.set_facecolor("#111b2e")
+    t.axis("off")
+    cen = pk & e["central"]
+    # (1) photons by number of clusters, central volume
     ax = axs[0]
-    ph, el = e["photons"][peak], e["electrons"][peak]
-    if peak.sum() > 1:
-        ax.hist2d(ph, el, bins=60, cmap="viridis", cmin=1)
-    for kind, col in (("gamma", "#f39c12"), ("beta", "#ff6b6b")):
-        p, q, st = ref[kind]
-        cov = np.cov(p, q)
-        val, vec = np.linalg.eigh(cov)
-        a = np.linspace(0, 2 * np.pi, 200)
-        for nsig, ls in ((1, "-"), (2, "--")):
-            xy = vec @ (nsig * np.sqrt(val)[:, None] * np.array([np.cos(a), np.sin(a)]))
-            ax.plot(p.mean() + xy[0], q.mean() + xy[1], color=col, lw=1.1, ls=ls,
-                    label=f"NEST {'γ' if kind == 'gamma' else 'β'}-ER, 1 deposit (1σ, 2σ)" if nsig == 1 else None)
-    ax.set(xlabel="photons (sum over the clusters)", ylabel="electrons (sum over the clusters)",
-           title=f"{iso} {line:.0f} keV, full energy in the drift region: chain ({peak.sum()} events)")
+    if cen.sum() > 10:
+        lo, hi = np.percentile(e["photons"][cen], [0.5, 99.5])
+        bins = np.linspace(lo, hi, 40)
+        ax.hist(e["photons"][cen], bins=bins, histtype="step", color="#dce7ff", lw=1.4, label=f"all ({cen.sum()})")
+        for lab, m, col in groups:
+            if (cen & m).sum():
+                ax.hist(e["photons"][cen & m], bins=bins, histtype="step", color=col, lw=1.0, label=f"{lab} ({(cen & m).sum()})")
+    for k, ls in (("beta", ":"), ("gamma", "--")):
+        ax.axvline(ref[k]["photons"], color="#8a96a8", lw=0.8, ls=ls)
+        ax.text(ref[k]["photons"], ax.get_ylim()[1] * 0.97, f" NEST {'β' if k == 'beta' else 'γ'}-ER, 1 deposit",
+                color="#8a96a8", fontsize=7, rotation=90, va="top", ha="right")
+    ax.set(xlabel="photons per event (sum over its clusters)", ylabel="events",
+           title=f"central volume (r < {CENTRAL['r_mm']:g} mm, {CENTRAL['dz_mm']:g} mm from gate / cathode)")
+    ax.title.set_fontsize(9)
     ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
-    rows = [("", "events", "photons  σ/μ", "electrons  σ/μ", "corr", "sum σ/μ")]
-    for name, st in (("NEST γ-ER, 1 deposit", ref["gamma"][2]), ("NEST β-ER, 1 deposit", ref["beta"][2]),
-                     ("chain: β-ER per cluster", quanta_stats(ph, el) if peak.sum() > 2 else None)):
-        rows.append((name, "—" if name.startswith("NEST") else f"{peak.sum()}",
-                     *((f"{st['photons']:7.0f}  {st['photons_rel_sd']:.3f}", f"{st['electrons']:7.0f}  {st['electrons_rel_sd']:.3f}",
-                        f"{st['corr']:+.2f}", f"{st['quanta_rel_sd']:.4f}") if st else ("—",) * 4)))
-    t, y = axs[1], 0.95
-    for i, r in enumerate(rows):
-        for x, c in zip((0.0, 0.33, 0.43, 0.66, 0.86, 0.95), r):
-            t.text(x, y, c, transform=t.transAxes, va="top", fontsize=8.5 if i else 8, family="monospace",
-                   color="#9fb4d8" if i == 0 else "#dce7ff")
-        y -= 0.08
-    ncl = e["n_clusters"][peak]
-    t.text(0.0, y - 0.04,
-           f"drift field {field:.0f} V/cm, NEST settings: {_nest_tag(nest)}\n"
-           f"full-energy events: |E_drift − {line:.1f}| < 2 keV, nothing outside the drift region; "
-           f"clusters per event: median {np.median(ncl) if len(ncl) else 0:.0f}\n"
-           "quanta as made by NEST (before drift, extraction and light collection)\n\n"
-           "if chain ≈ γ-ER, the cluster approach reproduces NEST's γ line;\n"
-           "the widths in data also contain the detector (light collection, extraction, gain).",
-           transform=t.transAxes, va="top", fontsize=8, color="#8a96a8")
-    fig.suptitle(f"{rec['run_id']}: the {iso} line in quanta — chain vs NEST in one deposit", color="#dce7ff", fontsize=10)
+    # (2) one-cluster events: photons vs local field, with NEST beta-ER in one deposit
+    ax = axs[1]
+    one = pk & (e["n_clusters"] == 1)
+    if one.sum() > 10:
+        flo, fhi = np.percentile(e["field"][one], [1, 99])
+        ax.hist2d(e["field"][one], e["photons"][one], bins=[np.linspace(flo, fhi, 40), 50], cmap="viridis", cmin=1)
+        fs = np.linspace(flo, fhi, 25)
+        ax.plot(fs, [run.yields("beta", line, f_, rho).PhotonYield for f_ in fs], color="#ff6b6b", lw=1.4,
+                label="NEST β-ER, 1 deposit (mean)")
+        ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    ax.set(xlabel="local field at the cluster [V/cm]", ylabel="photons", title=f"1-cluster events, all positions ({one.sum()})")
+    ax.title.set_fontsize(9)
+    # (3) the numbers
+    rows = [("", "events", "photons  σ/μ", "electrons  σ/μ")]
+    for sel_name, base in (("all positions", pk), ("central", cen)):
+        for lab, m in [("all", np.ones(len(e), bool))] + [(g[0], g[1]) for g in groups]:
+            mm = base & m
+            if mm.sum() > 2:
+                q = quanta_stats(e["photons"][mm], e["electrons"][mm])
+                rows.append((f"{sel_name}, {lab}" if lab == "all" else f"   {lab}", f"{mm.sum()}",
+                             f"{q['photons']:7.0f}  {q['photons_rel_sd']:.3f}", f"{q['electrons']:7.0f}  {q['electrons_rel_sd']:.3f}"))
+    for k in ("beta", "gamma"):
+        q = ref[k]
+        rows.append((f"NEST {'β' if k == 'beta' else 'γ'}-ER, 1 deposit", "—", f"{q['photons']:7.0f}  {q['photons_rel_sd']:.3f}",
+                     f"{q['electrons']:7.0f}  {q['electrons_rel_sd']:.3f}"))
+    y = 0.99
+    for i, r_ in enumerate(rows):
+        for x, c in zip((0.0, 0.40, 0.55, 0.80), r_):
+            t.text(x, y, c, transform=t.transAxes, va="top", fontsize=7.8, family="monospace",
+                   color="#9fb4d8" if i == 0 or c.startswith("NEST") else "#dce7ff")
+        y -= 0.056
+    t.text(0.0, y - 0.02,
+           f"{iso} {line:.0f} keV, full energy in the drift region (|E − line| < 2 keV, nothing outside); quanta as\n"
+           f"made by NEST, before drift and light collection. Run field {field:.0f} ± {sd:.0f} V/cm, {_nest_tag(nest)}.\n"
+           "Each cluster gets NEST β-ER at its local field: 1-cluster events follow NEST β-ER; more and smaller\n"
+           "clusters give more light; the field varies most near wall, gate and cathode. Real or not: data.",
+           transform=t.transAxes, va="top", fontsize=7.5, color="#8a96a8")
+    fig.suptitle(f"{rec['run_id']}: what makes the width of the {iso} line in quanta (simulation bookkeeping)",
+                 color="#dce7ff", fontsize=10)
     fig.tight_layout()
     return fig
 
 
 FIGURES["nest"] = ("NEST yields (run's field and settings)", fig_nest)
-RESULT_FIGURES["nest_photopeak"] = ("Line in quanta: chain vs NEST", fig_nest_photopeak)
+RESULT_FIGURES["nest_photopeak"] = ("Line in quanta: clusters and field", fig_nest_photopeak)
 FIGURE_ROWS = FIGURE_ROWS + (("nest",), ("spe",))
 
 
