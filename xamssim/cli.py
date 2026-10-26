@@ -235,6 +235,14 @@ def cmd_nest(a) -> int:
     return 0
 
 
+def cmd_figures(a) -> int:
+    from . import compose
+    for r in a.run:
+        print(f"figures of {r}:")
+        compose.prerender(r)
+    return 0
+
+
 def cmd_number(a) -> int:
     from .runid import ensure_number
     for r in a.run:
@@ -337,6 +345,11 @@ def main(argv=None) -> int:
                                       "(production account: last production number + 1; else private 99xxxx)")
     p.add_argument("run", nargs="+", help="run file(s)")
     p.set_defaults(func=cmd_number)
+
+    p = sub.add_parser("figures", help="make all fixed figures of simulations now (the app's detail page), e.g. at the "
+                                       "end of a job, so the first page view does not wait")
+    p.add_argument("run", nargs="+", help="simulation id(s) as in xamssim list / the app (e.g. 900002)")
+    p.set_defaults(func=cmd_figures)
 
     p = sub.add_parser("corrections", help="per-run corrections of simulated runs (truth, calibrated) in their run "
                                            "document: show, or store a calibration with --calibrated")

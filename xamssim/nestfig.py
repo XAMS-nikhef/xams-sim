@@ -29,11 +29,16 @@ CS137_KEV = 661.657
 
 def drift_field(res: Resolved) -> tuple[float, float]:
     """Mean and spread of |E| [V/cm] in the drift region of a state's field map."""
-    from .fieldmap import FieldMap, path
-    g = res.geometry
+    from .fieldmap import path
+    return drift_field_map(res.geometry, path(res))
+
+
+def drift_field_map(g: dict, file) -> tuple[float, float]:
+    """Mean and spread of |E| [V/cm] in the drift region of a field-map file, for geometry g (geometry.yaml)."""
+    from .fieldmap import FieldMap
     z = {m["name"]: m["z_mm"] for m in g["meshes"]}
     r_cage = g["ptfe_cylinder"]["inner_diameter_mm"] / 2
-    fm = FieldMap(path(res))
+    fm = FieldMap(file)
     rng = np.random.default_rng(1)
     n = 20000
     r = 0.9 * r_cage * np.sqrt(rng.random(n))
@@ -107,16 +112,22 @@ def cases(states=(), fields=(), runs=()) -> list:
     return out
 
 
-def cs137_table(cs: list, n: int = 4000) -> list:
-    """The Cs-137 photopeak (662 keV gamma) in quanta per case: mean and relative width of photons and electrons,
-    their correlation, the width of the combined quanta (photons + electrons)."""
+def quanta_stats(ph, el) -> dict:
+    """Mean and relative width of photons and electrons, their correlation, the width of their sum."""
+    ph, el = np.asarray(ph, float), np.asarray(el, float)
+    return dict(n=len(ph), photons=ph.mean(), photons_rel_sd=ph.std() / ph.mean(), electrons=el.mean(),
+                electrons_rel_sd=el.std() / el.mean(), corr=float(np.corrcoef(ph, el)[0, 1]),
+                quanta_rel_sd=(ph + el).std() / (ph + el).mean())
+
+
+def cs137_table(cs: list, n: int = 4000, kind: str = "gamma") -> list:
+    """The Cs-137 photopeak (662 keV in one deposit, NEST's gamma-ER model by default) in quanta per case:
+    quanta_stats of n NEST draws."""
     rows = []
     for label, field, rho, nest in cs:
         ne = Nest(nest)
-        ph, el = ne.quanta(ne.yields("gamma", CS137_KEV, field, rho), n)
-        rows.append(dict(case=label, photons=ph.mean(), photons_rel_sd=ph.std() / ph.mean(), electrons=el.mean(),
-                         electrons_rel_sd=el.std() / el.mean(), corr=float(np.corrcoef(ph, el)[0, 1]),
-                         quanta_rel_sd=(ph + el).std() / (ph + el).mean()))
+        ph, el = ne.quanta(ne.yields(kind, CS137_KEV, field, rho), n)
+        rows.append(dict(case=label, **quanta_stats(ph, el)))
     return rows
 
 

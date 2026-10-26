@@ -39,7 +39,7 @@
 </div>
 {% endfor %}
 </section>
-{% if 'top_view' in row %}
+{% if 'nest' in row %}
 {% if optical %}
 <section class="panel">
   <div class="panel-title">Optical maps <a class="mono small" href="{{ url_for('optical_map', key=optical.key) }}">{{ optical.key }}</a>

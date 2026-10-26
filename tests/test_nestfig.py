@@ -28,3 +28,13 @@ def test_yields_and_widths():
 def test_nr():
     k = nestfig.Nest().curves("nr", 150.0, 2.87, np.array([5.0, 50.0]), n_fluct=20)
     assert np.all(k["qy"] > 0) and np.all(k["ly"] > 0)
+
+
+def test_quanta_stats():
+    rng = np.random.default_rng(1)
+    ph = rng.normal(1000, 50, 20000)
+    st = nestfig.quanta_stats(ph, 2000 - ph)                                         # perfect anti-correlation
+    assert st["photons"] == pytest.approx(1000, rel=0.01) and st["photons_rel_sd"] == pytest.approx(0.05, rel=0.05)
+    assert st["corr"] == pytest.approx(-1.0) and st["quanta_rel_sd"] == pytest.approx(0.0, abs=1e-9)
+    rows = nestfig.cs137_table([("d", 150.0, 2.87, {})], n=300, kind="beta")
+    assert rows[0]["n"] == 300 and rows[0]["photons"] > 0
