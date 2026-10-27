@@ -903,18 +903,30 @@ MAP_FIGURES = {"s2_pattern": ("S2 pattern", fig_s2_pattern), "s1_light": ("S1 li
 
 
 def map_figure(kind: str, key: str) -> Path:
-    """PNG of an optical map, made once and kept next to the map in the registry."""
+    """PNG of an optical map, made once and kept next to the map in the registry. If the app may not write there
+    (the central maps belong to the production account; a private app runs as its user), it is kept in the app's own
+    cache instead: <data>/cache/map_figures/<kind>/<map folder>/."""
     if kind not in MAP_FIGURES:
         raise FileNotFoundError(kind)
     src = _map_file(kind, key)
-    out = src.parent / "figures" / f"{kind}_v{MAP_FIGURE_VERSION}.png"
-    if not out.exists():
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
+    name = f"{kind}_v{MAP_FIGURE_VERSION}.png"
+    out = src.parent / "figures" / name
+    cached = DATA / "cache" / "map_figures" / kind / src.parent.name / name
+    for p in (out, cached):
+        if p.exists():
+            return p
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig = MAP_FIGURES[kind][1](key)
+    try:
         out.parent.mkdir(exist_ok=True)
-        fig = MAP_FIGURES[kind][1](key)
         fig.savefig(out, dpi=100, facecolor=fig.get_facecolor())
+    except PermissionError:
+        out = cached
+        out.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out, dpi=100, facecolor=fig.get_facecolor())
+    finally:
         plt.close(fig)
     return out
 
