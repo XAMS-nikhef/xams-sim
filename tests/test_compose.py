@@ -53,3 +53,21 @@ def test_nest_figures_registered_and_tag():
     assert compose._nest_tag({"widths": {"A_ER": 0.08}}) == "A_ER 0.08"
     assert "yield parameters set" in compose._nest_tag({"er_yields": [1.0] * 10})
     assert compose.LINES_KEV["Cs-137"] == pytest.approx(661.657)
+
+
+def test_map_figure_cache_when_map_folder_read_only(tmp_path, monkeypatch):
+    """A private app may not write next to the central maps: the figure goes to its own cache."""
+    import matplotlib.pyplot as plt
+    maps = tmp_path / "maps" / "s1_light" / "abc"
+    maps.mkdir(parents=True)
+    (maps / "s1.npz").write_bytes(b"")
+    maps.chmod(0o555)
+    try:
+        monkeypatch.setattr(compose, "DATA", tmp_path / "data")
+        monkeypatch.setattr(compose, "_map_file", lambda kind, key: maps / "s1.npz")
+        monkeypatch.setitem(compose.MAP_FIGURES, "s1_light", ("S1 light", lambda key: plt.figure()))
+        out = compose.map_figure("s1_light", "abc")
+        assert out == tmp_path / "data" / "cache" / "map_figures" / "s1_light" / "abc" / f"s1_light_v{compose.MAP_FIGURE_VERSION}.png"
+        assert out.exists() and compose.map_figure("s1_light", "abc") == out            # found again, not remade
+    finally:
+        maps.chmod(0o755)
