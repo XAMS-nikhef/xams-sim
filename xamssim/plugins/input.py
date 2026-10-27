@@ -44,8 +44,10 @@ PROCESS_ALIASES = {"RadioactiveDecay": "RadioactiveDecayBase", "Radioactivation"
 # (e.g. 1000 Hz with 1.7 M decays that deposit energy) such gaps never occur and the whole run becomes one chunk
 # (990018: 95 M deposits, > 16 GB). A chunk with more deposits than MAX_CHUNK_DEPOSITS is therefore split further at
 # gaps of at least MIN_SPLIT_GAP_NS between decays (far longer than a decay with its drift; events are never cut).
-# Runs whose chunks stay below the ceiling (every run at the default 100 Hz) are chunked exactly as by fuse.
-MAX_CHUNK_DEPOSITS = 2_000_000
+# Runs whose chunks stay below the ceiling (every run at the default 100 Hz: chunks of ~1e5) are chunked exactly as by
+# fuse. 200 000, not more: the lineage clustering of one chunk grows faster than linearly (1e5 deposits ~10 s, 2e6
+# ~40 min) and strax gives up when a plugin waits > 900 s for its next input chunk (990019 with 2e6-deposit chunks).
+MAX_CHUNK_DEPOSITS = 200_000
 MIN_SPLIT_GAP_NS = 1_000_000
 
 
