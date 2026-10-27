@@ -664,6 +664,9 @@ OPTICS_LABELS = {
 }
 OPTICAL_KINDS = ("s1_light", "s2_pattern")
 MAP_FIGURE_VERSION = 1
+# s1_outer (the liquid outside the TPC) has its own key (light inputs + outer model + bucket); it belongs to the optical
+# key whose light inputs it shares and is shown with it.
+OUTER_SHARED = ("geometry", "optics", "liquid_level_mm")
 
 
 def _flatten(d: dict, prefix: str = "") -> dict:
@@ -697,8 +700,15 @@ def optical_maps() -> list:
                                              inputs=e.get("inputs", {})))
         row["kinds"][e["kind"]] = all((MAPS / f).exists() for f in e["files"])
         row["states"].add(e.get("state", ""))
+    outer = [e for e in load_manifest()["maps"] if e["kind"] == "s1_outer"]
     rows = []
     for key, row in keys.items():
+        inp = row["inputs"]
+        o = next((e for e in reversed(outer)
+                  if all(e.get("inputs", {}).get(k) == inp.get(k) for k in OUTER_SHARED)), None)
+        if o is not None:
+            row["kinds"]["s1_outer"] = all((MAPS / f).exists() for f in o["files"])
+            row["outer_key"] = o["key"]
         inp = row.pop("inputs")
         row.update(states=sorted(row["states"]), level_mm=inp.get("liquid_level_mm"), model=inp.get("model", ""),
                    optics=optics_table(inp.get("optics")),
@@ -712,7 +722,10 @@ def optical_map(key: str) -> dict | None:
 
 
 def _map_file(kind: str, key: str) -> Path:
+    """The map file of an optical key (s1_outer: the outer map that belongs to the key, see optical_maps)."""
     from .maps import MAPS, find
+    if kind == "s1_outer":
+        key = (optical_map(key) or {}).get("outer_key", "")
     e = find(kind, key)
     if e is None:
         raise FileNotFoundError(f"no {kind} map {key}")
@@ -801,7 +814,92 @@ def fig_s1_light(key: str):
     return fig
 
 
-MAP_FIGURES = {"s2_pattern": ("S2 pattern", fig_s2_pattern), "s1_light": ("S1 light", fig_s1_light)}
+def fig_s1_outer(key: str):
+    """S1 light of the whole liquid: the TPC map (s1_light) and the map of the liquid outside the TPC (s1_outer) in one
+    picture: total detection probability and top-PMT fraction in x-z through the axis (same colour scale for both
+    maps, log for the probability), x-y at the top of the outer liquid (gate-anode gap), and the mean versus z."""
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
+    t = np.load(_map_file("s1_light", key))
+    o = np.load(_map_file("s1_outer", key))
+    names = [str(n) for n in o["channel_names"]]
+    itop = [i for i, n in enumerate(names) if n.startswith("top")]
+    t_tot, o_tot = t["p"].sum(0), o["p"].sum(0)
+    t_top, o_top = t["p"][itop].sum(0), o["p"][itop].sum(0)
+    t_in = t["inside"].astype(bool)
+    ex_r, (ex_z0, ex_z1) = float(o["exclude_r_mm"]), o["exclude_z_mm"]
+    ox, oy, oz = o["x"], o["y"], o["z"]
+    rr = np.hypot(ox[:, None], oy[None, :])
+    o_ok = (o["liquid"] >= 0.3) & ~((rr < ex_r)[:, :, None] & ((oz >= ex_z0) & (oz <= ex_z1))[None, None, :])
+    vals = np.concatenate([t_tot[t_in].ravel(), o_tot[o_ok].ravel()])
+    norm = LogNorm(vmin=max(float(np.percentile(vals[vals > 0], 1)), 1e-6), vmax=float(vals.max()))
+    fig, axs = plt.subplots(2, 2, figsize=(12.5, 9), facecolor="#111b2e", gridspec_kw=dict(wspace=0.3, hspace=0.32))
+
+    def _cb(ax, im, label):
+        cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
+        cb.ax.tick_params(labelsize=7, colors="#9fb4d8")
+        cb.set_label(label, color="#9fb4d8", fontsize=8)
+
+    def _frac(a, b):
+        return np.divide(a, b, out=np.zeros_like(a), where=b > 0)
+
+    jt, jo = len(t["y"]) // 2, int(np.argmin(np.abs(oy)))
+    zlim = (min(oz[0], t["z"][0]), max(oz[-1], t["z"][-1]))
+    for ax, (ti, oi, title, cmap, nrm, lab) in zip(axs[0], (
+            (t_tot, o_tot, "all channels", "viridis", norm, "detection probability"),
+            (_frac(t_top, t_tot), _frac(o_top, o_tot), "fraction on the top PMT", "magma", None, "top fraction"))):
+        _style(ax)
+        kw = dict(origin="lower", cmap=cmap, aspect="auto", interpolation="nearest")
+        kw.update(norm=nrm) if nrm else kw.update(vmin=0, vmax=1)
+        im = ax.imshow(np.ma.masked_where(~o_ok[:, jo, :], oi[:, jo, :]).T, extent=(ox[0], ox[-1], oz[0], oz[-1]), **kw)
+        keep = np.broadcast_to(t_in[:, jt][:, None], ti[:, jt, :].shape)
+        ax.imshow(np.ma.masked_where(~keep, ti[:, jt, :]).T, extent=(t["x"][0], t["x"][-1], t["z"][0], t["z"][-1]), **kw)
+        ax.set_xlim(ox[0], ox[-1])
+        ax.set_ylim(*zlim)
+        ax.set_title(f"{title}, y = 0: TPC + liquid outside", fontsize=10)
+        ax.set_xlabel("x [mm]", fontsize=8)
+        ax.set_ylabel("z [mm]", fontsize=8)
+        ax.tick_params(labelsize=7)
+        _cb(ax, im, lab)
+    # x-y at the top of the outer liquid (gate-anode gap) with the TPC map at its highest layer
+    ax = axs[1, 0]
+    _style(ax)
+    ko = int(np.nonzero(o_ok.any(axis=(0, 1)))[0].max())
+    kt = len(t["z"]) - 2
+    im = ax.imshow(np.ma.masked_where(~o_ok[:, :, ko], o_tot[:, :, ko]).T, origin="lower", norm=norm, cmap="viridis",
+                   extent=(ox[0], ox[-1], oy[0], oy[-1]), interpolation="nearest")
+    ax.imshow(np.ma.masked_where(~t_in, t_tot[:, :, kt]).T, origin="lower", norm=norm, cmap="viridis",
+              extent=(t["x"][0], t["x"][-1], t["y"][0], t["y"][-1]), interpolation="nearest")
+    ax.set_xlim(ox[0], ox[-1])
+    ax.set_ylim(oy[0], oy[-1])
+    ax.set_aspect("equal")
+    ax.set_title(f"all channels: outside z = {oz[ko]:.0f} mm, TPC z = {t['z'][kt]:.0f} mm", fontsize=10)
+    ax.set_xlabel("x [mm]", fontsize=8)
+    ax.set_ylabel("y [mm]", fontsize=8)
+    ax.tick_params(labelsize=7)
+    _cb(ax, im, "detection probability")
+    ax = axs[1, 1]
+    _style(ax)
+    w = o["liquid"] * o_ok
+    for img, col, lab in ((o_tot, "#4db6ff", "outside, all channels"), (o_top, "#f1c40f", "outside, top PMT")):
+        m = np.array([np.sum(img[:, :, k] * w[:, :, k]) / np.sum(w[:, :, k]) if w[:, :, k].sum() > 0 else np.nan
+                      for k in range(len(oz))])
+        ax.plot(m, oz, color=col, label=lab)
+    for img, col, lab in ((t_tot, "#4db6ff", "TPC, all channels"), (t_top, "#f1c40f", "TPC, top PMT")):
+        ax.plot([img[:, :, k][t_in].mean() for k in range(len(t["z"]))], t["z"], color=col, ls="--", label=lab)
+    ax.set_xscale("log")
+    ax.set_xlabel("mean detection probability", fontsize=8)
+    ax.set_ylabel("z [mm]", fontsize=8)
+    ax.set_title("mean per height (outside: weighted with the liquid fraction)", fontsize=10)
+    ax.tick_params(labelsize=7)
+    ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    fig.suptitle("S1: probability that a photon from the liquid gives a photoelectron, whole liquid (TPC and outside)",
+                 color="#dce7ff", fontsize=11)
+    return fig
+
+
+MAP_FIGURES = {"s2_pattern": ("S2 pattern", fig_s2_pattern), "s1_light": ("S1 light", fig_s1_light),
+               "s1_outer": ("S1 light, whole liquid (TPC and outside)", fig_s1_outer)}
 
 
 def map_figure(kind: str, key: str) -> Path:
