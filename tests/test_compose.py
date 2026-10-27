@@ -42,7 +42,7 @@ def test_optics_table_labels_known_keys_first_and_keeps_the_rest():
 
 
 def test_map_figures_cover_both_optical_maps():
-    assert set(compose.MAP_FIGURES) == set(compose.OPTICAL_KINDS)
+    assert set(compose.MAP_FIGURES) == set(compose.OPTICAL_KINDS) | {"s1_outer"}   # s1_outer: shown with its light key
 
 
 def test_nest_figures_registered_and_tag():
