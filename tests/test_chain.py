@@ -327,3 +327,40 @@ def test_block_loader_identical_on_geant4_output():
     g4 = runs[0].parent                                    # the smallest: a quick test
     kw = dict(event_rate=100.0, n_interactions_per_chunk=1000, first_chunk_left=10, r_max_mm=36.0)
     _assert_same(_chunks("fuse", g4, 3, **kw), _chunks("blocks", g4, 3, **kw))
+
+
+def test_split_large_chunks():
+    from xamssim.plugins.input import split_large_chunks
+    t = np.cumsum(np.r_[0, np.full(99, 2_000_000)])                  # 100 deposits, 2 ms apart
+    assert list(split_large_chunks(t, [0], max_n=1000)) == [0]         # small: unchanged
+    st = split_large_chunks(t, [0], max_n=30)
+    assert list(st) == [0, 30, 60, 90]                                 # pieces of >= 30 at the gaps
+    t2 = np.repeat(np.arange(10) * 2_000_000, 10)                      # 10 events of 10 deposits (same time)
+    st2 = split_large_chunks(t2, [0], max_n=25)
+    assert list(st2) == [0, 30, 60, 90] and all(t2[i] != t2[i - 1] for i in st2[1:])   # never inside an event
+
+
+def test_block_loader_ceiling_high_rate(tmp_path, monkeypatch):
+    """At a source rate where fuse makes one chunk, the ceiling splits it; every deposit is still delivered once."""
+    import xamssim.plugins.input as I
+    write_g4(tmp_path / "g4", ROWS, 6)
+    monkeypatch.setattr(I, "MAX_CHUNK_DEPOSITS", 2)
+    import logging
+    ld = I.XamsG4Loader(str(tmp_path / "g4"), "deposits", np.random.default_rng(3), log=logging.getLogger("t"),
+                        event_rate=1e5, n_interactions_per_chunk=1e5, entry_start=0)
+    ld.r_max_mm = None
+    orig = I.split_large_chunks
+    monkeypatch.setattr(I, "split_large_chunks", lambda t, s: orig(t, s, max_n=2, min_gap=0))
+    chunks = list(ld.output_chunk())
+    assert len(chunks) > 1 and sum(len(c[0]) for c in chunks) == 7
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_dynamic_chunking_sorted_equals_fuse(seed):
+    from fuse.common import dynamic_chunking
+    from xamssim.plugins.input import _dynamic_chunking_sorted
+    rng = np.random.default_rng(seed)
+    t = np.sort(np.cumsum(rng.exponential(3e7, 20000)).astype(np.int64))
+    t = np.repeat(t, rng.integers(1, 30, len(t)))                     # several deposits per event (equal times)
+    for scale, n_min in ((1e8, 1000), (1e7, 50), (1e9, 10)):
+        assert np.array_equal(_dynamic_chunking_sorted(t, scale, n_min), dynamic_chunking(t, scale=scale, n_min=n_min))
