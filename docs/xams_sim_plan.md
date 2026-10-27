@@ -579,6 +579,21 @@ database and start fresh").**
    shows one at a time with a switch "latest (vN) | truth".
 5. *Fresh start:* delete all MC (runs_mc documents, central MC folders, private test outputs; keep the maps) and make
    the three Cs-137 runs again (sept short / long, cmb50_a36 long) as 900301-900303.
+6. *Deleting a run completely (planned 2026-10-27, before the next clean-up):* `xamssim rundb --delete` removes only
+   the run documents from `run.runs_mc`; everything on disk stays (live data, raw records with run-document file and
+   truth, reconstruction, Geant4 / chain products, provenance and app figures, run file), so a run vanishes from the
+   xams-dashboard but stays in the simulation app and loadable by amstrax. New command `xamssim delete-run <number>
+   [...]`:
+   - collects everything of the run: the runs_mc document (production), `live_mc/<run>/`, the raw records, run-document
+     file and truth file (`mc_raw_records/<run>-*`), the processed products (`mc_processed/<run>-*`), Geant4 output and
+     chain products (`<data>/g4/<run>/`, `<data>/strax/<run>-*`), provenance and figures (`<data>/provenance/<run>/`),
+     logs (`<data>/logs/<run>/`); the run file only on request (`--run-file`; it is committed in simulations anyway);
+   - shows the list with sizes and asks for confirmation (no `--yes` by hand); production runs only as xamsdata,
+     private runs only in the own area (the account's settings decide, as for the submission);
+   - refuses while a condor job of the run is running (batch name `xamssim_<run>`), and refuses a run that another run
+     `supersedes` unless that is deleted too or `--keep-chain` is given;
+   - `--range LO-HI` / `--tag` for many runs (the fresh start); a dry run by default (`--delete` to act), as rundb.
+   The same deletion behind a "delete" button for folded old versions in the app (S11) later.
 
 ### S11. Simulation app: overview and composer (2–3 weeks, in phases) — **planned 2026-10-20, worked out 2026-10-21**
 
