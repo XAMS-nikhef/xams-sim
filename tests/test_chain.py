@@ -286,3 +286,44 @@ def test_cloud_splitting(tmp_path):
     assert abs(f[0] - 0.5) < 0.1 and f[1] == 1.0 and f[2] == 0.0       # -0.5 mm: on the boundary (grid spacing 1 mm)
     p.cloud_samples = 1
     assert set(XamsElectronDrift._cloud(p, np.array([-0.5, 3.0]), np.zeros(2), np.full(2, -20.0))[0]) <= {0.0, 1.0}
+
+
+def _chunks(which, g4_dir, seed, r_max_mm=None, **kw):
+    """All chunks of XamsG4Loader: its output_chunk ("blocks") or fuse's file_loader.output_chunk ("fuse")."""
+    import logging
+    from fuse.plugins.micro_physics.input import file_loader
+    from xamssim.plugins.input import XamsG4Loader
+    kw.setdefault("entry_start", 0)                     # ChunkInput passes 0 by default
+    ld = XamsG4Loader(str(g4_dir), "deposits", np.random.default_rng(seed), log=logging.getLogger("t"), **kw)
+    ld.r_max_mm = r_max_mm
+    gen = file_loader.output_chunk(ld) if which == "fuse" else ld.output_chunk()
+    return list(gen)
+
+
+def _assert_same(a, b):
+    assert len(a) == len(b)
+    for (ca, la, ra, da), (cb, lb, rb, db) in zip(a, b):
+        assert (la, ra, da) == (lb, rb, db)
+        assert ca.dtype == cb.dtype and len(ca) == len(cb)
+        for f in ca.dtype.names:
+            assert np.array_equal(ca[f], cb[f]), f
+
+
+@pytest.mark.parametrize("kw", [dict(event_rate=100.0, n_interactions_per_chunk=3, separation_scale=1e6),
+                                dict(event_rate=100.0, n_interactions_per_chunk=1e5, r_max_mm=30.0),
+                                dict(event_rate=100.0, n_interactions_per_chunk=3, entry_start=1, entry_stop=5)])
+def test_block_loader_identical_to_fuse(tmp_path, kw):
+    """XamsG4Loader.output_chunk (deposits per chunk) gives exactly fuse's chunks (all deposits at once)."""
+    write_g4(tmp_path / "g4", ROWS, 6)
+    _assert_same(_chunks("fuse", tmp_path / "g4", 7, **kw), _chunks("blocks", tmp_path / "g4", 7, **kw))
+
+
+def test_block_loader_identical_on_geant4_output():
+    """The same on a real Geant4 output, if one is present (simulations/data/g4)."""
+    from xamssim.config import DATA
+    runs = sorted((DATA / "g4").glob("*/deposits.bin"), key=lambda p: p.stat().st_size) if (DATA / "g4").exists() else []
+    if not runs:
+        pytest.skip("no Geant4 output here")
+    g4 = runs[0].parent                                    # the smallest: a quick test
+    kw = dict(event_rate=100.0, n_interactions_per_chunk=1000, first_chunk_left=10, r_max_mm=36.0)
+    _assert_same(_chunks("fuse", g4, 3, **kw), _chunks("blocks", g4, 3, **kw))

@@ -15,6 +15,13 @@ Translation:
 
 Lineage: `g4_output_hash` (content of the Geant4 output, from its header) is a tracked option.
 Pre-selection: only decays with a deposit inside the field-cage radius (`preselect_r_max_cm`) go to the clustering.
+
+Memory: fuse's loader builds all deposits of a run at once (pandas + awkward with string columns: > 28 GB for 10^7
+Na-22 decays). XamsG4Loader.output_chunk does the same steps (`file_loader.output_chunk`) with per-event numbers only
+(event selection, time sorting, event times, chunk bounds) and reads and converts the deposits chunk by chunk from the
+memory-mapped file, so memory no longer grows with the run size. The output is bit-identical to fuse's: the same single
+random draw (event times, in the same order), the same deposit order within a chunk (events ascending, deposits by time
+within the event, then a stable sort by time), the same casts (tests/test_chain.py compares both loaders).
 Options as in ChunkInput: `path` is the run directory (`<data>/g4/<run>`), `file_name` the stem (`deposits`);
 `entry_start` / `entry_stop` select events by their index in the run.
 """
@@ -24,6 +31,7 @@ import numpy as np
 import pandas as pd
 import strax
 import straxen
+from fuse.common import dynamic_chunking, stable_argsort, stable_sort
 from fuse.plugins.micro_physics.input import ChunkInput, file_loader
 
 from .. import g4io
@@ -79,9 +87,126 @@ class XamsG4Loader(file_loader):
     r_max_mm = None
 
     def _load_csv_file(self):
+        """fuse's path: all deposits at once (file_loader.output_chunk). Kept as the reference of the tests."""
         df, n_events = deposits_frame(self.file, self.entry_start, self.entry_stop, self.r_max_mm)
         interactions = self._awkwardify_df(df)
         return interactions, n_events, 0, n_events
+
+    def output_chunk(self):
+        """file_loader.output_chunk with the deposits read per chunk (module doc). Yields the same chunks."""
+        if self.cut_nr_only:
+            raise NotImplementedError("nr_only: use fuse's loader (file_loader.output_chunk)")
+        h, dep, ev = g4io.read(self.file, mmap=True)
+        n_events = len(ev)
+        if not np.array_equal(ev["event"], np.arange(n_events)):
+            raise ValueError(f"{self.file}: event records are not numbered 0..N-1")
+        start = int(self.entry_start or 0)
+        stop = n_events if self.entry_stop is None else min(int(self.entry_stop), n_events)
+        event = np.asarray(dep["event"])
+        sel = (event >= start) & (event < stop)
+        if self.r_max_mm is not None:                       # deposits_frame: whole events with a deposit inside r_max
+            inner = np.hypot(dep["x"], dep["y"]) < self.r_max_mm
+            keep = np.zeros(n_events, bool)
+            keep[event[inner]] = True
+            sel &= keep[event]
+            del inner, keep
+        t = np.asarray(dep["t"], dtype=np.float64)
+        edep = np.asarray(dep["edep"])
+        # events with deposits and with energy (fuse: ak.num > 0 and ak.sum(ed) > 0)
+        e_sum = np.bincount(event[sel], weights=edep[sel].astype(np.float64), minlength=n_events)
+        ev_kept = np.nonzero(e_sum > 0)[0]
+        del e_sum
+        sel &= np.isin(event, ev_kept, assume_unique=False)
+        idx = np.nonzero(sel)[0]
+        del sel
+        # deposits by event, by time within the event (stable: file order on ties) = fuse's flatten order
+        idx = idx[np.lexsort((t[idx], event[idx]))]
+        ev_of = event[idx]
+        first = np.searchsorted(ev_of, ev_kept, "left")
+        last = np.searchsorted(ev_of, ev_kept, "right")
+        dt = t[idx]
+        if self.event_rate > 0 and self.subtract_first_interaction_time:
+            dt = dt - np.repeat(dt[first], last - first)
+        if self.event_rate > 0:
+            if self.fixed_event_spacing:
+                ev_t = (np.linspace(start=0, stop=len(ev_kept) / self.event_rate, num=len(ev_kept), endpoint=False)
+                        + 1e9).astype(np.int64)
+            else:
+                # fuse: uniform over [start, stop) of _load_csv_file, which returns 0 and the event count
+                ev_t = self.rng.uniform(low=0 / self.event_rate, high=n_events / self.event_rate,
+                                        size=len(ev_kept)).astype(np.int64)
+                ev_t = stable_sort(ev_t)
+            time = dt + np.repeat(ev_t, last - first)
+        elif self.event_rate == 0:
+            time = dt.copy()
+        else:
+            raise ValueError("Source rate cannot be negative!")
+        del t, edep
+        ok = dt < self.cut_delayed                            # fuse: interactions[interactions["t"] < cut_delayed]
+        if not ok.all():
+            idx, dt, time, ev_of = idx[ok], dt[ok], time[ok], ev_of[ok]
+            first = np.searchsorted(ev_of, ev_kept, "left")
+            last = np.searchsorted(ev_of, ev_kept, "right")
+        del ok
+        # chunk bounds as fuse: from all deposit times, sorted (dynamic_chunking on sorted times: chunk ids ascend)
+        interaction_time = stable_sort(time).astype(np.int64)
+        chunk_idx = dynamic_chunking(interaction_time, scale=self.separation_scale, n_min=self.n_interactions_per_chunk)
+        unique_chunk_index_values, i0 = np.unique(chunk_idx, return_index=True)
+        i1 = np.append(i0[1:], len(chunk_idx)) - 1
+        chunk_start, chunk_end = interaction_time[i0], interaction_time[i1]
+        del interaction_time, chunk_idx
+        if (len(chunk_start) > 1) & (len(chunk_end) > 1):
+            gap_length = chunk_start[1:] - chunk_end[:-1]
+            gap_length = np.append(gap_length, gap_length[-1] + self.last_chunk_length)
+            chunk_bounds = chunk_end + np.int64(self.chunk_delay_fraction * gap_length)
+            self.chunk_bounds = np.append(chunk_start[0] - self.first_chunk_left, chunk_bounds)
+        else:
+            self.log.warning("Only one Chunk created! Only a few events simulated? If no, your chunking parameters "
+                             "might not be optimal. Try to decrease the source_rate or decrease the "
+                             "n_interactions_per_chunk.")
+            self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0] + self.last_chunk_length]
+        # per event: first and last deposit time (fuse: ak.min / ak.max of the time, as int64)
+        has = last > first
+        ev_kept, first, last = ev_kept[has], first[has], last[has]
+        times_min = np.minimum.reduceat(time, first).astype(np.int64)
+        times_max = np.maximum.reduceat(time, first).astype(np.int64)
+        particle = np.array(h["codes"]["particle"], dtype=object)
+        process = np.array([PROCESS_ALIASES.get(p, p) for p in h["codes"]["process"]], dtype=object)
+        source_done = False
+        self.log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
+        for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, self.chunk_bounds[:-1],
+                                                 self.chunk_bounds[1:]):
+            m = np.nonzero((times_min <= chunk_right) & (times_max >= chunk_left))[0]
+            if len(m) == 0:
+                current_chunk = np.empty(0, dtype=self.dtype)
+            else:
+                rows = np.concatenate([np.arange(a, b) for a, b in zip(first[m], last[m])])
+                current_chunk = self._records(dep, ev, idx[rows], dt[rows], time[rows], particle, process)
+            select_times = current_chunk["time"] >= chunk_left
+            select_times &= current_chunk["time"] <= chunk_right
+            current_chunk = current_chunk[select_times]
+            current_chunk = current_chunk[stable_argsort(current_chunk["time"])]
+            if c_ix == unique_chunk_index_values[-1]:
+                source_done = True
+            yield current_chunk, chunk_left, chunk_right, source_done
+
+    def _records(self, dep, ev, rows, dt, time, particle, process):
+        """The deposits `rows` (file indices, fuse order) as fuse's numpy chunk (full_array_to_numpy casts)."""
+        d = np.asarray(dep[rows])
+        for f in ("track", "parent"):
+            if len(d) and d[f].max() > np.iinfo(np.int16).max:
+                raise ValueError(f"{self.file}: track id {d[f].max()} does not fit fuse's int16 '{f}' field")
+        pri = ev[d["event"]]
+        out = np.zeros(len(d), dtype=self.dtype)
+        for f in ("x", "y", "z"):
+            out[f] = d[f] / 10.0
+            out[f"{f}_pri"] = pri[f"{f}_pri"] / 10.0
+        out["t"], out["ed"], out["time"] = dt, d["edep"], time
+        out["type"], out["parenttype"] = particle[d["particle"]], particle[d["parent_particle"]]
+        out["trackid"], out["parentid"] = d["track"], d["parent"]
+        out["creaproc"], out["edproc"] = process[d["creaproc"]], process[d["edproc"]]
+        out["eventid"] = d["event"]
+        return out
 
 
 @export
