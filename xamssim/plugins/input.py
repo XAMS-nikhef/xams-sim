@@ -27,11 +27,12 @@ Options as in ChunkInput: `path` is the run directory (`<data>/g4/<run>`), `file
 """
 from __future__ import annotations
 
+import numba
 import numpy as np
 import pandas as pd
 import strax
 import straxen
-from fuse.common import dynamic_chunking, stable_argsort, stable_sort
+from fuse.common import stable_argsort, stable_sort
 from fuse.plugins.micro_physics.input import ChunkInput, file_loader
 
 from .. import g4io
@@ -39,6 +40,52 @@ from .. import g4io
 export, __all__ = strax.exporter()
 
 PROCESS_ALIASES = {"RadioactiveDecay": "RadioactiveDecayBase", "Radioactivation": "RadioactiveDecayBase"}
+# Chunk ceiling: fuse starts a new chunk only at a gap > separation_scale (0.1 s) between decays. At a high source rate
+# (e.g. 1000 Hz with 1.7 M decays that deposit energy) such gaps never occur and the whole run becomes one chunk
+# (990018: 95 M deposits, > 16 GB). A chunk with more deposits than MAX_CHUNK_DEPOSITS is therefore split further at
+# gaps of at least MIN_SPLIT_GAP_NS between decays (far longer than a decay with its drift; events are never cut).
+# Runs whose chunks stay below the ceiling (every run at the default 100 Hz) are chunked exactly as by fuse.
+MAX_CHUNK_DEPOSITS = 2_000_000
+MIN_SPLIT_GAP_NS = 1_000_000
+
+
+@numba.njit(cache=True)
+def _dynamic_chunking_sorted(data_sorted, scale, n_min):
+    """fuse.common.dynamic_chunking for data that are already sorted (the deposit times here): the same chunk ids,
+    without fuse's Python list of one entry per deposit and its two argsorts (95 M deposits: GBs)."""
+    out = np.zeros(len(data_sorted), np.int64)
+    c = 0
+    n_cluster = 0
+    for i in range(1, len(data_sorted)):
+        value = data_sorted[i] - data_sorted[i - 1]
+        if value <= scale:
+            n_cluster += 1
+        elif n_cluster + 1 < n_min:
+            n_cluster += 1
+        else:
+            c += 1
+            n_cluster = 0
+        out[i] = c
+    return out
+
+
+def split_large_chunks(t_sorted, starts, max_n=MAX_CHUNK_DEPOSITS, min_gap=MIN_SPLIT_GAP_NS):
+    """Chunk start indices (into the sorted deposit times) with every chunk of more than max_n deposits split at
+    gaps > min_gap, each piece at least max_n deposits long (the last one may be shorter)."""
+    starts = np.asarray(starts, dtype=np.int64)
+    ends = np.append(starts[1:], len(t_sorted))
+    out = []
+    for s, e in zip(starts, ends):
+        out.append(s)
+        if e - s <= max_n:
+            continue
+        cand = s + 1 + np.nonzero(np.diff(t_sorted[s:e]) > min_gap)[0]     # a new chunk may start here
+        last = s
+        for c in cand:
+            if c - last >= max_n:
+                out.append(c)
+                last = c
+    return np.asarray(out, dtype=np.int64)
 
 
 def deposits_frame(path, entry_start: int = 0, entry_stop: int | None = None,
@@ -116,7 +163,10 @@ class XamsG4Loader(file_loader):
         e_sum = np.bincount(event[sel], weights=edep[sel].astype(np.float64), minlength=n_events)
         ev_kept = np.nonzero(e_sum > 0)[0]
         del e_sum
-        sel &= np.isin(event, ev_kept, assume_unique=False)
+        is_kept = np.zeros(n_events, bool)
+        is_kept[ev_kept] = True
+        sel &= is_kept[event]                                  # (np.isin over all deposits: sort-based, GBs)
+        del is_kept
         idx = np.nonzero(sel)[0]
         del sel
         # deposits by event, by time within the event (stable: file order on ties) = fuse's flatten order
@@ -150,8 +200,10 @@ class XamsG4Loader(file_loader):
         del ok
         # chunk bounds as fuse: from all deposit times, sorted (dynamic_chunking on sorted times: chunk ids ascend)
         interaction_time = stable_sort(time).astype(np.int64)
-        chunk_idx = dynamic_chunking(interaction_time, scale=self.separation_scale, n_min=self.n_interactions_per_chunk)
-        unique_chunk_index_values, i0 = np.unique(chunk_idx, return_index=True)
+        chunk_idx = _dynamic_chunking_sorted(interaction_time, float(self.separation_scale), float(self.n_interactions_per_chunk))
+        _, i0 = np.unique(chunk_idx, return_index=True)
+        i0 = split_large_chunks(interaction_time, i0)                    # ceiling (module doc); no-op for normal runs
+        unique_chunk_index_values = np.arange(len(i0))
         i1 = np.append(i0[1:], len(chunk_idx)) - 1
         chunk_start, chunk_end = interaction_time[i0], interaction_time[i1]
         del interaction_time, chunk_idx
