@@ -2,6 +2,9 @@
 # states with `daq: sr2026_3`. Made by measurements/analysis_SR2026.3/studies/daq_response.py (read-only), 2026-10-26.
 # Sources: R = run doc 7762 daq_config; M = measured from its raw_records (seconds 30-33) and the LED runs
 # 7759 (top), 7760 (bottom), 7761 (SiPMs); G = analysis_SR2026.3 config/gains.csv, period P1 (provisional).
+# 2026-10-31: bottom gain 53 -> 29 as in gains.csv P1 (corrected there 2026-10-30: 7760 at 2 Vpp does not resolve the
+# 1-PE peak, 53 was likely 2 PE; the bottom gain was the same on 26-10 and 28-10). The bottom single-PE template is still
+# the 7760 shape. Runs 7790 and later: daq_sr2026_3_p4.yaml.
 # Differences from SR-2026.2 (daq.yaml): PMTs top -900 / bottom -950 V; top PMTs at 0.5 Vpp input range (RevB:
 # 0x1n28 = 1; bottom and SiPMs 2 Vpp), so their gains in ADC are ~3x higher; thresholds top 30 (ch4 18).
 # The range enters only through the gains and baselines in ADC (clipping at 14 bits).
@@ -16,7 +19,7 @@ digitizer:
 channels:                   # data channel number -> simulated light channel (xamssim.lightmap.CHANNEL_NAMES)
   # threshold ADC (R), polarity (R), baseline ADC and noise rms ADC (M), samples after the last crossing (M),
   # single-PE gain in ADC·samples (G; SiPMs: 1 / to_pe)
-  0: {light: bottom,  raw: raw_records,      threshold: 60, polarity: negative, baseline: 15900, noise: 2.28, post_samples: 29, gain: 53}
+  0: {light: bottom,  raw: raw_records,      threshold: 60, polarity: negative, baseline: 15900, noise: 2.28, post_samples: 29, gain: 29.0}   # 2 Vpp
   1: {light: top_ch1, raw: raw_records,      threshold: 30, polarity: negative, baseline: 15966, noise: 2.98, post_samples: 45, gain: 151.7}   # 0.5 Vpp
   2: {light: top_ch2, raw: raw_records,      threshold: 30, polarity: negative, baseline: 15884, noise: 3.72, post_samples: 46, gain: 138.1}   # 0.5 Vpp
   3: {light: top_ch3, raw: raw_records,      threshold: 30, polarity: negative, baseline: 15939, noise: 3.18, post_samples: 45, gain: 143.8}   # 0.5 Vpp
