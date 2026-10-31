@@ -5,6 +5,6 @@ hv_case: pg2
 daq: sr2026_3_p4             # detectors/xams2026/daq_sr2026_3_p4.yaml (gains P4)
 liquid_level_mm: 4.0         # above the gate, as for this fill
 pressure_bar: 1.49           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
-electron_lifetime_us: null   # time-dependent: analysis_SR2026.3/config/corrections/SR2026.3_v4.json (set in the run file)
+electron_lifetime_us: 707.0    # SR2026.3_v4 lifetime (mean over the runs of PG2)
 sensors:
   pmt_hv_v: {top: -900, bottom: -950}
