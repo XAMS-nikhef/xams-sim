@@ -156,3 +156,17 @@ def test_stale_code_warning(tmp_path, monkeypatch, capsys):
     os.utime(f, None)                                             # touch: now newer than the (faked) import time
     assert "xamssim/config.py" in xamssim.changed_since_import()
     assert xamssim.warn_if_stale() and "Restart the kernel" in capsys.readouterr().out
+
+
+def test_materials_at_measured_pressure():
+    """A state with a measured pressure gets liquid and gas at saturation there; the reference pressure is unchanged."""
+    from xamssim.config import ConfigError, at_pressure, load_materials_and_geometry
+    _, mat = load_materials_and_geometry("xams2026")
+    assert at_pressure(mat, None) is mat and at_pressure(mat, 2.0) is mat
+    m = at_pressure(mat, 1.4897)["materials"]
+    assert m["liquid_xenon"]["temperature_k"] == pytest.approx(172.07)
+    assert m["liquid_xenon"]["density_g_cm3"] == pytest.approx(2.8947)
+    assert m["gas_xenon"]["density_g_cm3"] == pytest.approx(0.014257)
+    assert mat["materials"]["gas_xenon"]["density_g_cm3"] == 0.018694          # the reference stays as it is
+    with pytest.raises(ConfigError):
+        at_pressure(mat, 9.0)
