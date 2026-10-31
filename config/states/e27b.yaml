@@ -2,9 +2,9 @@
 description: "SR-2026.3 e27b: anode +2501, gate +303, cathode -216, BS -65, SiPM +0 V; PMTs -900 / -800 V"
 detector: xams2026           # config/detectors/xams2026/geometry.yaml
 hv_case: e27b
-daq: sr2026_3                # detectors/xams2026/daq_sr2026_3.yaml
+daq: sr2026_3                # detectors/xams2026/daq_sr2026_3.yaml (gains P1; 27-10 has no own LED run)
 liquid_level_mm: 4.0         # above the gate, as for this fill
-pressure_bar: 2.0            # assumed
+pressure_bar: 1.51           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
 electron_lifetime_us: null   # time-dependent: analysis_SR2026.3/config/corrections/SR2026.3_v4.json (set in the run file)
 sensors:
   pmt_hv_v: {top: -900, bottom: -800}
