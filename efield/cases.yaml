@@ -44,3 +44,44 @@ cases:
           note: "CM-B with margin: SiPM ≈ 50 V below its surroundings (short-fill plan, 2026-10-12)"}
   cmb50_a36: {A: 3600, G: 303, C: -215, BS: -65, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
           note: "cmb50 with the anode at +3.6 kV (anode-gate 3.3 kV: g2 about as in the Flierman thesis, 2026-10-19)"}
+  # SR-2026.3 (fill of 26-10-2026): measured voltages (sc_snapshot medians per set, analysis_SR2026.3/config/runs);
+  # SIPM = SiPM equaliser hv_sipm_eq_vmon (in sc_snapshot since 7794, backfilled 2026-10-31; R900 before 7794: −900 V per
+  # the run notes; E27: 0 V). Same-field blocks share a case (R900 / R900S / F / P90 / M90 / B / U / T, BG16, P4B).
+  e27: {A: 2401, G: 303, C: -215, BS: -65, TS: -25, PMT_T: -900, PMT_B: -800, SIPM: 0, export: [planes],
+          note: "SR-2026.3 E27 7784-7785: first test, gate positive; SiPM 0 V (no SC channel yet, user 2026-10-31)"}
+  e27b: {A: 2501, G: 303, C: -216, BS: -65, TS: -25, PMT_T: -900, PMT_B: -800, SIPM: 0, export: [planes],
+          note: "SR-2026.3 E27b 7786-7787: as e27, anode +2.5 kV"}
+  e27c: {A: 2801, G: 300, C: -215, BS: -65, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: 0, export: [planes, sipm],
+          note: "SR-2026.3 E27c 7788-7789: as e27, anode +2.8 kV, TS 0"}
+  r900: {A: 2101, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes, sipm],
+          note: "SR-2026.3 R900* 7790-7902, R900T 7929, BG16, P4B 7957-7980: standard ~97 V/cm, SiPM equalised (−890…−901 V measured; anode +2106 V from 7903 on)"}
+  r900_a22: {A: 2201, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes],
+          note: "SR-2026.3 R900A22 7838-7843: r900, anode +2.2 kV"}
+  r900_a23: {A: 2301, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes],
+          note: "SR-2026.3 R900A23 7844-7849: r900, anode +2.3 kV"}
+  d25: {A: 2106, G: -645, C: -775, BS: -74, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -709, export: [planes, sipm],
+          note: "SR-2026.3 D25 7909-7911: drift scan ~25 V/cm"}
+  d50: {A: 2106, G: -646, C: -905, BS: -204, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -773, export: [planes],
+          note: "SR-2026.3 D50 7912-7914: drift scan ~50 V/cm"}
+  d75: {A: 2106, G: -646, C: -1035, BS: -334, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -836, export: [planes],
+          note: "SR-2026.3 D75 7917-7919: drift scan ~75 V/cm"}
+  d125: {A: 2106, G: -646, C: -1293, BS: -592, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -962, export: [planes],
+          note: "SR-2026.3 D125 7920-7922: drift scan ~125 V/cm"}
+  d135: {A: 2106, G: -646, C: -1345, BS: -644, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -987, export: [planes],
+          note: "SR-2026.3 D135 7923-7925: drift scan ~135 V/cm"}
+  d140: {A: 2106, G: -646, C: -1371, BS: -670, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1000, export: [planes],
+          note: "SR-2026.3 D140 7926-7928: drift scan ~140 V/cm (SiPM at its −1000 V limit)"}
+  d150: {A: 2106, G: -646, C: -1423, BS: -722, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -987, export: [planes, sipm],
+          note: "SR-2026.3 D150 7930-7932: drift scan ~150 V/cm (SiPM −987 V, below equalised)"}
+  pg1: {A: 2106, G: -696, C: -1196, BS: -495, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -940, export: [planes],
+          note: "SR-2026.3 PG1 7933-7935: gate −50 V vs r900 (drift field as r900)"}
+  pg2: {A: 2106, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
+          note: "SR-2026.3 PG2 7936-7938: gate −100 V vs r900"}
+  pg3: {A: 2301, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
+          note: "SR-2026.3 PG3 7939-7941: pg2, anode +2.3 kV"}
+  pg4: {A: 2501, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
+          note: "SR-2026.3 PG4 7942-7946: pg2, anode +2.5 kV"}
+  pg4b: {A: 2601, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
+          note: "SR-2026.3 PG4b 7950: pg2, anode +2.6 kV"}
+  pg5: {A: 2701, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
+          note: "SR-2026.3 PG5 7947-7949: pg2, anode +2.7 kV"}
