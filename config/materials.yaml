@@ -11,6 +11,35 @@ reference_conditions:          # decision 2026-10-18 (user): 2 bar, 175 K
     2 bar 177.88 K, so 2.9 K sub-cooled); the gas above the liquid is saturated vapour: at 2 bar 0.018694 g/cm³
     (177.88 K). For comparison: saturated liquid / vapour at 175 K ≈ 2.876 / 0.0167 g/cm³ at ≈ 1.75 bar.
 
+saturation:                    # xenon liquid / vapour at saturation; used for a state with a measured pressure_bar that
+  # differs from reference_conditions (config.Resolved: liquid and gas at saturation at that pressure; the values in
+  # `materials` below stay the reference, 2 bar). NIST Chemistry WebBook, saturation properties (2026-10-31).
+  # Geant4 (g4config) reads the reference densities directly.
+  columns: [pressure_bar, temperature_k, liquid_density_g_cm3, vapour_density_g_cm3]
+  rows:
+    - [1.0097, 164.99, 2.9424, 0.009977]
+    - [1.1057, 166.59, 2.9317, 0.010843]
+    - [1.2017, 168.08, 2.9217, 0.011704]
+    - [1.2977, 169.49, 2.9122, 0.012560]
+    - [1.3937, 170.81, 2.9032, 0.013410]
+    - [1.4897, 172.07, 2.8947, 0.014257]
+    - [1.5857, 173.27, 2.8865, 0.015099]
+    - [1.6817, 174.41, 2.8786, 0.015937]
+    - [1.7777, 175.51, 2.8711, 0.016773]
+    - [1.8737, 176.56, 2.8638, 0.017605]
+    - [1.9697, 177.57, 2.8568, 0.018434]
+    - [2.0657, 178.55, 2.8500, 0.019260]
+    - [2.1618, 179.49, 2.8435, 0.020084]
+    - [2.2578, 180.40, 2.8371, 0.020905]
+    - [2.3538, 181.28, 2.8309, 0.021725]
+    - [2.4498, 182.13, 2.8249, 0.022542]
+    - [2.5458, 182.96, 2.8190, 0.023357]
+    - [2.6418, 183.77, 2.8133, 0.024170]
+    - [2.7378, 184.56, 2.8077, 0.024982]
+    - [2.8338, 185.32, 2.8022, 0.025792]
+    - [2.9298, 186.07, 2.7969, 0.026601]
+    - [3.0258, 186.79, 2.7916, 0.027408]
+
 materials:
   liquid_xenon:
     density_g_cm3: 2.8748

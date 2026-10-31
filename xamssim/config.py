@@ -18,12 +18,14 @@ map, a short hash of exactly the inputs that map depends on (the map registry us
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from dataclasses import dataclass
 import os
 from pathlib import Path
 
+import numpy as np
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -160,6 +162,25 @@ def load_materials_and_geometry(detector: str) -> tuple:
     if unknown:
         raise ConfigError(f"geometry.yaml uses materials not defined in materials.yaml: {unknown}")
     return geo, mat
+
+
+def at_pressure(mat: dict, pressure_bar) -> dict:
+    """materials.yaml for a state's measured pressure: liquid and gas xenon at saturation at that pressure (temperature,
+    densities interpolated in the `saturation` table). Without a pressure, or at the reference pressure, unchanged."""
+    ref = mat.get("reference_conditions", {}).get("pressure_bar")
+    if pressure_bar is None or ref is None or abs(float(pressure_bar) - float(ref)) < 1e-6:
+        return mat
+    rows = np.asarray(mat["saturation"]["rows"], float)
+    p = float(pressure_bar)
+    if not rows[0, 0] <= p <= rows[-1, 0]:
+        raise ConfigError(f"pressure_bar {p} outside the saturation table of materials.yaml "
+                          f"({rows[0, 0]}-{rows[-1, 0]} bar)")
+    t, rho_l, rho_v = (float(np.interp(p, rows[:, 0], rows[:, i])) for i in (1, 2, 3))
+    out = copy.deepcopy(mat)
+    m = out["materials"]
+    m["liquid_xenon"].update(density_g_cm3=round(rho_l, 5), temperature_k=round(t, 2), pressure_bar=p)
+    m["gas_xenon"].update(density_g_cm3=round(rho_v, 6), temperature_k=round(t, 2), pressure_bar=p)
+    return out
 
 
 def short_hash(obj) -> str:
@@ -300,7 +321,8 @@ def resolve(run_path) -> Resolved:
 
     geo, mat = load_materials_and_geometry(state["detector"])
     return Resolved(run_path=run_path, run=run, state_name=run["state"], state=state, source_name=run["source"],
-                    source=source, geometry=geo, materials=mat, detector=state["detector"],
+                    source=source, geometry=geo, materials=at_pressure(mat, state.get("pressure_bar")),
+                    detector=state["detector"],
                     hv_case=hv_case, hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
 
 
@@ -315,7 +337,7 @@ def resolve_state(state_name: str) -> Resolved:
         raise ConfigError(f"{sp}: hv_case '{state['hv_case']}' not in {HV_CASES}")
     geo, mat = load_materials_and_geometry(state["detector"])
     return Resolved(run_path=sp, run=tmp, state_name=state_name, state=state, source_name="-", source={},
-                    geometry=geo, materials=mat, detector=state["detector"],
+                    geometry=geo, materials=at_pressure(mat, state.get("pressure_bar")), detector=state["detector"],
                     hv_case=cases["cases"][state["hv_case"]], hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
 
 

@@ -23,7 +23,7 @@ def test_config(tmp_path):
     from xamssim.waveforms import daq_file, load_daq
     assert daq_file(res).name == "daq_sr2026_3.yaml"
     d = load_daq(res)
-    assert d["channels"]["0"]["gain"] == pytest.approx(53.0) and set(d["templates"]) == {"0", "1", "2", "3", "4", "6", "7"}
+    assert d["channels"]["0"]["gain"] == pytest.approx(29.0) and set(d["templates"]) == {"0", "1", "2", "3", "4", "6", "7"}
     assert chain.physics(res)["zero_field_yields"] == "nest_gamma"
     with pytest.raises(ConfigError):
         chain.physics(config.resolve(run_file(tmp_path, zero_field_yields="beta")))
@@ -58,7 +58,7 @@ def test_truth_constants(tmp_path):
     from xamssim.amstrax_io import truth_constants
     tc = truth_constants(config.resolve(run_file(tmp_path)))
     assert tc["drift_time_gate"] is None and tc["elife"] is None and tc["electron_drift_velocity"] is None
-    assert tc["gain_to_pe_array"][0] == pytest.approx(1 / 53.0) and tc["channel_map"]["top"] == [1, 4]
+    assert tc["gain_to_pe_array"][0] == pytest.approx(1 / 29.0) and tc["channel_map"]["top"] == [1, 4]
 
 
 def test_outer_liquid_volume():
