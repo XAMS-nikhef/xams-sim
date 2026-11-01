@@ -1,0 +1,31 @@
+# Sensor response of the xams2026 readout channels (plan S7): photoelectrons -> areas per channel [PE], as the analysis
+# calibrates them (LED single-PE gains, visible light: no double-PE in the calibration).
+# Channel names: xamssim.lightmap.CHANNEL_NAMES. Separate from geometry.yaml: changing it renews only the sensor step.
+# efficiency (default 1): detection efficiency relative to the light maps, per channel, for all light (light step).
+# Sources: A = analysis_SR2026.2 outputs/step1_led.json (LED fits, median of the fits with chi2/ndf < 3, runs 7603 ...)
+# PMT efficiency 1 since 2026-11-01 (user: no fudge factor; the PMT QE 0.33 is in the optical model). Was 0.36 (2026-10-26): a BRIDGE for the absolute light scale of the light maps, which give ~2.8x too much
+#   S1 light: zero-field Cs-137 (SR-2026.3 runs 7762-7765, 2.24 PE/keV) vs MC 990016 (light x 0.36 -> 2.22 PE/keV;
+#   the S1 vs top-fraction ridge matches within ~10-20 % over depth). Applied in the light step (before the waveforms:
+#   no artificial saturation, right photon statistics). With field (SR-2026.2) the data asked for ~0.6 (S1 field
+#   quenching mismatch, open). Remove when the light maps have the right absolute scale (TODO "Absolute light scale of
+#   the optical maps": optics refit with absolute targets, new maps).
+# 2026-11-01: at field the 0.36 gave Cs photopeak S1 814 PE vs 1732 in the data (MC 990020, R900, NEST beta yields 34
+#   ph/keV vs 46 in the data); most of the 0.36 / 0.6 difference is the yield model (zero-field MC used NEST gamma).
+channels:
+  bottom:  {kind: pmt,  spe_resolution: 0.51, efficiency: 1.0}   # A: 10 fits, 0.24-0.59
+  top_ch1: {kind: pmt,  spe_resolution: 0.38, efficiency: 1.0}   # A: 4 fits, 0.33-0.40
+  top_ch2: {kind: pmt,  spe_resolution: 0.44, efficiency: 1.0}   # A: 4 fits, 0.36-0.59
+  top_ch3: {kind: pmt,  spe_resolution: 0.40, efficiency: 1.0}   # A: 4 fits, 0.35-0.45
+  top_ch4: {kind: pmt,  spe_resolution: 0.37, efficiency: 1.0}   # A: 4 fits, 0.34-0.49
+  # SiPMs: VUV-blocking filter (not in the optical model) -> detection efficiency relative to the light maps (which count
+  # every photon reaching the SiPM, PDE 1), one value for all light, fitted 2026-10-20 to SR-2026.2 (paper_data/sipm.npz)
+  # on S2: (SiPMs / bottom PMT) data 1.8e-4 / MC 3.5e-2. S1 then gives SiPMs / PMTs 2.5e-4 vs 1.7e-3 in the data (7x low;
+  # S1 SiPM signal ~1 PE in the data): open.
+  # 2026-10-26: x 0.36 with the PMT bridge (0.0051 -> 0.00184), so the fitted SiPM / bottom-PMT ratio is kept.
+  sipm_1:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.00184}   # spe_resolution assumed
+  sipm_2:  {kind: sipm, spe_resolution: 0.10, efficiency: 0.00184}
+pmt:
+  double_pe_probability: 0.2    # assumed: VUV photons on R11410-type photocathodes (literature ~0.2); not measured in XAMS
+sipm:
+  crosstalk_probability: 0.05   # assumed (VUV4 MPPC at moderate overvoltage); not measured in XAMS
+# not modelled (v1): afterpulses, non-linearity of the top PMT under load (the analysis' top factor), SiPM afterpulses
