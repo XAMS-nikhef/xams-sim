@@ -11,7 +11,7 @@ run.runs_mc) holds:
                                      from_run, method, analysis_commit, date
     xamssim.corrections.history      earlier calibrations
 
-amstrax reconstructs simulated runs with an MC global version (amstrax_files `_global_MC1.json`: the cuts and settings of
+amstrax reconstructs simulated runs with an MC global version (amstrax_files `_global_MC2.json`: the cuts and settings of
 the data version, the per-run corrections as rundoc:// addresses: calibrated, else truth) and
 `amstrax.contexts.for_mc_run`, which puts the calibration version into the addresses: each calibration gets its own
 lineage, so products of an older calibration are never used for a newer one.
