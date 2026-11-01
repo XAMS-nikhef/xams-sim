@@ -56,6 +56,7 @@ nav:
       - Geometry: geometry.md
       - Optics: optics.md
       - Validation checks: validation.md
+      - Critical parameters (gap, level, extraction): critical_parameters.md
   - Development:
       - Development guide: development.md
       - Roadmap (full chain): xams_sim_plan.md
