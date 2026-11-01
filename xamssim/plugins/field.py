@@ -3,6 +3,10 @@
 Replaces fuse's ElectricField, which looks up (r, z) only: XAMS is not cylindrically symmetric (SiPMs in the wall).
 Map: `<data>/maps/field/<key>/efield_xyz.npz` (xamssim.fieldmap); trilinear interpolation of |E|, positions outside the grid
 moved to its edge.
+
+NEST returns NaN yields for 0 < |E| < ~1e-3 V/cm (nestpy, checked 2026-10-31: 1e-6 and 1e-4 NaN, 1e-3 fine) and its
+GetQuanta then loops forever (MC 990020: 32 keV beta below the field cage at 1.1e-4 V/cm). The field is therefore
+floored at `xams_min_e_field` (V/cm); these field-free regions give no S2 anyway.
 """
 from __future__ import annotations
 
@@ -21,7 +25,7 @@ export, __all__ = strax.exporter()
 class XamsElectricField(FuseBasePlugin):
     """|E| in V/cm at the cluster position (x, y, z in cm) from the 3D field map."""
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     depends_on = "interactions_in_roi"
     provides = "electric_field_values"
     data_kind = "interactions_in_roi"
@@ -30,6 +34,10 @@ class XamsElectricField(FuseBasePlugin):
 
     xams_efield_map = straxen.URLConfig(
         type=str, help="3D field map of the state (maps/field/<key>/efield_xyz.npz)",
+    )
+
+    xams_min_e_field = straxen.URLConfig(
+        default=0.01, type=float, help="lower bound of |E| [V/cm] given to NEST (NaN yields below ~1e-3 V/cm)",
     )
 
     def setup(self):
@@ -41,5 +49,6 @@ class XamsElectricField(FuseBasePlugin):
         out = np.zeros(len(d), dtype=self.dtype)
         out["time"], out["endtime"] = d["time"], d["endtime"]
         if len(d):
-            out["e_field"] = self.field(d["x"] * 10.0, d["y"] * 10.0, d["z"] * 10.0)      # cm -> mm
+            e = self.field(d["x"] * 10.0, d["y"] * 10.0, d["z"] * 10.0)                     # cm -> mm
+            out["e_field"] = np.maximum(np.nan_to_num(e, nan=0.0), self.xams_min_e_field)
         return out
