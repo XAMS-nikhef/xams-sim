@@ -10,12 +10,12 @@
 # 2 amstrax as for data (setup_py312.sh): live data -> raw_records -> peak_basics ... event_info
 # 3 production only: the processing recorded in run.runs_mc (data[] entries, processing_status)
 # 4 the app's figures of the run (xamssim figures), so its detail page opens at once
-# Corrections: an MC global version of amstrax_files (default MC1: the cuts and settings of the data version, the
+# Corrections: an MC global version of amstrax_files (default MC2: the PROD4 cuts and position map v2 of the data, the
 # per-run corrections from the run's own run document: calibrated if stored, else the simulation's truth;
 # amstrax.contexts.for_mc_run puts the calibration version into the lineage). See xamssim corrections.
 # Reconstructions kept per run: the latest and, after a calibration, the truth one; older versions are deleted.
 set -o pipefail
-RUN=$(readlink -f "$1"); CV=${2:-MC1}
+RUN=$(readlink -f "$1"); CV=${2:-MC2}
 X=/data/xenon/xams_v2
 source $X/setup_xamssim.sh >/dev/null || exit 1
 RAW=$XAMSSIM_AMSTRAX_STORE; PROC=${XAMSSIM_PROCESSED:-$(dirname "$XAMSSIM_DATA")/processed}
