@@ -122,7 +122,7 @@ def test_el_map():
     path = d["path_mm"][0, 0]
     assert d["end"][0, 0] == 2 and path == pytest.approx(12.0 - 4.01, abs=0.05)
     assert d["n_el"][0, 0] == pytest.approx((140 * 7.6 - 116 * gm["p_eq"]) * path / 10, rel=0.01)
-    assert d["t_transit_us"][0, 0] == pytest.approx(path / gm["v_gas"], rel=0.01)
+    assert d["t_transit_us"][0, 0] == pytest.approx(path / elmap.gas_velocity(gm, 7600.0), rel=0.01)
     q = d["t_q_us"][0, 0]
     assert np.all(np.diff(q) > 0) and q[9] == pytest.approx(0.5 * d["t_transit_us"][0, 0], rel=0.02)   # uniform light
     et, ee = elmap.extraction_table()
@@ -376,3 +376,20 @@ def test_dynamic_chunking_sorted_equals_fuse(seed):
     t = np.repeat(t, rng.integers(1, 30, len(t)))                     # several deposits per event (equal times)
     for scale, n_min in ((1e8, 1000), (1e7, 50), (1e9, 10)):
         assert np.array_equal(_dynamic_chunking_sorted(t, scale, n_min), dynamic_chunking(t, scale=scale, n_min=n_min))
+
+
+def test_el_map_mobility():
+    """With a mobility, v = mu E: the transit through the uniform gas gap scales as 1 / E."""
+    from xamssim import elmap
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    gm = elmap.gas_model(res)
+    mats = res.materials["materials"]["gas_xenon"]["transport"]
+    mats.pop("drift_velocity_mm_us", None)
+    mats["drift_mobility_mm_us_per_kV_cm"] = 0.5
+    t = []
+    for eg in (-7600.0, -5000.0):
+        d = elmap.compute(res, cell=uniform_stack(e_gas=eg), log=lambda *a: None)
+        path = d["path_mm"][0, 0]
+        assert d["t_transit_us"][0, 0] == pytest.approx(path / (0.5 * abs(eg) / 1e3), rel=0.01)
+        t.append(d["t_transit_us"][0, 0])
+    assert t[1] / t[0] == pytest.approx(7600 / 5000, rel=0.01)

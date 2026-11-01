@@ -38,8 +38,18 @@ def gas_model(res: Resolved) -> dict:
     tr = g.get("transport", {})
     if tr.get("el_yield") != "monteiro2007" or lq.get("transport", {}).get("extraction") != "nest":
         raise ValueError("materials.yaml: only el_yield 'monteiro2007' and extraction 'nest' are implemented")
-    return dict(v_gas=float(tr["drift_velocity_mm_us"]), p_eq=g["density_g_cm3"] / R_293K_1BAR,
+    # electron velocity in the gas: v = mobility x |E| (drift_mobility_mm_us_per_kV_cm), or a constant (drift_velocity_mm_us)
+    mu = tr.get("drift_mobility_mm_us_per_kV_cm")
+    return dict(v_gas=None if mu is not None else float(tr["drift_velocity_mm_us"]),
+                mu_gas=None if mu is None else float(mu), p_eq=g["density_g_cm3"] / R_293K_1BAR,
                 eps_ratio=lq["electrical"]["relative_permittivity"] / g["electrical"]["relative_permittivity"])
+
+
+def gas_velocity(gm: dict, e_v_cm):
+    """Electron drift velocity in the gas [mm/µs] at |E| [V/cm] (array): mobility x E, or the constant velocity."""
+    if gm["mu_gas"] is not None:
+        return np.maximum(gm["mu_gas"] * np.asarray(e_v_cm) / 1e3, 0.05)      # floor: never stall in a field-free corner
+    return np.full(np.shape(e_v_cm), gm["v_gas"])
 
 
 def extraction_table():
@@ -106,7 +116,7 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
         q[:, :2][over] = 2 * h - q[:, :2][over]
         p[active] = q
         photons[active] += dy
-        t[active] += STEP_MM / gm["v_gas"]
+        t[active] += STEP_MM / gas_velocity(gm, emag)
         path[active] += STEP_MM
         tt, yy = np.zeros(n), np.zeros(n)
         tt[active], yy[active] = t[active], photons[active]
@@ -131,30 +141,38 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
     return dict(u=us, ext_eff=ext.reshape(shape), n_el=photons.reshape(shape), t_transit_us=t.reshape(shape),
                 t_q_us=tq.reshape(shape + (len(QUANTILES),)), quantiles=QUANTILES, path_mm=path.reshape(shape),
                 end=end.reshape(shape), e_liq_kV_cm=e_liq.reshape(shape), e_gas_kV_cm=e_gas_surf.reshape(shape),
-                v_gas_mm_us=gm["v_gas"], p_eq_bar=gm["p_eq"])
+                v_gas_mm_us=np.nan if gm["v_gas"] is None else gm["v_gas"],
+                mu_gas_mm_us_per_kV_cm=np.nan if gm["mu_gas"] is None else gm["mu_gas"], p_eq_bar=gm["p_eq"])
 
 
 def _rescaled_from_other_velocity(res: Resolved, log=print) -> dict | None:
-    """The EL map of the same inputs except the gas drift velocity, with its times scaled (the paths, the extraction
-    and the EL photons do not depend on it, every time is path / v): no COMSOL needed."""
+    """The EL map of the same inputs except the gas velocity parameter, with its times scaled: no COMSOL needed. The
+    paths, the extraction and the EL photons do not depend on it; every time is path / v (constant velocity) or
+    sum(step / (mu E)) (mobility), so a map scales from another map of the same kind (velocity -> velocity or mobility ->
+    mobility) by v_old / v_new or mu_old / mu_new."""
     from .maps import load_manifest
     want = json.loads(json.dumps(res.map_inputs()["extraction_el"], default=str))
-    v_new = float(want["gas"]["transport"]["drift_velocity_mm_us"])
+    tw = want["gas"]["transport"]
+    key = "drift_mobility_mm_us_per_kV_cm" if "drift_mobility_mm_us_per_kV_cm" in tw else "drift_velocity_mm_us"
+    x_new = float(tw[key])
     for e in load_manifest()["maps"]:
         if e["kind"] != "extraction_el":
             continue
         inp = json.loads(json.dumps(e.get("inputs", {}), default=str))
         try:
-            v_old = float(inp["gas"]["transport"]["drift_velocity_mm_us"])
-            inp["gas"]["transport"]["drift_velocity_mm_us"] = v_new
+            ti = inp["gas"]["transport"]
+            if key not in ti:
+                continue
+            x_old = float(ti[key])
+            ti[key] = x_new
         except (KeyError, TypeError):
             continue
         if inp == want and all((MAPS / f).exists() for f in e["files"]):
             d = dict(np.load(MAPS / e["files"][0]))
             for k in ("t_transit_us", "t_q_us"):
-                d[k] = d[k] * (v_old / v_new)
-            d["v_gas_mm_us"] = np.float64(v_new)
-            log(f"  EL map from {e['key']} (gas drift velocity {v_old} -> {v_new} mm/µs, times scaled)")
+                d[k] = d[k] * (x_old / x_new)
+            d["v_gas_mm_us" if key == "drift_velocity_mm_us" else "mu_gas_mm_us_per_kV_cm"] = np.float64(x_new)
+            log(f"  EL map from {e['key']} ({key} {x_old} -> {x_new}, times scaled)")
             return d
     return None
 
