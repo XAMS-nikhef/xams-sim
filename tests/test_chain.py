@@ -190,6 +190,18 @@ def test_fieldmap_3d(tmp_path):
     assert x[0] == -36 and z[0] == pytest.approx(-64.1) and z[-1] <= 22.5
 
 
+def test_field_floor(tmp_path):
+    """Near-zero fields are floored: NEST gives NaN yields for 0 < |E| < ~1e-3 V/cm and then hangs (MC 990020)."""
+    import strax
+    from xamssim.plugins.field import XamsElectricField
+    p = XamsElectricField()
+    p.field = fieldmap.FieldMap(flat_map(tmp_path / "f.npz", ez=-1e-4))
+    p.config = {"xams_min_e_field": 0.01}
+    d = np.zeros(2, dtype=strax.time_fields + [("x", np.float32), ("y", np.float32), ("z", np.float32)])
+    d["z"] = -2.5
+    assert np.all(p.compute(d)["e_field"] == pytest.approx(0.01))
+
+
 def test_volumes_and_physics():
     res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
     v = chain.volumes(res)
