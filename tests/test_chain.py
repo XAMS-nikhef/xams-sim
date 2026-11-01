@@ -404,3 +404,12 @@ def test_el_map_velocity_table():
     assert elmap.gas_velocity(gm, 4500.0) == pytest.approx(np.interp(4.5, e_tab, v_tab))
     assert elmap.gas_velocity(gm, 20000.0) == pytest.approx(v_tab[-1])
     assert 3.5 < elmap.gas_velocity(gm, 4550.0) < 4.5                   # Magboltz at 1.49 bar, 172 K: ~4.0 mm/µs
+
+
+def test_stack_spec_covers_the_surface():
+    """The stack cell is read from below the liquid surface for any level (the extraction needs the liquid field)."""
+    from xamssim import cellmap
+    for level in (1.0, 2.0, 3.0, 4.0, 5.0):
+        _, (z0, z1) = cellmap.stack_spec(level)
+        assert z0 <= level - 0.5 and z1 == 12.0
+    assert cellmap.stack_spec(4.0)[1] == cellmap.STACK[1]              # unchanged for the 4 mm level

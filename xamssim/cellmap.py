@@ -30,6 +30,12 @@ FILE = "cells.npz"
 # drift; stack (gate + liquid surface + anode + top screen, anode aligned): extraction and EL (xamssim.elmap)
 ELECTRODES = {"gate": ({"Vel": "G", "Vtop": "A"}, (-3.2, 3.98)), "cathode": ({"Vel": "C", "Vbot": "BS"}, (-3.6, 3.6))}
 STACK = ({"Vel": "G", "Va": "A"}, (3.4, 12.0))
+
+
+def stack_spec(level_mm: float):
+    """Read window of the stack cell for a liquid level: from at least 0.6 mm below the surface (the extraction uses the
+    liquid field just below it) to 12 mm; STACK's 3.4 mm was set for a 4 mm level and missed the surface at lower levels."""
+    return STACK[0], (min(STACK[1][0], round(float(level_mm) - 0.6, 4)), STACK[1][1])
 STEP = 0.02
 
 
