@@ -1,0 +1,20 @@
+# Detector state r900b_l25 = r900b with the liquid level 2.5 mm above the gate (2.5 mm LXe + 5.5 mm GXe between gate and
+# anode). Best compromise from the data (simulations/2026-10-31_sr2026_3_r900, 2026-11-01): the main-band S2 width of the 9
+# anode / gate sets with Magboltz gas velocities and the COMSOL mesh field wants 2.35 mm (2.5 mm: 3-5 % short at all sets);
+# the S2 size (extraction near threshold, NEST) wants ~3 mm. The Oct 2024 fill gives the same ~1.5 mm offset from the
+# believed level. Header of r900b_l2.yaml:
+# Detector state r900b_l2 = r900b with the liquid level 2.0 mm above the gate (2 mm LXe + 6 mm GXe between gate and anode):
+# the data of the anode / gate scan (S2 width with Magboltz drift velocities, S2 size vs gate-anode voltage) give ~6 mm of
+# gas (simulations/2026-10-31_sr2026_3_r900, 2026-11-01). Header of r900b.yaml:
+# Detector state r900b = r900 with the P4B DAQ (bottom PMT threshold 16 ADC, Science_Rev2.6; P4B 7957-7980 and the runs of
+# 2-11-2026). 2026-11-01. Header of r900.yaml:
+# Detector state: SR-2026.3 R900* 7790-7902, R900T 7929, BG16, P4B 7957-7980. Sources: analysis_SR2026.3/config/runs/*.csv, sc_snapshot of the runs.
+description: "SR-2026.3 r900b_l25 (P4B DAQ, ch0 16 ADC, 2.5 mm LXe above the gate): anode +2101, gate -646, cathode -1146, BS -445, SiPM -900 V; PMTs -900 / -950 V"
+detector: xams2026           # config/detectors/xams2026/geometry.yaml
+hv_case: r900
+daq: sr2026_3_p4b           # detectors/xams2026/daq_sr2026_3_p4b.yaml (gains P4, ch0 threshold 16)
+liquid_level_mm: 2.5         # above the gate: 2.5 mm LXe + 5.5 mm GXe, compromise of S2 width (2.35) and S2 size (~3) (2026-11-01)
+pressure_bar: 1.49           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
+electron_lifetime_us: 424.0    # SR2026.3_v4 lifetime (mean over the runs of R900 7790-7837 (48 runs, 357-487); later blocks on this field: S 533, F 574, P90/M90 ~600, B 629, T/BG16/P4B 707)
+sensors:
+  pmt_hv_v: {top: -900, bottom: -950}
