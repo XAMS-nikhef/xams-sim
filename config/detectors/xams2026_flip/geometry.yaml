@@ -1,0 +1,233 @@
+# Detector xams2026_flip = xams2026 with the anode mesh flipped on its ring (hypothesis 2026-11-01, user): gate–anode 9.65 mm in
+# the middle, ~8 mm at the support ring. Everything else identical to xams2026 (copy of 2026-11-01).
+# XAMS optical simulation — geometry and optical parameters (model v1)
+#
+# Model v1 contains only: (1) the meshes as real bars, (2) the PMT photocathodes (+ windows), (3) liquid xenon,
+# (4) gas xenon, (5) the inner PTFE cylinder. Everything else is a perfect absorber.
+# The Geant4 simulation will read this file directly: fill in the `null` values (each has a question in the comment),
+# correct anything that is wrong, and keep the `source:` notes up to date.
+#
+# Coordinate system = the DATA frame (amstrax positions, position reconstruction; since v5, 2026-10-18): z = 0 at the
+# gate mesh (mid-plane of the foil), z up; x, y in the plane of the meshes along the edges of the top-PMT anode
+# sectors: +x towards sectors I, III (ch1, ch3), +y towards sectors I, II (ch1, ch2). Every program (Geant4, COMSOL,
+# the chain) takes positions from this file and works in this frame. (Up to v4 the file used thesis T's frame,
+# +x towards II, IV, i.e. x mirrored.)
+# Units: mm, degrees.
+#
+# Sources used: P = reference/XAMS design/XAMS_projections_annotated.pdf (section A–A; dimension chain added by AP
+#                   2026-10-05: top PMT window 4.5 top screen 10 anode 8 gate 51.8 cathode 7.8 bottom screen 4.5 bottom PMT window),
+#               G = reference/XAMS design/XAMS_XAMS grid.pdf and XAMS_XAMS grid assy.pdf,
+#               T = reference/papers/Thesis_Maricke_Flierman.pdf (ch. 4–5),
+#               R = analysis_SR2026.2 (posrec v2: outputs/posrec2_template.json, posrec2_fit.json; drift note),
+#               H = reference/LightSensors/R12699.pdf (Hamamatsu datasheet R12699-406-M4, 2017).
+
+meta:
+  version: 6                 # v6 (2026-10-22): SiPM azimuths and heights from the data (were the assembly sheet)
+                             # v5 (2026-10-18): data frame (x mirrored vs v4: top-PMT sectors, SiPM azimuths)
+  date: 2026-10-22
+  status: draft — to be completed by AP
+
+# ------------------------------------------------------------------------------------------------ liquid level
+liquid:
+  level_above_gate_mm:
+    sr2026_2: 4.0          # 4 mm LXe + 4 mm GXe between gate and anode (user, 2026-10-01)
+    oct_2024: 2.0          # user: 2 mm LXe + 6 mm GXe. NOTE: thesis T p.145 says "3 mm above the gate" — which is right?
+  scenarios_to_simulate: [2.0, 3.0, 4.0]   # cover the doubt and the change
+
+# ------------------------------------------------------------------------------------------------ meshes
+mesh_common:                 # all five meshes identical and aligned the same way (user, 2026-10-01 / 2026-10-05)
+  material: stainless_steel
+  foil_thickness_mm: 0.15    # G
+  hole_size_mm: 2.45         # G, square holes
+  bar_width_mm: 0.15         # G (pitch 2.6 mm = 2.45 + 0.15)
+  pitch_mm: 2.60             # G, T p.102, R (2.5997)
+  foil_diameter_mm: 80.0     # G
+  hole_pattern_file: mesh_holes.json   # drawing "XAMS_XAMS grid.pdf": a SOLID foil with only 456 square holes etched
+                             #   in a staircase pattern (outermost hole corners at r = 32.8 mm); everything else, up to
+                             #   the ring, is solid steel (from posrec2_template.json; the same pattern for all meshes)
+  open_fraction_normal: 0.888  # (2.45/2.60)^2 inside the etched area, perpendicular incidence (derived); over the
+                             #   whole Ø72 bore 456 × 2.45² / (π 36²) = 0.67
+  ring:                      # mesh support ring (drawing "XAMS_XAMS grid assy.pdf", 2026-10-05)
+    outer_diameter_mm: 92.6  # G, drawing
+    inner_diameter_mm: 72.0  # drawing: bore R36 = open mesh aperture; the PTFE cylinder (outer Ø72) fits in it
+    thickness_mm: 1.8        # drawing: whole assembly (ring + foil); the foil (Ø80) lies on one face, overlapping the
+                             #   ring from R36 to R40 (4.1 mm)
+  # which face of its ring carries the foil (user, 2026-10-05): the ring body lies on the other side of the foil
+
+meshes:                      # z = foil mid-plane
+  - name: top_screen
+    z_mm: 18.0               # P: 10 mm above the anode
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: down          # user, 2026-10-05 (ring body on the other side)
+  - name: anode
+    z_mm: 9.65               # FLIPPED anode (hypothesis, user 2026-11-01): the foil on the upper face of its ring, so the foil
+                             #   1.65 mm (ring + foil 1.8 − foil 0.15) higher than in xams2026 (8.0); the ring body below the
+                             #   foil, its lower face still at ~8 mm: gate–anode 9.65 mm in the middle, ~8 mm at the ring
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: up            # flipped (xams2026: down)
+  - name: gate
+    z_mm: 0.0                # definition
+    angle_to_anodes_deg: 29.4  # R: posrec2_fit.json mesh_angle_to_anodes_deg (mod 90°). Checked 2026-10-22 (user
+                             #   expected 0°): the hole lattice in the raw top-PMT pattern (u, v) is square at 30.9°;
+                             #   gains, crosstalk, channel swaps or mirroring cannot make 0° look like ~30°; drawings:
+                             #   mesh rings have 3 holes at 120°, the top-PMT PTFE plate 6 rods at 60°, so a ring on
+                             #   the other rod set sits at 60° = 30° mod 90°. To confirm: photo of the rods used
+    foil_side: up          # user, 2026-10-05 (ring body on the other side)
+  - name: cathode
+    z_mm: -51.8              # P (gate–cathode 51.8 mm)
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: down          # user, 2026-10-05 (ring body on the other side)
+  - name: bottom_screen
+    z_mm: -59.6              # P: 7.8 mm below the cathode (2026-10-05; the earlier -61.8 was a misread "10")
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    foil_side: up          # user, 2026-10-05 (ring body on the other side)
+
+# ------------------------------------------------------------------------------------------------ PTFE cylinder
+ptfe_cylinder:                 # drawing "PTFE_cylinder.pdf" (2026-10-05)
+  material: ptfe
+  inner_diameter_mm: 62.0    # drawing
+  wall_thickness_mm: 5.0     # drawing: outer Ø72, fits in the bores of the gate and cathode rings
+  length_mm: 50.85           # drawing
+  z_top_mm: -0.075           # against the gate foil (lower face); the bottom end is then at -50.925 mm.
+                             # Gate–cathode 51.8 mm is correct (user, 2026-10-05): the 0.8 mm gap between the PTFE
+                             # bottom and the cathode foil is real (copper ring 4 -> cathode ring 9.15 mm here).
+  above_gate: >-
+    Between gate and anode only three PTFE pillars (user, 2026-10-05), ignored. No PTFE above the gate or below the
+    cathode.
+
+field_shaping_rings:         # drawing "XAMS_field_shaper.pdf" (2026-10-05): copper, around the PTFE cylinder
+  material: copper
+  inner_diameter_mm: 72.0    # around the PTFE (outer Ø72)
+  outer_diameter_mm: 92.6    # drawn as wide as the mesh rings
+  thickness_mm: 1.8          # drawing
+  # gaps between faces from the gate ring downwards: gate ring -> ring 1 not dimensioned (assumed 8), then 8, 8, 8;
+  # ring 4 -> cathode ring 8.2 (drawing). Gate ring body: -1.725 to -0.075 mm -> ring centres:
+  z_center_mm: [-10.625, -20.425, -30.225, -40.025]
+
+pmt_ptfe:                    # PTFE holders of the PMTs (user, 2026-10-06; drawings "PTFE_between_TS_PMT.pdf",
+                             # "PTFE_between_BS_PMT.pdf"; CAD picture: the PMT falls into the slot of the PTFE structure)
+  material: ptfe
+  outer_diameter_mm: 92.6    # user: exactly the mesh-ring outer diameter (plate drawing: Ø93)
+  aperture_square_mm: 50.0   # drawing: square opening in front of the photocathode (48.5)
+  slot_square_mm:            # the PMT sits in the slot
+    top: 56.0                # = PMT outline in the model (drawing: step 54 + bevel, smaller than the 56 mm PMT)
+    bottom: 56.9             # drawing
+  # plate: from the screen ring (top screen / bottom screen assembly) to the PMT window face, opening 50 mm
+  #   (drawing: 7 mm thick, of which the part below the window face is in front of the window);
+  # surround: around the PMT from the window face to its back, slot 56 mm.
+  # Both plates Ø93 × 7 mm; with the mesh z chain only 2.8 mm of that is in front of the window (the PMT sits 4.2 mm
+  # deep in the slot).
+
+# ------------------------------------------------------------------------------------------------ surroundings
+ptfe_bucket:                 # drawing "PTFE_bucket.pdf" (2026-10-06): the TPC hangs in this PTFE bucket
+  material: ptfe
+  inner_diameter_mm: 112.0   # drawing
+  outer_diameter_mm: 132.0   # drawing (wall 10 mm)
+  height_mm: 129.0           # drawing (outer)
+  weir_below_rim_mm: 1.78    # drawing: overflow notch in the rim. The weir SETS the liquid level (user, 2026-10-06):
+                             #   rim at liquid surface + 1.78 mm, so the bucket moves with the simulated level.
+                             #   The notch itself (a few mm wide) is not modelled.
+  bottom_thickness_mm: null  # not on the drawing -> default 10 (= wall)
+  # inside below the weir: liquid xenon; above it and all around the bucket: gas xenon (user, 2026-10-06).
+  # Surfaces: PTFE liquid values towards the liquid, PTFE gas values towards the gas.
+
+cryostat_vessel:             # inner vessel, gas xenon; drawings "Inner_cryostat_vessel.pdf" (2026-10-06) and
+                             # "XAMS_cryostat.pdf" (2026-10-18, section A-A)
+  inner_diameter_mm: 146.86  # drawing
+  outer_diameter_mm: 152.4   # drawing (6" tube, wall 2.77 mm)
+  height_mm: 305.0           # drawing: tube length; in the model the gas cavity between the two blind flanges
+  material: stainless_steel  # surface: optics.stainless_steel_reflectivity (Lambertian)
+  flange:                    # XAMS_cryostat.pdf: at each end a welded flange (21) + blind flange (24) = 45 mm, OD 202.5.
+    outer_diameter_mm: 202.5 #   Model (simplified, user 2026-10-18): a ring OD 202.5 / ID = tube OD around the last
+    ring_thickness_mm: 21.0  #   21 mm of each tube end, and a solid disc OD 202.5 of 24 mm closing the tube
+    blind_thickness_mm: 24.0 #   (bolt holes, gasket, recesses and ports not modelled)
+  center_z_mm: -25.9         # user 2026-10-18: XAMS in the middle of the inner vessel -> cavity centre at the middle of
+                             #   the drift region (gate 0 / cathode -51.8); bucket bottom then ~55 mm above the cavity bottom
+
+cryostat_outer:              # outer (vacuum) vessel, drawing "XAMS_cryostat.pdf" (2026-10-18, section A-A); vacuum
+  inner_diameter_mm: 248.46  #   between the two vessels (user)
+  outer_diameter_mm: 254.0   # 10" tube, wall 2.77 mm
+  height_mm: 456.0           # tube length; in the model the vacuum cavity between the two blind flanges
+  material: stainless_steel
+  flange:                    # at each end a welded flange (12) + blind flange (12), OD 290; the top blind flange has
+    outer_diameter_mm: 290.0 #   ports (not modelled). Model: ring OD 290 / ID = tube OD around the last 12 mm of
+    ring_thickness_mm: 12.0  #   each tube end + a solid disc OD 290 of 12 mm
+    blind_thickness_mm: 12.0
+  inner_vessel_offset_mm: -24.0   # centre of the inner vessel relative to the centre of the outer one, read off the
+                             #   drawing (inner top flange ~62 mm below the outer tube top, inner bottom ~14 mm above
+                             #   the outer tube bottom); the outer vessel is placed around the inner one with this offset
+
+# ------------------------------------------------------------------------------------------------ PMTs
+pmt_common:
+  type: Hamamatsu R12699-406-M4   # T p.99: both PMTs
+  outer_square_mm: 56.0      # T p.133
+  photocathode_square_mm: 48.5   # T p.133
+  sectors: 2x2 of 24.25 mm   # T p.134
+  height_mm: 14.8            # T table 5.3, H (excluding pins)
+  window_face_square_mm: 54.6  # H (outline 56.0; window front 54.6)
+  sector_numbering: "top view: 1 2 / 3 4 (H, start mark at sector 1)"
+  window_material: silica   # H: silica glass (materials.yaml `silica`)
+  body_material: kovar      # metal package (particle mode); the optical model treats bodies as absorbers
+  window_thickness_mm: 2.5   # H
+  qe_178nm: 0.33             # H: typ. 33 % at 175 nm (min 30 %); free parameter in the fit, separately top and bottom
+
+pmts:
+  - name: top
+    readout: 4 sectors (ch1–ch4)
+    window_z_mm: 22.5        # P: outside of the window 4.5 mm above the top screen
+    rotation_deg: 0.0        # defines the frame (anode edges along x / y)
+    sector_to_channel: {ch1: I, ch2: II, ch3: III, ch4: IV}   # user, 2026-10-05: as in T (Fig. 5.10, Eq. 5.2)
+    sector_quadrant: {I: [1, 1], II: [-1, 1], III: [1, -1], IV: [-1, -1]}   # sign of (x, y) of each sector centre
+    sector_layout: "+x towards I and III (ch1, ch3), +y towards I and II (ch1, ch2), as the data (u = (ch1+ch3-ch2-ch4)/top)"
+    medium: gas
+  - name: bottom
+    readout: 4 sectors joined (ch0)
+    window_z_mm: -64.1       # P: outside of the window 4.5 mm below the bottom screen
+    rotation_deg: 0.0        # default (only matters for the bottom light pattern, which is read out as one channel)
+    medium: liquid
+
+# ------------------------------------------------------------------------------------------------ SiPMs (optional in v1)
+sipms:
+  type: Hamamatsu S13370-3025CN (VUV-MPPC)
+  active_mm: [3.0, 3.0]
+  mounting: inside the inner PTFE cylinder, looking inward   # user
+  azimuth_deg: [131, 28]     # sipm_1 = data ch6, sipm_2 = data ch7; from the data (2026-10-22): fit of the S1 ch6 / ch7
+                             #   ratio in (x, y, z) of runs 7687-7720 (analysis_SR2026.2 outputs/sipm_locate.npz) with
+                             #   point sensors on the wall: ch6 131 ± 2°, ch7 28 ± 4° (systematics ±10-15° / ±25°:
+                             #   position reconstruction pulls towards the diagonals, little coverage at 210-330°;
+                             #   135° / 45° fits nearly as well). Was [90, 180]: the assembly sheet mirrored into the
+                             #   data frame, not data (chi2 3933 vs 1716 for 748 dof)
+  z_mm: [-21.0, -21.0]       # same fit (-19.6 / -21.7 mm, ±5 mm): one height for both, as the COMSOL model takes one
+                             #   (efield/comsol/make_model.py uses z_mm[0]); was -25 (user, 2026-10-05: mid drift region)
+  recess_mm: 1.0             # sensor 1 mm deep in a square hole in the PTFE wall (user, 2026-10-12)
+  electrical: grounded 3 x 3 mm conducting plane (field model); no package, PCB, cables or foil (user, 2026-10-12)
+  filter: not modelled in v1 (user, 2026-10-05)
+  # the VUV-blocking filter's effect is the SiPM detection efficiency in sensors.yaml (one value, fitted, 2026-10-20)
+
+# ------------------------------------------------------------------------------------------------ optical properties
+# Moved to materials.yaml (`optics`) on 2026-10-18: materials.yaml is the single source for material properties.
+
+# ------------------------------------------------------------------------------------------------ light sources
+sources:
+  s2: uniform in the gas gap (liquid level to anode), x-y on a grid within r < 25 mm
+  s1: liquid, z from the cathode to the liquid level in 2 mm steps, same x-y grid
+
+# ------------------------------------------------------------------------------------------------ comparison with data
+targets:
+  # measured 2026-10-05 (analysis_SR2026.2/scratch/aft_check.py -> outputs/aft_check.json; central v4, Δ750 V,
+  # r < 25 mm, drift 2-36 µs; medians). "v2" = processed (top / f_top, bottom / b_hv); "LED" = LED gains only.
+  s2_top_fraction:
+    #                      S2 3-20 kPE (v2 / LED)   S2 > 20 kPE (v2 / LED)
+    no_source_28_09:      [0.64, 0.57,              0.56, 0.49]
+    no_source_29_09:      [0.61, 0.59,              0.52, 0.49]
+    na22_28_09:           [0.50, 0.45,              0.41, 0.36]
+    na22_29_09:           [0.49, 0.47,              0.40, 0.37]
+    cs137_28_09:          [0.38, 0.34,              0.31, 0.27]
+    cs137_29_09:          [0.39, 0.34,              0.32, 0.28]
+    note: "falls with source rate AND with S2 size (same geometry) -> not geometric; compare with no source, 3-20 kPE"
+  s1_top_fraction_vs_drift_us:   # mean, S1 > 20 PE; no source 28/29-09 (v2 / LED); Cs is 2.5-3x lower
+    4:  [0.26, 0.23]
+    16: [0.18, 0.15]
+    32: [0.12, 0.10]
+  top_anode_pattern: "R: posrec2_lrf.json (light-response model of the 4 anodes versus position)"
+  oct_2024_vs_now: same quantities for run 6786 (2 + 6 mm) versus SR-2026.2 (4 + 4 mm)

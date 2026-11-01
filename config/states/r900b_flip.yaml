@@ -1,0 +1,15 @@
+# Detector state r900b_flip = r900b on detector xams2026_flip (anode mesh flipped on its ring: gate–anode 9.65 mm in the middle,
+# ~8 mm at the ring) with 4.0 mm LXe above the gate (hypothesis 2026-11-01: wide S2 widths = 4 mm LXe + 5.65 mm GXe, narrow edge
+# S2s = 4 + 4 mm at the ring). Header of r900b.yaml:
+# Detector state r900b = r900 with the P4B DAQ (bottom PMT threshold 16 ADC, Science_Rev2.6; P4B 7957-7980 and the runs of
+# 2-11-2026). 2026-11-01. Header of r900.yaml:
+# Detector state: SR-2026.3 R900* 7790-7902, R900T 7929, BG16, P4B 7957-7980. Sources: analysis_SR2026.3/config/runs/*.csv, sc_snapshot of the runs.
+description: "SR-2026.3 r900b_flip (P4B DAQ, ch0 16 ADC, anode flipped: 9.65 mm, 4 mm LXe): anode +2101, gate -646, cathode -1146, BS -445, SiPM -900 V; PMTs -900 / -950 V"
+detector: xams2026_flip      # config/detectors/xams2026_flip/geometry.yaml: anode flipped (9.65 mm)
+hv_case: r900
+daq: sr2026_3_p4b           # detectors/xams2026/daq_sr2026_3_p4b.yaml (gains P4, ch0 threshold 16)
+liquid_level_mm: 4.0         # above the gate (user: 4 mm), with the flipped anode: 4 mm LXe + 5.65 mm GXe in the middle
+pressure_bar: 1.49           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
+electron_lifetime_us: 424.0    # SR2026.3_v4 lifetime (mean over the runs of R900 7790-7837 (48 runs, 357-487); later blocks on this field: S 533, F 574, P90/M90 ~600, B 629, T/BG16/P4B 707)
+sensors:
+  pmt_hv_v: {top: -900, bottom: -950}
