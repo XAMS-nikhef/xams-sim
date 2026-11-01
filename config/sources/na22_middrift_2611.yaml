@@ -1,0 +1,10 @@
+# Na-22 for the runs of 2-11-2026 (SR-2026.3, block M of the next-fill run plan): source lowered to mid-drift, 16 cm on the
+# measuring stick = 30-10 position - 20 mm = P4a - 35 mm (user, 2026-11-01). Target z = -26 mm; heights from the ring-shadow fit
+# of the Cs photopeak (analysis_SR2026.3 studies/source_z_shadowfit.py): P4a ~ +5 ... +12, 30-10 -8, RS21 -18 mm.
+# Azimuth and distance as cs137_zerofield.yaml (September default, ~169°, r ~129 mm on the outer vessel); check the height with
+# the MA run (studies/source_z_quickcheck.py).
+description: "Na-22, September azimuth (~169°, r ~129 mm), z = -26 mm (mid-drift, runs of 2-11-2026)"
+isotope: Na-22
+activity_bq: null
+position_mm: [-127.0, 25.0, -26.0]
+collimator: null
