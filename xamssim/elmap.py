@@ -82,7 +82,7 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
     level = res.state["liquid_level_mm"]
     h, hole, foil = mc["pitch_mm"] / 2, mc["hole_size_mm"], mc["foil_thickness_mm"]
     if cell is None:
-        cell = cellmap.read_cell("stack", res.hv_case, res.geometry, spec=cellmap.STACK, log=log)
+        cell = cellmap.read_cell("stack", res.hv_case, res.geometry, spec=cellmap.stack_spec(level), log=log)
     u, zc = cell["u"], cell["z"]
     comp = [np.nan_to_num(cell[k]).astype(np.float32) for k in ("Ex", "Ey", "Ez")]
     du, dz = u[1] - u[0], zc[1] - zc[0]

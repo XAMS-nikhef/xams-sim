@@ -256,7 +256,7 @@ class Resolved:
                               "pressure_bar": self.state.get("pressure_bar"), "permittivity": eps,
                               "gas": {k: mats["gas_xenon"].get(k) for k in ("density_g_cm3", "transport")},
                               "liquid_extraction": (mats["liquid_xenon"].get("transport") or {}).get("extraction"),
-                              "model": "elmap v1: stack cell, anode aligned"},
+                              "model": "elmap v2: stack cell read from 0.6 mm below the liquid surface, anode aligned"},
             "s1_light": light,
             "s2_pattern": light,
             "s1_outer": outer,
