@@ -1,0 +1,9 @@
+# Cs-137 at the P4B height (SR-2026.3 runs 7957-7962, 30-10-2026): z = -8 mm from the ring-shadow fit of the Cs photopeak
+# (analysis_SR2026.3 studies/source_z_shadowfit.py; P4a ~ +5 ... +12, 30-10 / P4B -8, RS21 -18 mm). Azimuth and distance as
+# cs137_zerofield.yaml (September default, ~169°, r ~129 mm on the outer vessel). Name: isotope, side position, height
+# (zm8 = z minus 8 mm; user, 2026-11-01).
+description: "Cs-137, September azimuth (~169°, r ~129 mm), z = -8 mm (P4B height)"
+isotope: Cs-137
+activity_bq: null
+position_mm: [-127.0, 25.0, -8.0]
+collimator: null
