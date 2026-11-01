@@ -38,15 +38,22 @@ def gas_model(res: Resolved) -> dict:
     tr = g.get("transport", {})
     if tr.get("el_yield") != "monteiro2007" or lq.get("transport", {}).get("extraction") != "nest":
         raise ValueError("materials.yaml: only el_yield 'monteiro2007' and extraction 'nest' are implemented")
-    # electron velocity in the gas: v = mobility x |E| (drift_mobility_mm_us_per_kV_cm), or a constant (drift_velocity_mm_us)
+    # electron velocity in the gas: a table v(|E|) (drift_velocity_table, e.g. from Magboltz), v = mobility x |E|
+    # (drift_mobility_mm_us_per_kV_cm), or a constant (drift_velocity_mm_us)
+    tab = tr.get("drift_velocity_table")
     mu = tr.get("drift_mobility_mm_us_per_kV_cm")
-    return dict(v_gas=None if mu is not None else float(tr["drift_velocity_mm_us"]),
-                mu_gas=None if mu is None else float(mu), p_eq=g["density_g_cm3"] / R_293K_1BAR,
+    return dict(v_gas=float(tr["drift_velocity_mm_us"]) if tab is None and mu is None else None,
+                mu_gas=None if mu is None else float(mu),
+                v_table=None if tab is None else (np.asarray(tab["E_kV_cm"], float), np.asarray(tab["v_mm_us"], float)),
+                p_eq=g["density_g_cm3"] / R_293K_1BAR,
                 eps_ratio=lq["electrical"]["relative_permittivity"] / g["electrical"]["relative_permittivity"])
 
 
 def gas_velocity(gm: dict, e_v_cm):
-    """Electron drift velocity in the gas [mm/µs] at |E| [V/cm] (array): mobility x E, or the constant velocity."""
+    """Electron drift velocity in the gas [mm/µs] at |E| [V/cm] (array): table v(E), mobility x E, or the constant velocity."""
+    if gm.get("v_table") is not None:
+        e_tab, v_tab = gm["v_table"]
+        return np.interp(np.asarray(e_v_cm) / 1e3, e_tab, v_tab)
     if gm["mu_gas"] is not None:
         return np.maximum(gm["mu_gas"] * np.asarray(e_v_cm) / 1e3, 0.05)      # floor: never stall in a field-free corner
     return np.full(np.shape(e_v_cm), gm["v_gas"])
@@ -141,7 +148,7 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
     return dict(u=us, ext_eff=ext.reshape(shape), n_el=photons.reshape(shape), t_transit_us=t.reshape(shape),
                 t_q_us=tq.reshape(shape + (len(QUANTILES),)), quantiles=QUANTILES, path_mm=path.reshape(shape),
                 end=end.reshape(shape), e_liq_kV_cm=e_liq.reshape(shape), e_gas_kV_cm=e_gas_surf.reshape(shape),
-                v_gas_mm_us=np.nan if gm["v_gas"] is None else gm["v_gas"],
+                v_gas_mm_us=np.nan if gm["v_gas"] is None else gm["v_gas"], v_table=np.nan if gm.get("v_table") is None else np.array(gm["v_table"]),
                 mu_gas_mm_us_per_kV_cm=np.nan if gm["mu_gas"] is None else gm["mu_gas"], p_eq_bar=gm["p_eq"])
 
 
@@ -153,6 +160,8 @@ def _rescaled_from_other_velocity(res: Resolved, log=print) -> dict | None:
     from .maps import load_manifest
     want = json.loads(json.dumps(res.map_inputs()["extraction_el"], default=str))
     tw = want["gas"]["transport"]
+    if "drift_velocity_table" in tw:
+        return None                                                # a velocity table: no rescaling, compute
     key = "drift_mobility_mm_us_per_kV_cm" if "drift_mobility_mm_us_per_kV_cm" in tw else "drift_velocity_mm_us"
     x_new = float(tw[key])
     for e in load_manifest()["maps"]:

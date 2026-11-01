@@ -61,9 +61,14 @@ materials:
     geant4: {composition: {Xe: 1}, molar_mass_g_mol: 131.29}
     electrical: {kind: dielectric, relative_permittivity: 1.00}
     transport:                   # electrons in the gas gap (simulation chain, S5)
-      drift_velocity_mm_us: 4.15 # TUNED: S2 width50 of main S2s at drift 2-8 µs (no diffusion correction), runs 7687 / 7719,
-                                 # 2-8e4 PE: 529 / 542 ns (2026-10-20); the S5 value 3.1 used a diffusion-corrected 605 ns that
-                                 # left diffusion in; no measurement found at ~9 Td
+      # electron drift velocity in the gas vs |E|: PyBoltz (Magboltz, Biagi cross sections), Xe, 1118 Torr, 172.3 K (saturated
+      # vapour at 1.49 bar, SR-2026.3), thermal motion, 1e8 collisions, cubic fit to 2.5-7.0 kV/cm (simulations/
+      # 2026-10-31_sr2026_3_r900 analysis/pyboltz_gxe_fine.py, 2026-11-01). Not tuned. Replaces the constant 4.15 mm/µs (tuned
+      # 2026-10-20 on the median S2 width near the gate, which is dominated by the narrow edge-event population). Outside the
+      # table: the end values (linear extrapolation is not done).
+      drift_velocity_table:
+        E_kV_cm: [2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00, 5.25, 5.50, 5.75, 6.00, 6.25, 6.50, 6.75, 7.00]
+        v_mm_us: [2.180, 2.359, 2.553, 2.760, 2.978, 3.205, 3.442, 3.685, 3.933, 4.186, 4.441, 4.697, 4.952, 5.206, 5.457, 5.703, 5.942, 6.174, 6.396]
       el_yield: monteiro2007     # photons per electron per cm = 140 E[kV/cm] - 116 p_eq[bar], p_eq = pressure at 293 K with the same density (Monteiro et al. 2007)
   ptfe:                          # inner cylinder, PMT holders, bucket
     density_g_cm3: 2.2

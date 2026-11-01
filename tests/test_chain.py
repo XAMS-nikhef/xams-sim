@@ -384,7 +384,7 @@ def test_el_map_mobility():
     res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
     gm = elmap.gas_model(res)
     mats = res.materials["materials"]["gas_xenon"]["transport"]
-    mats.pop("drift_velocity_mm_us", None)
+    mats.pop("drift_velocity_mm_us", None); mats.pop("drift_velocity_table", None)
     mats["drift_mobility_mm_us_per_kV_cm"] = 0.5
     t = []
     for eg in (-7600.0, -5000.0):
@@ -393,3 +393,14 @@ def test_el_map_mobility():
         assert d["t_transit_us"][0, 0] == pytest.approx(path / (0.5 * abs(eg) / 1e3), rel=0.01)
         t.append(d["t_transit_us"][0, 0])
     assert t[1] / t[0] == pytest.approx(7600 / 5000, rel=0.01)
+
+
+def test_el_map_velocity_table():
+    """The default gas velocity is the Magboltz table v(E): interpolated, end values outside the table."""
+    from xamssim import elmap
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    gm = elmap.gas_model(res)
+    e_tab, v_tab = gm["v_table"]
+    assert elmap.gas_velocity(gm, 4500.0) == pytest.approx(np.interp(4.5, e_tab, v_tab))
+    assert elmap.gas_velocity(gm, 20000.0) == pytest.approx(v_tab[-1])
+    assert 3.5 < elmap.gas_velocity(gm, 4550.0) < 4.5                   # Magboltz at 1.49 bar, 172 K: ~4.0 mm/µs
