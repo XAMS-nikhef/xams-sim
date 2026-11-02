@@ -79,8 +79,9 @@ Larger runs (or simulation + reconstruction in one go) on condor, at most 10 job
 /data/xenon/xams_v2/software/xams-sim/stbc/submit_production.sh runs/my_run.yaml
 ```
 
-This runs Geant4 → chain → live data → amstrax (raw records → event_info, corrections MC1) and puts everything in your
-own area; logs in `XAMSSIM_DATA/logs/<run file name>/`. The script is the same for production; as your own account it
+This runs Geant4 → chain → live data → amstrax (raw records → event_info, corrections MC2) and puts everything in your
+own area (`production_job.sh <run file> [corrections version] reco`: only the amstrax part again, for a stored
+simulation); logs in `XAMSSIM_DATA/logs/<run file name>/`. The script is the same for production; as your own account it
 writes nothing to the database ("private run: not recorded in the run database").
 
 ## A production MC
@@ -115,7 +116,7 @@ yourself (e.g. with other settings or corrections):
 ```python
 import strax, amstrax
 raw = "/data/xenon/xams_v2/mc_raw_records"          # private: your XAMSSIM_AMSTRAX_STORE
-st = amstrax.contexts.xams(output_folder="<your output folder>", corrections_version="MC1")
+st = amstrax.contexts.xams(output_folder="<your output folder>", corrections_version="MC2")
 st.storage += [strax.DataDirectory(raw, readonly=True, provide_run_metadata=True)]
 amstrax.xams_config.RUNDOC_DIRS.append(raw)          # the run document file next to the raw records
 st = amstrax.contexts.for_mc_run(st, "990001")       # the run's corrections (truth / calibrated) with their version
@@ -129,8 +130,10 @@ events = st.get_array("990001", "event_info")
 
 ## Corrections of MC runs
 
-The cuts and settings come from amstrax_files, as for data: the MC global version `MC1` is the data version v5 with one
-difference. The per-run corrections (electron lifetime, gains, gate and cathode drift times) come from the run's own
+The cuts and settings come from amstrax_files, as for data: the MC global version `MC2` is the data version PROD4
+(position map `pos_rec_map_v2`, the S1/S2 cuts and event building of the private SR-2026.3 processing) without the
+energy corrections `sr_corrections` / `sr_maps`, with one difference. (Runs made before 2026-11-01 used `MC1` = data
+v5, `pos_rec_map_v0`.) The per-run corrections (electron lifetime, gains, gate and cathode drift times) come from the run's own
 run document:
 
 - `xamssim.corrections.truth`: the simulation's own values, written when the run is made;

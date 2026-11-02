@@ -209,7 +209,7 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
                     "detector": res.detector, "n_events": res.run["n_events"], "seed": res.run["seed"],
                     "supersedes": res.run.get("supersedes"), "maps": res.map_keys(), "condition": condition(res),
                     # per-run corrections (xamssim.corrections): truth now, calibrated after a calibration on the
-                    # reconstructed MC; amstrax reads them with an MC global version (MC1) and for_mc_run
+                    # reconstructed MC; amstrax reads them with an MC global version (MC2) and for_mc_run
                     "corrections": {"truth": truth_constants(res, lifetime_us)}},
         "data": data or [],
     }
