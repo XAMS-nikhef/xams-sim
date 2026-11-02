@@ -1,0 +1,18 @@
+# Detector state r900b_flip_x30 = r900b_flip (anode flipped: 4.0 mm LXe + 5.65 mm GXe in the middle) with the extraction
+# efficiency of NEST moved by 0.30 kV/cm along the liquid field. Fit of the anode / gate scan (cS2 vs gate-anode voltage,
+# 9 sets R900 ... PG5; simulations/2026-10-31_sr2026_3_r900 analysis/extraction_fit.py, 2026-11-02): shift 0.302 kV/cm
+# (0.295-0.305), chi2 6.8 / 7 (NEST unshifted 10160 / 8): EE 0.06 (R900, E_liq 1.70 kV/cm) to 0.19 (PG5, 2.13 kV/cm), where
+# NEST gives 0 at R900. Header of r900b_flip.yaml:
+# Detector state r900b_flip = r900b on detector xams2026_flip (anode mesh flipped on its ring: gate–anode 9.65 mm in the middle,
+# ~8 mm at the ring) with 4.0 mm LXe above the gate (hypothesis 2026-11-01: wide S2 widths = 4 mm LXe + 5.65 mm GXe, narrow edge
+# S2s = 4 + 4 mm at the ring).
+description: "SR-2026.3 r900b_flip_x30 (P4B DAQ, anode flipped: 9.65 mm, 4 mm LXe, extraction NEST + 0.30 kV/cm): anode +2101, gate -646, cathode -1146, BS -445, SiPM -900 V; PMTs -900 / -950 V"
+detector: xams2026_flip      # config/detectors/xams2026_flip/geometry.yaml: anode flipped (9.65 mm)
+hv_case: r900
+daq: sr2026_3_p4b           # detectors/xams2026/daq_sr2026_3_p4b.yaml (gains P4, ch0 threshold 16)
+liquid_level_mm: 4.0         # above the gate, with the flipped anode: 4 mm LXe + 5.65 mm GXe in the middle
+pressure_bar: 1.49           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
+electron_lifetime_us: 424.0    # SR2026.3_v4 lifetime (as r900b_flip)
+extraction: {model: nest, shift_kV_cm: 0.30, note: "fit to cS2 vs dV of the anode / gate scan, 2026-11-02"}
+sensors:
+  pmt_hv_v: {top: -900, bottom: -950}

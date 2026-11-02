@@ -24,14 +24,21 @@ E_gas = f_mesh × ΔV / (d_g + d_l / 1.96), with f_mesh ≈ 0.92 for the etched 
 | liquid level above the gate | `config/states/<s>.yaml` `liquid_level_mm` | **not measured directly**; from the S2 width (below) |
 | gas pressure / temperature | state `pressure_bar`; Magboltz table at 1118 Torr, 172.3 K | sc_snapshot (pmain absolute), PT100s |
 | gas drift velocity v_gas(E) | `config/materials.yaml` `gas_xenon.transport.drift_velocity_table` | PyBoltz (Magboltz, Biagi cross sections) |
-| extraction efficiency | NEST (`xamssim.elmap.extraction_table`) | literature threshold 1.5–2 kV/cm: uncertain near threshold |
+| extraction efficiency | `materials.yaml` `liquid_xenon.transport.extraction` (NEST) or the state's `extraction` (NEST moved by `shift_kV_cm`, or a table; `xamssim.elmap.extraction_curve`) | literature threshold 1.5–2 kV/cm: uncertain near threshold; fit to the S2 size vs ΔV (below) |
 
 ## How to determine the level from data
 
 1. Measure the main-band S2 w50 (S2 2000–20000 PE, r < 20 mm, drift 10–35 µs, w50 > 0.75 µs to remove the narrow edge
    events) for several anode / gate voltages.
 2. Fit d_l with the gap fixed: `simulations/2026-10-31_sr2026_3_r900/analysis/liquid_level_scan.py`.
-3. Check the S2 size vs ΔV (extraction) and run the MC at the fitted level.
+3. Fit the extraction to the S2 size vs ΔV at that geometry: `analysis/extraction_fit.py` (NEST moved along the liquid
+   field; the shape of cS2 vs ΔV fixes the shift, the absolute scale stays free). Put the shift in the state
+   (`extraction: {model: nest, shift_kV_cm: s}`) and make its EL map: `xamssim maps --state <s> --export el` recomputes
+   only the extraction from an EL map of the same geometry (no COMSOL).
+4. Run the MC at the fitted level and extraction.
+
+The S2 size vs ΔV alone does not choose the geometry: with a free shift both 2.5 + 5.5 mm (shift 0.09 kV/cm, chi2 9.0 / 7)
+and the flipped anode 4.0 + 5.65 mm (0.30 kV/cm, chi2 6.8 / 7) fit; the widths of both S2 populations do.
 
 Results so far (gap 8 mm): SR-2026.3 2.35 mm (believed 4), October 2024 fill 0.75 mm (believed 2). Both ~1.5 mm below
 the believed level; state `r900b_l25` (2.5 mm) is the compromise of width and size.

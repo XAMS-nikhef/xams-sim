@@ -4,8 +4,8 @@ From the stack cell model of the state (gate + liquid surface + anode + top scre
 the gate; `efield/comsol/run_cell.sh stack --states <s>`), read through COMSOL's API like the other cells. Electrons
 start on a grid over one quarter cell just above the liquid surface (u, v relative to the gate-hole centre; the gate
 focuses them near u = v = 0) and are tracked against the gas field to the anode bars. Per start point:
-    ext_eff    extraction efficiency from the field just below the surface (NEST CalculateG2, as a function of the
-               field in the gas just above it)
+    ext_eff    extraction efficiency from the field just below the surface (materials liquid_xenon.transport.extraction
+               or the state's `extraction`: NEST CalculateG2, NEST moved along the field, or a table; extraction_curve)
     n_el       EL photons per extracted electron: integral of 140 E[kV/cm] - 116 p_eq[bar] per cm along the path
                (Monteiro et al. 2007; p_eq = pressure at 293 K with the density of the gas)
     t_transit  time from the surface to the anode [µs], with the gas drift velocity of materials.yaml
@@ -36,8 +36,8 @@ def gas_model(res: Resolved) -> dict:
     mats = res.materials["materials"]
     g, lq = mats["gas_xenon"], mats["liquid_xenon"]
     tr = g.get("transport", {})
-    if tr.get("el_yield") != "monteiro2007" or lq.get("transport", {}).get("extraction") != "nest":
-        raise ValueError("materials.yaml: only el_yield 'monteiro2007' and extraction 'nest' are implemented")
+    if tr.get("el_yield") != "monteiro2007":
+        raise ValueError("materials.yaml: only el_yield 'monteiro2007' is implemented")
     # electron velocity in the gas: a table v(|E|) (drift_velocity_table, e.g. from Magboltz), v = mobility x |E|
     # (drift_mobility_mm_us_per_kV_cm), or a constant (drift_velocity_mm_us)
     tab = tr.get("drift_velocity_table")
@@ -71,6 +71,34 @@ def extraction_table():
     return e, np.clip(np.array(eff), 0, 1)
 
 
+def extraction_curve(res: Resolved):
+    """The extraction efficiency as a function of the liquid field just below the surface [kV/cm] (array -> array), from
+    liquid_xenon.transport.extraction (with the state's `extraction`, config.with_extraction):
+        nest                                         NEST CalculateG2 (its E_gas = E_liq x eps_liq / eps_gas)
+        {model: nest, shift_kV_cm: s}                NEST at E_liq + s (s > 0: threshold s lower, same shape)
+        {model: table, E_liq_kV_cm: [..], eff: [..]} linear in the table, 0 below it, the last value above it"""
+    mats = res.materials["materials"]
+    spec = (mats["liquid_xenon"].get("transport") or {}).get("extraction", "nest")
+    eps = mats["liquid_xenon"]["electrical"]["relative_permittivity"] / mats["gas_xenon"]["electrical"]["relative_permittivity"]
+    if spec == "nest":
+        spec = {"model": "nest"}
+    if not isinstance(spec, dict) or spec.get("model") not in ("nest", "table"):
+        raise ValueError(f"extraction: 'nest', {{model: nest, shift_kV_cm}} or {{model: table, E_liq_kV_cm, eff}}, not {spec!r}")
+    if spec["model"] == "nest":
+        unknown = set(spec) - {"model", "shift_kV_cm", "note"}
+        if unknown:
+            raise ValueError(f"extraction (nest): unknown key(s) {sorted(unknown)}")
+        et, ee = extraction_table()
+        shift = float(spec.get("shift_kV_cm", 0.0))
+        return lambda e_liq: np.interp((np.asarray(e_liq, float) + shift) * eps, et, ee, left=0.0)
+    unknown = set(spec) - {"model", "E_liq_kV_cm", "eff", "note"}
+    e_t, f_t = np.asarray(spec.get("E_liq_kV_cm", []), float), np.asarray(spec.get("eff", []), float)
+    if unknown or len(e_t) < 2 or len(e_t) != len(f_t) or np.any(np.diff(e_t) <= 0) or np.any((f_t < 0) | (f_t > 1)):
+        raise ValueError("extraction (table): E_liq_kV_cm increasing (>= 2 points), eff in [0, 1] of the same length"
+                         + (f"; unknown key(s) {sorted(unknown)}" if unknown else ""))
+    return lambda e_liq: np.interp(np.asarray(e_liq, float), e_t, f_t, left=0.0, right=f_t[-1])
+
+
 def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
     """The extraction / EL map of a state (cell: the stack cell field, else read from the state's cell model)."""
     from scipy.ndimage import map_coordinates
@@ -98,8 +126,7 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
     # extraction: field just below and above the surface
     e_liq = np.linalg.norm(field(np.stack([U.ravel(), V.ravel(), np.full(n, level - 0.05)], axis=1)), axis=1) / 1e3
     e_gas_surf = np.linalg.norm(field(np.stack([U.ravel(), V.ravel(), np.full(n, level + 0.05)], axis=1)), axis=1) / 1e3
-    et, ee = extraction_table()
-    ext = np.interp(e_liq * gm["eps_ratio"], et, ee, left=0.0)
+    ext = extraction_curve(res)(e_liq)
     # gas: track to the anode bars
     p = np.stack([U.ravel(), V.ravel(), np.full(n, level + 0.01)], axis=1)
     photons = np.zeros(n)
@@ -186,7 +213,34 @@ def _rescaled_from_other_velocity(res: Resolved, log=print) -> dict | None:
     return None
 
 
+def _reextracted_from_other_model(res: Resolved, log=print) -> dict | None:
+    """The EL map of the same inputs except the extraction model, with ext_eff recomputed from its stored liquid field
+    below the surface (e_liq_kV_cm): no COMSOL needed. Paths, EL photons and times do not depend on the extraction."""
+    from .maps import load_manifest
+    want = json.loads(json.dumps(res.map_inputs()["extraction_el"], default=str))
+    want.pop("liquid_extraction", None)
+    for e in load_manifest()["maps"]:
+        if e["kind"] != "extraction_el":
+            continue
+        inp = json.loads(json.dumps(e.get("inputs", {}), default=str))
+        inp.pop("liquid_extraction", None)
+        if inp == want and all((MAPS / f).exists() for f in e["files"]):
+            d = dict(np.load(MAPS / e["files"][0]))
+            d["ext_eff"] = extraction_curve(res)(d["e_liq_kV_cm"]).reshape(d["e_liq_kV_cm"].shape)
+            log(f"  EL map from {e['key']} (extraction recomputed: median {np.median(d['ext_eff']):.3f})")
+            return d
+    return None
+
+
 def export(res: Resolved) -> dict:
+    d = _reextracted_from_other_model(res)
+    if d is not None:
+        key = res.map_keys()["extraction_el"]
+        rel = f"extraction_el/{key}/{FILE}"
+        (MAPS / rel).parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(MAPS / rel, **d)
+        return register(res, "extraction_el", [rel], producer_version="xamssim elmap v2, extraction recomputed from "
+                                                                       "another map's liquid field (no COMSOL)")
     d = _rescaled_from_other_velocity(res)
     if d is not None:
         key = res.map_keys()["extraction_el"]

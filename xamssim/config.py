@@ -70,7 +70,8 @@ SCHEMA = {
              "run_number": int, "tags": list, "supersedes": int},
             {"state", "source", "n_events", "seed"}),
     "state": ({"description": str, "detector": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
-               "electron_lifetime_us": OPT_NUM, "sensors": dict, "zero_field": bool, "daq": str},
+               "electron_lifetime_us": OPT_NUM, "sensors": dict, "zero_field": bool, "daq": str,
+               "extraction": (str, dict)},
               {"detector", "hv_case", "liquid_level_mm"}),
     "source": ({"isotope": str, "activity_bq": OPT_NUM, "position_mm": (list, type(None)), "collimator": (dict, str, type(None)),
                 "type": str, "energy_keV": OPT_NUM, "direction": str, "half_angle_deg": NUM, "z_target_mm": NUM,
@@ -180,6 +181,18 @@ def at_pressure(mat: dict, pressure_bar) -> dict:
     m = out["materials"]
     m["liquid_xenon"].update(density_g_cm3=round(rho_l, 5), temperature_k=round(t, 2), pressure_bar=p)
     m["gas_xenon"].update(density_g_cm3=round(rho_v, 6), temperature_k=round(t, 2), pressure_bar=p)
+    return out
+
+
+def with_extraction(mat: dict, spec) -> dict:
+    """materials with the extraction model of a state (state key `extraction`), else unchanged. The model is
+    liquid_xenon.transport.extraction: 'nest' (NEST CalculateG2), {model: nest, shift_kV_cm: s} (the NEST curve moved
+    by s along the liquid field: eff(E) = NEST(E + s), s > 0 lowers the threshold) or {model: table, E_liq_kV_cm: [...],
+    eff: [...]} (linear, 0 below and the last value above the table). Checked in xamssim.elmap.extraction_curve."""
+    if spec is None:
+        return mat
+    out = copy.deepcopy(mat)
+    out["materials"]["liquid_xenon"].setdefault("transport", {})["extraction"] = copy.deepcopy(spec)
     return out
 
 
@@ -321,7 +334,7 @@ def resolve(run_path) -> Resolved:
 
     geo, mat = load_materials_and_geometry(state["detector"])
     return Resolved(run_path=run_path, run=run, state_name=run["state"], state=state, source_name=run["source"],
-                    source=source, geometry=geo, materials=at_pressure(mat, state.get("pressure_bar")),
+                    source=source, geometry=geo, materials=with_extraction(at_pressure(mat, state.get("pressure_bar")), state.get("extraction")),
                     detector=state["detector"],
                     hv_case=hv_case, hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
 
@@ -337,7 +350,8 @@ def resolve_state(state_name: str) -> Resolved:
         raise ConfigError(f"{sp}: hv_case '{state['hv_case']}' not in {HV_CASES}")
     geo, mat = load_materials_and_geometry(state["detector"])
     return Resolved(run_path=sp, run=tmp, state_name=state_name, state=state, source_name="-", source={},
-                    geometry=geo, materials=at_pressure(mat, state.get("pressure_bar")), detector=state["detector"],
+                    geometry=geo, materials=with_extraction(at_pressure(mat, state.get("pressure_bar")), state.get("extraction")),
+                    detector=state["detector"],
                     hv_case=cases["cases"][state["hv_case"]], hv_global={k: cases[k] for k in ("field_cage",) if k in cases})
 
 
