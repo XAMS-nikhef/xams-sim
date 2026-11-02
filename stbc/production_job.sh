@@ -1,6 +1,7 @@
 #!/bin/bash
 # One MC run on STBC, simulated and reconstructed, as a condor job:
-#   production_job.sh <run file> [corrections version]
+#   production_job.sh <run file> [corrections version] [reco]
+#   reco: only step 2 on (reconstruct again, e.g. with a new corrections version); the simulation must be stored
 # Where everything goes comes from the settings of the account that runs it (~/.config/xamssim/env):
 #   XAMSSIM_DATA (Geant4, chain), XAMSSIM_LIVE (live data), XAMSSIM_AMSTRAX_STORE (raw records + run document),
 #   XAMSSIM_PROCESSED (amstrax products; default: processed/ next to XAMSSIM_DATA).
@@ -15,7 +16,7 @@
 # amstrax.contexts.for_mc_run puts the calibration version into the lineage). See xamssim corrections.
 # Reconstructions kept per run: the latest and, after a calibration, the truth one; older versions are deleted.
 set -o pipefail
-RUN=$(readlink -f "$1"); CV=${2:-MC2}
+RUN=$(readlink -f "$1"); CV=${2:-MC2}; MODE=${3:-all}
 X=/data/xenon/xams_v2
 source $X/setup_xamssim.sh >/dev/null || exit 1
 RAW=$XAMSSIM_AMSTRAX_STORE; PROC=${XAMSSIM_PROCESSED:-$(dirname "$XAMSSIM_DATA")/processed}
@@ -23,7 +24,8 @@ mkdir -p "$RAW" "$PROC"
 echo "host $(hostname), user $(whoami), $(date), run file $RUN, corrections $CV"
 echo "data $XAMSSIM_DATA, raw records $RAW, processed $PROC"
 umask 022
-( xamssim particle "$RUN" && xamssim chain "$RUN" --target raw_records && xamssim live "$RUN" ) || { echo "simulation failed"; exit 1; }
+if [ "$MODE" = reco ]; then echo "reco only: simulation kept"
+else ( xamssim particle "$RUN" && xamssim chain "$RUN" --target raw_records && xamssim live "$RUN" ) || { echo "simulation failed"; exit 1; }; fi
 RID=$(sed -nE 's/^run_number:[[:space:]]*([0-9]+).*/\1/p' "$RUN" | head -1)
 RID=$(printf "%06d" "$RID")
 # zero-field state (S1 only, no S2): amstrax up to peak_basics (events need an S2)

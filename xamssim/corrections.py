@@ -28,7 +28,7 @@ from pathlib import Path
 
 from .config import MC_RUN_NUMBERS, ConfigError
 
-KEYS = ("elife", "gain_to_pe_array", "drift_time_gate", "drift_time_cathode")    # per-run corrections (MC1)
+KEYS = ("elife", "gain_to_pe_array", "drift_time_gate", "drift_time_cathode")    # per-run corrections (MC2)
 INFO = ("method", "analysis_commit")                                            # optional, describes a calibration
 
 
