@@ -34,12 +34,13 @@ _REFRESHING = threading.Event()
 
 # The last listing on local disk, so a restarted app shows it at once (per user and data folder).
 _DISK = Path(tempfile.gettempdir()) / f"xamssim_web_{getpass.getuser()}_{hashlib.md5(str(DATA).encode()).hexdigest()[:8]}.pkl"
-_EMPTY = dict(runs=[], maps=dict(states={}, old=[], kinds=[]), loading=True)
+_EMPTY = dict(runs=[], rows=[], maps=dict(states={}, old=[], kinds=[]), loading=True)
 
 
 def _refresh() -> None:
     try:
         d = listing.collect()
+        d["rows"] = _rows(d)
         _CACHE["collect"] = (time.time(), d)
         try:
             tmp = _DISK.with_suffix(".tmp")
@@ -110,8 +111,17 @@ def _exported(number) -> dict:
 
 
 def simulations() -> dict:
-    """All simulations in the data folder, one row each (plus the data / studies folders and the map overview)."""
+    """All simulations in the data folder, one row each (plus the data / studies folders and the map overview).
+
+    The rows are made with the listing in the background (they look at many files: slow on STBC's /data)."""
     d = _collect()
+    rows = d.get("rows")
+    if rows is None:
+        rows = d["rows"] = _rows(d)
+    return dict(rows=rows, data=str(DATA), studies=str(STUDIES), maps=d["maps"], loading=d.get("loading", False))
+
+
+def _rows(d: dict) -> list:
     busy = listing.in_progress()
     rows = []
     for r in d["runs"]:
@@ -132,7 +142,7 @@ def simulations() -> dict:
                          status=status,   # current / outdated / unknown, or running while it is being made
                          size_mb=size / 1e6, last_run=files[-1].name[:15] if files else "", note=r.get("note", ""),
                          exported=_exported(r.get("number")), n_records=len(files)))
-    return dict(rows=rows, data=str(DATA), studies=str(STUDIES), maps=d["maps"], loading=d.get("loading", False))
+    return rows
 
 
 def records(run_id: str) -> list:
