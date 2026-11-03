@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% block title %}{{ o.key }}{% endblock %}
+{% block eyebrow %}<a href="{{ url_for('maps') }}">Maps</a> / optical{% endblock %}
+{% block heading %}<span class="mono" style="font-size:.75em">{{ o.key }}</span>{% endblock %}
 {% block content %}
 <section class="panel">
-  <div class="panel-title">Optical maps {{ o.key }}
+  <div class="panel-title">
     {% for k, ok in o.kinds.items() %}<span class="status {{ 'current' if ok else 'outdated' }}">{{ k }}</span>{% endfor %}
     <span class="muted small">made {{ o.created }} for {{ o.states|join(', ') }}; used by {{ o.used_by|join(', ') or 'no state now' }}</span>
   </div>

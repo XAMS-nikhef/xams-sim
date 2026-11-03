@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% block title %}{{ run_id }}{% endblock %}
+{% block eyebrow %}<a href="{{ url_for('overview') }}">Simulations</a> / {% if d.row %}{{ d.row.study }}{% endif %}{% endblock %}
+{% block heading %}{{ run_id }}{% endblock %}
 {% block content %}
 <section class="panel">
-  <div class="panel-title">{{ run_id }}
+  <div class="panel-title">
     {% if d.row and d.row.number %}<span class="tag">run {{ "%06d"|format(d.row.number) }}</span>{% endif %}
     {% if d.row %}<span class="status {{ d.row.status }}">{{ d.row.status }}</span> <span class="muted small">{{ d.row.how_far }}</span>{% endif %}
     {% if d.row and d.row.status == 'outdated' and d.row.number %}<a class="nav-link small" href="{{ url_for('rerun', run_id=run_id) }}">rerun…</a>{% endif %}
@@ -90,10 +93,10 @@ document.querySelectorAll('.figrow img').forEach(function (img) { if (img.comple
 </section>
 <section class="panel">
   <div class="panel-title">channels</div>
-  <table class="table">
+  <div class="scroll-x"><table class="table">
     <thead><tr>{% for k in daq.channels[0].keys() %}<th>{{ k }}</th>{% endfor %}</tr></thead>
     {% for c in daq.channels %}<tr>{% for v in c.values() %}<td class="mono">{{ v|fmt }}</td>{% endfor %}</tr>{% endfor %}
-  </table>
+  </table></div>
 </section>
 {% endif %}
 {% if reco and reco.products %}
@@ -102,7 +105,7 @@ document.querySelectorAll('.figrow img').forEach(function (img) { if (img.comple
   {% set shown = reco.views.get(view) %}
   <div class="panel-title">Reconstruction (amstrax) <span class="muted small">run {{ "%06d"|format(d.row.number) }}; stored data types, no database
     {% if reco.n_decays %}· {{ reco.n_decays|fmt }} decays simulated{% endif %}</span>
-    {% for v, c in reco.views.items() %}<a class="nav-link small{% if v == view %} active{% endif %}" href="?reco={{ v }}">{{ v }}{% if v == 'latest' %} ({{ 'truth' if not c else 'v%d'|format(c) }}){% endif %}</a>{% endfor %}
+    <span class="segmented">{% for v, c in reco.views.items() %}<a class="nav-link small{% if v == view %} active{% endif %}" href="?reco={{ v }}">{{ v }}{% if v == 'latest' %} ({{ 'truth' if not c else 'v%d'|format(c) }}){% endif %}</a>{% endfor %}</span>
   </div>
   <div class="grid two">
     <table class="table">

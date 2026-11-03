@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% block title %}Compare{% endblock %}
+{% block heading %}Compare{% endblock %}
 {% block content %}
 <section class="panel">
-  <div class="panel-title">Compare two simulations</div>
+  <div class="panel-title">Two simulations, parameter by parameter</div>
   <form class="controls" method="get">
     <select name="a">{% for i in ids %}<option {% if i == a %}selected{% endif %}>{{ i }}</option>{% endfor %}</select>
     <select name="b">{% for i in ids %}<option {% if i == b %}selected{% endif %}>{{ i }}</option>{% endfor %}</select>
@@ -9,14 +11,14 @@
   </form>
   {% if error %}<div class="note">{{ error }}</div>{% endif %}
   {% if a and b and not error %}
-  <table class="table">
+  <div class="scroll-x"><table class="table">
     <thead><tr><th>section</th><th>parameter</th><th><a href="{{ url_for('simulation', run_id=a) }}">{{ a }}</a></th><th><a href="{{ url_for('simulation', run_id=b) }}">{{ b }}</a></th></tr></thead>
     {% for sec, path, va, vb in rows %}
     <tr><td class="muted">{{ sec }}</td><td class="mono">{{ path }}</td><td class="mono">{{ va|fmt }}</td><td class="mono">{{ vb|fmt }}</td></tr>
     {% else %}
     <tr><td colspan="4" class="muted">no differences</td></tr>
     {% endfor %}
-  </table>
+  </table></div>
   {% endif %}
 </section>
 {% if a and b and not error %}
