@@ -10,6 +10,7 @@
   <div class="stat"><span class="label">Running</span><span class="value accent">{{ all|selectattr("status", "equalto", "running")|list|length }}</span></div>
   <div class="stat"><span class="label">On disk</span><span class="value">{{ "%.1f"|format((all|sum(attribute="size_mb")) / 1000) }}<span class="unit"> GB</span></span></div>
 </section>
+{% if d.loading %}<section class="panel"><p class="status unknown">Reading the data folder for the first time (minutes on a busy node); reload this page in a while.</p></section>{% endif %}
 <section class="panel">
   <div class="panel-title">All simulations <span class="muted small">{{ rows|length }} shown</span></div>
   <form class="controls" method="get">
