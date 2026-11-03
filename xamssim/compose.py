@@ -13,6 +13,7 @@ Nothing is written except the figure files under <data>/provenance/<run>/figures
 from __future__ import annotations
 
 import json
+import threading
 import time
 from pathlib import Path
 
@@ -23,16 +24,39 @@ from .config import DATA, STUDIES
 
 MESH_HV = {"top_screen": "TS", "anode": "A", "gate": "G", "cathode": "C", "bottom_screen": "BS"}
 _CACHE: dict = {}
+_LOCK = threading.Lock()
+_REFRESHING = threading.Event()
+
+
+def _refresh() -> None:
+    try:
+        _CACHE["collect"] = (time.time(), listing.collect())
+    finally:
+        _REFRESHING.clear()
 
 
 def _collect(max_age_s: float = 60.0) -> dict:
-    """listing.collect(), kept for a minute (it builds the chain contexts to judge current / outdated)."""
+    """listing.collect() (it builds the chain contexts to judge current / outdated, which takes a minute on STBC).
+
+    Kept for a minute; after that the old result is still returned at once while a background thread makes a new
+    one, so no page waits for it (only the very first call does, or warm() at start-up)."""
     hit = _CACHE.get("collect")
-    if hit and time.time() - hit[0] < max_age_s:
-        return hit[1]
-    d = listing.collect()
-    _CACHE["collect"] = (time.time(), d)
-    return d
+    if hit is None:
+        with _LOCK:
+            hit = _CACHE.get("collect")
+            if hit is None:
+                _REFRESHING.set()
+                _refresh()
+                return _CACHE["collect"][1]
+    if time.time() - hit[0] >= max_age_s and not _REFRESHING.is_set():
+        _REFRESHING.set()
+        threading.Thread(target=_refresh, daemon=True).start()
+    return hit[1]
+
+
+def warm() -> None:
+    """Fill the cache in the background (the app calls it at start-up)."""
+    threading.Thread(target=_collect, daemon=True).start()
 
 
 def _how_far(types: set) -> str:
