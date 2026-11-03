@@ -133,6 +133,7 @@ def reload():
 
 
 def main(host: str = "127.0.0.1", port: int = 8071, debug: bool = False):
+    compose.warm()
     app.run(host=host, port=port, debug=debug)
 
 
