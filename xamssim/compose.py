@@ -12,7 +12,11 @@ Nothing is written except the figure files under <data>/provenance/<run>/figures
 """
 from __future__ import annotations
 
+import getpass
+import hashlib
 import json
+import pickle
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -28,35 +32,54 @@ _LOCK = threading.Lock()
 _REFRESHING = threading.Event()
 
 
+# The last listing on local disk, so a restarted app shows it at once (per user and data folder).
+_DISK = Path(tempfile.gettempdir()) / f"xamssim_web_{getpass.getuser()}_{hashlib.md5(str(DATA).encode()).hexdigest()[:8]}.pkl"
+_EMPTY = dict(runs=[], maps=dict(states={}, old=[], kinds=[]), loading=True)
+
+
 def _refresh() -> None:
     try:
-        _CACHE["collect"] = (time.time(), listing.collect())
+        d = listing.collect()
+        _CACHE["collect"] = (time.time(), d)
+        try:
+            tmp = _DISK.with_suffix(".tmp")
+            tmp.write_bytes(pickle.dumps(_CACHE["collect"]))
+            tmp.replace(_DISK)
+        except Exception:
+            pass
     finally:
         _REFRESHING.clear()
 
 
-def _collect(max_age_s: float = 60.0) -> dict:
-    """listing.collect() (it builds the chain contexts to judge current / outdated, which takes a minute on STBC).
+def _start_refresh() -> None:
+    with _LOCK:
+        if _REFRESHING.is_set():
+            return
+        _REFRESHING.set()
+    threading.Thread(target=_refresh, daemon=True).start()
 
-    Kept for a minute; after that the old result is still returned at once while a background thread makes a new
-    one, so no page waits for it (only the very first call does, or warm() at start-up)."""
+
+def _collect(max_age_s: float = 60.0) -> dict:
+    """listing.collect() (it builds the chain contexts to judge current / outdated: minutes on a busy STBC node).
+
+    Never waits for it: an expired result is returned while a background thread makes a new one; after a restart the
+    last result from local disk; with nothing at all an empty listing marked `loading`."""
     hit = _CACHE.get("collect")
     if hit is None:
-        with _LOCK:
-            hit = _CACHE.get("collect")
-            if hit is None:
-                _REFRESHING.set()
-                _refresh()
-                return _CACHE["collect"][1]
-    if time.time() - hit[0] >= max_age_s and not _REFRESHING.is_set():
-        _REFRESHING.set()
-        threading.Thread(target=_refresh, daemon=True).start()
+        try:
+            hit = pickle.loads(_DISK.read_bytes())
+            _CACHE["collect"] = hit
+        except Exception:
+            _start_refresh()
+            return _EMPTY
+    if time.time() - hit[0] >= max_age_s:
+        _start_refresh()
     return hit[1]
 
 
 def warm() -> None:
-    """Fill the cache in the background (the app calls it at start-up)."""
-    threading.Thread(target=_collect, daemon=True).start()
+    """Start the first listing at start-up."""
+    _collect()
 
 
 def _how_far(types: set) -> str:
@@ -109,7 +132,7 @@ def simulations() -> dict:
                          status=status,   # current / outdated / unknown, or running while it is being made
                          size_mb=size / 1e6, last_run=files[-1].name[:15] if files else "", note=r.get("note", ""),
                          exported=_exported(r.get("number")), n_records=len(files)))
-    return dict(rows=rows, data=str(DATA), studies=str(STUDIES), maps=d["maps"])
+    return dict(rows=rows, data=str(DATA), studies=str(STUDIES), maps=d["maps"], loading=d.get("loading", False))
 
 
 def records(run_id: str) -> list:
