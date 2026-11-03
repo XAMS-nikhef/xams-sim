@@ -1,7 +1,17 @@
 {% extends "base.html" %}
+{% block eyebrow %}<span class="mono">{{ d.data }}</span>{% endblock %}
+{% block aside %}<span class="tag" title="run files">{{ d.studies }}</span>{% endblock %}
 {% block content %}
+{% set all = d.rows %}
+<section class="stats" aria-label="Summary">
+  <div class="stat"><span class="label">Simulations</span><span class="value">{{ all|length }}</span></div>
+  <div class="stat"><span class="label">Current</span><span class="value ok">{{ all|selectattr("status", "equalto", "current")|list|length }}</span></div>
+  <div class="stat"><span class="label">Outdated</span><span class="value warn">{{ all|selectattr("status", "equalto", "outdated")|list|length }}</span></div>
+  <div class="stat"><span class="label">Running</span><span class="value accent">{{ all|selectattr("status", "equalto", "running")|list|length }}</span></div>
+  <div class="stat"><span class="label">On disk</span><span class="value">{{ "%.1f"|format((all|sum(attribute="size_mb")) / 1000) }}<span class="unit"> GB</span></span></div>
+</section>
 <section class="panel">
-  <div class="panel-title">Simulations <span class="muted small">data folder {{ d.data }} · run files {{ d.studies }}</span></div>
+  <div class="panel-title">All simulations <span class="muted small">{{ rows|length }} shown</span></div>
   <form class="controls" method="get">
     {% for k in ["study", "state", "source", "status"] %}
     <select name="{{ k }}" onchange="this.form.submit()">
@@ -10,7 +20,7 @@
     </select>
     {% endfor %}
   </form>
-  <table class="table">
+  <div class="scroll-x"><table class="table">
     <thead><tr>
       <th>simulation</th><th>study</th><th>run</th><th>state</th><th>source</th><th class="num">decays</th>
       <th>how far</th><th>for amstrax</th><th>status</th><th class="num">size</th><th>last chain run</th>
@@ -34,6 +44,6 @@
       <tr><td colspan="11" class="muted">no simulations</td></tr>
     {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </section>
 {% endblock %}

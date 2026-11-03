@@ -1,27 +1,65 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>XAMS Simulations</title>
+  <title>{% block title %}Simulations{% endblock %} · XAMS</title>
+  <script>
+    // The theme: the one chosen with the toggle, else the system setting. Set before the page paints.
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("xamssim-theme"); } catch (e) {}
+      if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
 <body>
-  <div class="bg"></div>
   <div class="app">
-    <header class="topbar">
-      <div class="title-wrap">
-        <h1>XAMS <span>Simulations</span></h1>
-        <div class="nav-links">
-          <a class="nav-link {% if page == 'overview' %}active{% endif %}" href="{{ url_for('overview') }}">Simulations</a>
-          <a class="nav-link {% if page == 'compare' %}active{% endif %}" href="{{ url_for('compare') }}">Compare</a>
-          <a class="nav-link {% if page == 'maps' %}active{% endif %}" href="{{ url_for('maps') }}">Maps</a>
-          <a class="nav-link muted" title="composer: next phase">Compose</a>
+    <nav class="rail" aria-label="Main">
+      <a class="mark" href="{{ url_for('overview') }}" aria-label="XAMS simulations home">XS</a>
+      <ul class="rail-nav">
+        <li><a class="rail-btn {% if page == 'overview' %}active{% endif %}" href="{{ url_for('overview') }}" data-tip="Simulations" aria-label="Simulations"
+               {% if page == 'overview' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M7.3 11 16.7 6M7.3 13l9.4 5"/></svg></a></li>
+        <li><a class="rail-btn {% if page == 'compare' %}active{% endif %}" href="{{ url_for('compare') }}" data-tip="Compare" aria-label="Compare"
+               {% if page == 'compare' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h5M16 16h5M3 16h5M16 8h5"/></svg></a></li>
+        <li><a class="rail-btn {% if page == 'maps' %}active{% endif %}" href="{{ url_for('maps') }}" data-tip="Maps" aria-label="Maps"
+               {% if page == 'maps' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></a></li>
+        <li><span class="rail-btn muted" data-tip="Compose (next phase)" aria-label="Compose (next phase)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></li>
+      </ul>
+      <div class="rail-spacer"></div>
+      <a class="rail-btn solo" href="{{ url_for('reload') }}" data-tip="Read the data folder again" aria-label="Reload the data folder">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></a>
+      <button class="rail-btn solo" type="button" onclick="toggleTheme()" data-tip="Light / dark" aria-label="Switch between light and dark">
+        <svg class="theme-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        <svg class="theme-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.3M12 19.3v2.3M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.3M19.3 12h2.3M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+      </button>
+    </nav>
+    <main>
+      <header class="page-head">
+        <div>
+          <p class="eyebrow">{% block eyebrow %}XAMS simulations{% endblock %}</p>
+          <h1>{% block heading %}Simulations{% endblock %}</h1>
         </div>
-      </div>
-      <a class="reload" href="{{ url_for('reload') }}" title="read the data folder again">reload</a>
-    </header>
-    <main>{% block content %}{% endblock %}</main>
+        <div class="aside">{% block aside %}{% endblock %}</div>
+      </header>
+      {% block content %}{% endblock %}
+    </main>
   </div>
+  <script>
+    function toggleTheme() {
+      var t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+      try { localStorage.setItem("xamssim-theme", t); } catch (e) {}
+    }
+  </script>
 </body>
 </html>

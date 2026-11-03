@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% block title %}Rerun {{ run_id }}{% endblock %}
+{% block eyebrow %}<a href="{{ url_for('overview') }}">Simulations</a> / <a href="{{ url_for('simulation', run_id=run_id) }}">{{ run_id }}</a>{% endblock %}
+{% block heading %}Rerun{% endblock %}
 {% block content %}
 <section class="panel">
-  <div class="panel-title">Rerun {{ run_id }} <a class="small" href="{{ url_for('simulation', run_id=run_id) }}">back</a></div>
+  <div class="panel-title">What a rerun does</div>
   {% if error %}<p class="status outdated">{{ error }}</p>{% endif %}
   {% if plan %}
   <p class="muted small">A run number is one fixed simulation: a rerun is a new run file with the next free number and
