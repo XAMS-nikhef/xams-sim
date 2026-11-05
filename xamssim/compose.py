@@ -33,7 +33,8 @@ _REFRESHING = threading.Event()
 
 
 # The last listing on local disk, so a restarted app shows it at once (per user and data folder).
-_DISK = Path(tempfile.gettempdir()) / f"xamssim_web_{getpass.getuser()}_{hashlib.md5(str(DATA).encode()).hexdigest()[:8]}.pkl"
+ROWS_VERSION = 2                     # part of the disk cache name: raise it when a row gets new fields (2: chain steps)
+_DISK = Path(tempfile.gettempdir()) / f"xamssim_web_{getpass.getuser()}_{hashlib.md5(str(DATA).encode()).hexdigest()[:8]}_v{ROWS_VERSION}.pkl"
 _EMPTY = dict(runs=[], rows=[], maps=dict(states={}, old=[], kinds=[]), loading=True)
 
 
@@ -93,6 +94,65 @@ def _how_far(types: set) -> str:
     return "Geant4 only"
 
 
+# The chain steps shown as boxes in the run list (the same look as the plugin boxes in Processing): step -> data types
+STEPS = [
+    ("Geant4", None),                                  # the Geant4 output itself (its key against the run file now)
+    ("optical", ("clustered_interactions", "microphysics_summary", "volume_properties", "drifted_electrons",
+                 "extracted_electrons", "s1_photoelectrons", "s2_photoelectrons", "peak_areas", "xams_events")),
+    ("waveforms", ("xams_raw_records", "xams_raw_records_sipm")),
+    ("reconstruction", ("event_info",)),               # amstrax (Processing), in the MC folders
+]
+
+
+def _recon_present(number) -> bool:
+    """Whether amstrax made event_info for the run (MC folders; a glob, no metadata read)."""
+    if number is None:
+        return False
+    from . import amstrax_io
+    rid = f"{int(number):06d}"
+    for folder in (Path(amstrax_io.STORE) if amstrax_io.STORE is not None else None, processed_dir()):
+        if folder is not None and folder.is_dir() and any(not d.name.endswith("_temp") for d in folder.glob(f"{rid}-event_info-*")):
+            return True
+    return False
+
+
+def _steps(r: dict, making: list) -> list:
+    """[(step, status, tooltip)] per chain step: current / outdated / unknown / running / missing."""
+    by_type = {p["type"]: p["state"] for p in r["products"]}
+    out = []
+    for name, types in STEPS:
+        if name == "Geant4":
+            g = r.get("g4")
+            if not g:
+                st, tip = ("running" if making == [] else "missing"), "no Geant4 output"
+            elif r.get("g4_key_now") and g["key"] != r["g4_key_now"]:
+                st, tip = "outdated", "Geant4 settings changed since"
+            else:
+                st, tip = "current", f"{g.get('events') or ''} events".strip()
+        elif name == "reconstruction":
+            ok = _recon_present(r.get("number"))
+            st, tip = ("current" if ok else "missing"), ("event_info made by amstrax (see Processing)" if ok
+                                                         else "not reconstructed (no event_info)")
+        else:
+            have = {t: by_type[t] for t in types if t in by_type}
+            busy = [t for t in types if t in (making or [])]
+            if busy:
+                st = "running"
+            elif not have:
+                st = "missing"
+            elif "old" in have.values():
+                st = "outdated"
+            elif "?" in have.values():
+                st = "unknown"
+            else:
+                st = "current"
+            tip = ", ".join(f"{t}: {v}" for t, v in have.items()) or "not made"
+            if busy:
+                tip = "being made: " + ", ".join(busy) + ("; " + tip if have else "")
+        out.append((name, st, tip))
+    return out
+
+
 def _exported(number) -> dict:
     """Whether the run was exported for amstrax (raw records) or written as live data."""
     if number is None:
@@ -141,7 +201,7 @@ def _rows(d: dict) -> list:
                          how_far=_how_far({p["type"] for p in prods}) + (f" (making {', '.join(making)})" if making else ""),
                          status=status,   # current / outdated / unknown, or running while it is being made
                          size_mb=size / 1e6, last_run=files[-1].name[:15] if files else "", note=r.get("note", ""),
-                         exported=_exported(r.get("number")), n_records=len(files)))
+                         exported=_exported(r.get("number")), n_records=len(files), steps=_steps(r, making)))
     return rows
 
 

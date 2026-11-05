@@ -178,6 +178,16 @@ p{margin:0}
 .status.running{background:var(--grad-running);color:#fff}
 p.status{height:auto;padding:8px 14px;white-space:normal}
 
+/* ---- chain / plugin boxes: one per step, the same in Processing (its run list) ---- */
+.steps{display:inline-flex;gap:3px;vertical-align:middle;margin-right:6px}
+.blk{display:inline-block;width:13px;height:13px;border-radius:4px;vertical-align:middle;background:var(--inset-2)}
+.blk.st-current{background:var(--ok)}
+.blk.st-outdated{background:var(--bad)}
+.blk.st-unknown,.blk.st-incomplete{background:#ca8a04}
+.blk.st-running{background:var(--accent)}
+.blk.st-missing{background:transparent;box-shadow:inset 0 0 0 1px var(--rail)}
+.nowrap{white-space:nowrap}
+
 /* ---- figures: the PNGs have a white ground (plotstyle.py), also in the dark theme ---- */
 .figure{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:var(--r-inset);background:var(--plate)}
 .grid.figures .figure{max-height:520px}
