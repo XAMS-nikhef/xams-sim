@@ -15,7 +15,7 @@
     <span class="muted">compare with</span>
     <select name="b">{% for o in others %}<option>{{ o }}</option>{% endfor %}</select>
     <button type="submit">compare</button>
-    {% if dashboard and d.row and d.row.number %}<a class="nav-link" href="{{ dashboard }}">processing / data (xams-dashboard)</a>{% endif %}
+    {% if d.row and d.row.number %}<a class="nav-link" href="{{ processing_url(d.row.number) }}">reconstruction in Processing</a>{% endif %}
   </form>
 </section>
 
@@ -99,35 +99,11 @@ document.querySelectorAll('.figrow img').forEach(function (img) { if (img.comple
   </table></div>
 </section>
 {% endif %}
-{% if reco and reco.products %}
+{% if d.row and d.row.number %}
 <section class="panel">
-  {% set view = reco_view if reco_view in reco.views else 'latest' %}
-  {% set shown = reco.views.get(view) %}
-  <div class="panel-title">Reconstruction (amstrax) <span class="muted small">run {{ "%06d"|format(d.row.number) }}; stored data types, no database
-    {% if reco.n_decays %}· {{ reco.n_decays|fmt }} decays simulated{% endif %}</span>
-    <span class="segmented">{% for v, c in reco.views.items() %}<a class="nav-link small{% if v == view %} active{% endif %}" href="?reco={{ v }}">{{ v }}{% if v == 'latest' %} ({{ 'truth' if not c else 'v%d'|format(c) }}){% endif %}</a>{% endfor %}</span>
-  </div>
-  <div class="grid two">
-    <table class="table">
-      <thead><tr><th>data type</th><th>hash</th><th class="num">chunks</th><th class="num">rows</th><th class="num">size</th><th>calibration</th><th>made</th></tr></thead>
-      {% for p in reco.products if p.calibration is none or p.calibration == shown %}<tr><td>{{ p.type }}</td><td class="mono">{{ p.hash }}</td><td class="num">{{ p.n_chunks }}</td>
-        <td class="num">{{ p.rows }}</td><td class="num">{{ "%.1f"|format(p.size_mb) }} MB</td>
-        <td>{% if p.calibration is not none %}{{ "truth" if p.calibration == 0 else "v%d"|format(p.calibration) }}{% endif %}</td><td class="mono small">{{ p.made }}</td></tr>{% endfor %}
-    </table>
-    <table class="table">
-      <thead><tr><th>correction</th><th>truth</th><th>calibrated</th></tr></thead>
-      {% for c in reco.corrections %}<tr><td>{{ c.name }}</td><td class="mono">{{ c.truth|fmt }}</td><td class="mono">{{ c.calibrated|fmt }}</td></tr>{% endfor %}
-      <tr><td class="muted">current calibration</td><td colspan="2">{{ "truth (version 0)" if not reco.calibration_version else "version %d"|format(reco.calibration_version) }}
-        {% if reco.calibration %}<span class="muted small">from run {{ reco.calibration.from_run }}, {{ reco.calibration.method }}</span>{% endif %}</td></tr>
-    </table>
-  </div>
+  <div class="panel-title">Reconstruction (amstrax) <span class="muted small">moved to Processing: the run page of MC run {{ "%06d"|format(d.row.number) }} has the same figures as a data run</span></div>
+  <p><a class="nav-link" href="{{ processing_url(d.row.number) }}">open run {{ "%06d"|format(d.row.number) }} in Processing</a></p>
 </section>
-{% for e in reco.event_info if e.calibration == shown or shown is none %}
-<section class="panel">
-  <div class="panel-title">event_info {{ e.hash }} <span class="muted small">{{ e.rows }} events · calibration {{ "truth" if not e.calibration else "v%d"|format(e.calibration) }} · made once, the first view takes a while</span></div>
-  <img class="figure" loading="lazy" src="{{ url_for('reconstruction_figure', run_id=run_id, ev_hash=e.hash) }}" alt="reconstruction" />
-</section>
-{% endfor %}
 {% endif %}
 
 {% else %}

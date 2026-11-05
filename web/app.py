@@ -14,7 +14,18 @@ from flask import Flask, abort, redirect, render_template, request, send_file, u
 from xamssim import compose
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
-DASHBOARD = os.environ.get("XAMSSIM_DASHBOARD_URL", "")          # link to the xams-dashboard, if known
+# The reconstruction of an MC run is shown in Processing (xams-dashboard run page), opened through the XAMS launcher,
+# which knows the tunnels and passes the key (central) or token (private runs).
+LAUNCHER = os.environ.get("XAMSSIM_LAUNCHER_URL", "http://127.0.0.1:8090").rstrip("/")
+
+
+@app.template_global()
+def processing_url(number) -> str:
+    from xamssim.runid import PRIVATE
+    n = int(number)
+    if PRIVATE[0] <= n <= PRIVATE[1]:
+        return f"{LAUNCHER}/open/dashprivate?to=/run/{n}"
+    return f"{LAUNCHER}/open/dashboard?to=/v3/run/{n}"
 
 
 def _fmt(v):
@@ -50,9 +61,8 @@ def simulation(run_id):
     number = (d.get("row") or {}).get("number")
     reasons = compose.outdated_reasons(rec) if rec and (d.get("row") or {}).get("status") == "outdated" else []
     return render_template("simulation.html", run_id=run_id, d=d, figures=compose.FIGURES, figure_rows=compose.FIGURE_ROWS, others=others,
-                           optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES, dashboard=DASHBOARD,
+                           optical=optical, map_figures=compose.MAP_FIGURES, results=compose.RESULT_FIGURES,
                            daq=compose.daq_settings(rec) if rec else None, live=compose.live_settings(rec, number),
-                           reco=compose.reconstruction(number), reco_view=request.args.get("reco", "latest"),
                            reasons=reasons, page="overview")
 
 
