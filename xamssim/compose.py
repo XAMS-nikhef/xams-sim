@@ -23,7 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import listing, provenance
+from . import listing, plotstyle, provenance
 from .config import DATA, STUDIES
 
 MESH_HV = {"top_screen": "TS", "anode": "A", "gate": "G", "cathode": "C", "bottom_screen": "BS"}
@@ -207,13 +207,7 @@ def compare(a: str, b: str) -> list:
 
 # ------------------------------------------------------------------------------------------------ figures
 def _style(ax):
-    ax.set_facecolor("#0f1729")
-    for sp in ax.spines.values():
-        sp.set_color("#2a3a58")
-    ax.tick_params(colors="#9fb4d8")
-    ax.xaxis.label.set_color("#dce7ff")
-    ax.yaxis.label.set_color("#dce7ff")
-    ax.title.set_color("#dce7ff")
+    plotstyle.style_axes(ax)
 
 
 def _draw_detector(ax, rec, labels=True, liquid=True):
@@ -227,12 +221,12 @@ def _draw_detector(ax, rec, labels=True, liquid=True):
     level = z_gate + rec["state"]["liquid_level_mm"]
     bucket = g.get("ptfe_bucket", {})
     rb = bucket.get("inner_diameter_mm", 112) / 2
-    PTFE = dict(color="#d9d9d9", alpha=0.8, lw=0, zorder=2)
+    PTFE = dict(color="#a3a9b3", alpha=0.8, lw=0, zorder=2)
     z_rim = level + bucket.get("weir_below_rim_mm", 0.0)                 # the weir sets the level (as Geant4 builds it)
     z_bucket = z_rim - bucket.get("height_mm", 0.0)
     bot = bucket.get("bottom_thickness_mm") or 10.0                      # g4config default: = wall
     if liquid:
-        ax.add_patch(Rectangle((-rb, z_bucket + bot), 2 * rb, level - z_bucket - bot, color="#1d4f7a", alpha=0.35,
+        ax.add_patch(Rectangle((-rb, z_bucket + bot), 2 * rb, level - z_bucket - bot, color="#93c5fd", alpha=0.35,
                                lw=0, zorder=0))
     if bucket:                                                           # PTFE bucket: wall and bottom
         rbo = bucket["outer_diameter_mm"] / 2
@@ -240,16 +234,16 @@ def _draw_detector(ax, rec, labels=True, liquid=True):
             ax.add_patch(Rectangle((x0, z_bucket), rbo - rb, z_rim - z_bucket, **PTFE))
         ax.add_patch(Rectangle((-rb, z_bucket), 2 * rb, bot, **PTFE))
         if labels:
-            ax.text(rbo + 1, z_bucket + 4, "PTFE bucket", color="#d9d9d9", fontsize=7, va="bottom")
-    ax.axhline(level, color="#4db6ff", lw=0.8, ls="--", zorder=1)
+            ax.text(rbo + 1, z_bucket + 4, "PTFE bucket", color="#a3a9b3", fontsize=7, va="bottom")
+    ax.axhline(level, color="#0284c7", lw=0.8, ls="--", zorder=1)
     if labels:
-        ax.text(-rb + 1, level + 0.6, f"liquid level (gate +{rec['state']['liquid_level_mm']} mm)", color="#4db6ff",
+        ax.text(-rb + 1, level + 0.6, f"liquid level (gate +{rec['state']['liquid_level_mm']} mm)", color="#0284c7",
                 fontsize=7, ha="left", va="bottom")
     pt = g["ptfe_cylinder"]
     ri, ro = pt["inner_diameter_mm"] / 2, pt["inner_diameter_mm"] / 2 + pt["wall_thickness_mm"]
     for sgn in (-1, 1):
         x0 = sgn * ri if sgn > 0 else -ro
-        ax.add_patch(Rectangle((x0, pt["z_top_mm"] - pt["length_mm"]), ro - ri, pt["length_mm"], color="#d9d9d9",
+        ax.add_patch(Rectangle((x0, pt["z_top_mm"] - pt["length_mm"]), ro - ri, pt["length_mm"], color="#a3a9b3",
                                alpha=0.8, lw=0, zorder=2))
     fr = g.get("field_shaping_rings", {})
     for zc in fr.get("z_center_mm", []):
@@ -260,15 +254,15 @@ def _draw_detector(ax, rec, labels=True, liquid=True):
     foil = mc["foil_diameter_mm"] / 2
     for m in g["meshes"]:
         z = m["z_mm"]
-        ax.plot([-foil, foil], [z, z], color="#f1c40f", lw=1.2, zorder=3)
+        ax.plot([-foil, foil], [z, z], color="#ca8a04", lw=1.2, zorder=3)
         for sgn in (-1, 1):
             x0 = r_ring_in if sgn > 0 else -r_ring_out
             ax.add_patch(Rectangle((x0, z - mc["ring"]["thickness_mm"] / 2), r_ring_out - r_ring_in,
-                                   mc["ring"]["thickness_mm"], color="#8a96a8", lw=0, zorder=3))
+                                   mc["ring"]["thickness_mm"], color="#5f6775", lw=0, zorder=3))
         if labels:
             v = hv.get(MESH_HV.get(m["name"], ""), None)
             ax.text(r_ring_out + 2, z, f"{m['name'].replace('_', ' ')}  {v:+g} V" if v is not None else m["name"],
-                    color="#f1c40f", fontsize=7, va="center")
+                    color="#ca8a04", fontsize=7, va="center")
     pc = g["pmt_common"]
     half, h = pc["outer_square_mm"] / 2, pc["height_mm"]
     hp = g.get("pmt_ptfe")
@@ -287,33 +281,33 @@ def _draw_detector(ax, rec, labels=True, liquid=True):
                     for x0 in (-ro, inner):
                         ax.add_patch(Rectangle((x0, lo), ro - inner, hi - lo, **PTFE))
         if labels:
-            ax.text(ro + 1, max(p["window_z_mm"] for p in g["pmts"]) + 0.75 * h, "PTFE PMT holder", color="#d9d9d9",
+            ax.text(ro + 1, max(p["window_z_mm"] for p in g["pmts"]) + 0.75 * h, "PTFE PMT holder", color="#a3a9b3",
                     fontsize=7, ha="left", va="center")
     for p in g["pmts"]:
         z = p["window_z_mm"]
         up = z > z_gate
         ax.add_patch(Rectangle((-half, z if up else z - h), 2 * half, h, color="#6c5ce7", alpha=0.8, lw=0, zorder=2))
         if labels:
-            ax.text(-half - 2, z + (h / 2 if up else -h / 2), f"PMT {p['name']}", color="#b3a7ff", fontsize=7,
+            ax.text(-half - 2, z + (h / 2 if up else -h / 2), f"PMT {p['name']}", color="#6d5dd3", fontsize=7,
                     ha="right", va="center")
     sp = g["sipms"]
     az = np.radians(np.atleast_1d(sp["azimuth_deg"]).astype(float))
     for i, (a, zz) in enumerate(zip(az, np.atleast_1d(sp["z_mm"]))):
         in_plane = abs(np.cos(a)) > 0.5                  # this section is the x-z plane through the axis
         x = np.sign(np.cos(a)) * ri if in_plane else ri
-        ax.plot([x], [zz], "s" if in_plane else "s", color="#2ecc71", ms=4, mfc="#2ecc71" if in_plane else "none",
+        ax.plot([x], [zz], "s" if in_plane else "s", color="#16a34a", ms=4, mfc="#16a34a" if in_plane else "none",
                 zorder=4)
         if labels:
             ax.text(x + (2 if x < 0 else -2), zz, f"SiPM {i + 1} ({np.degrees(a):.0f}°"      # inwards, off the wall
-                    + ("" if in_plane else ", out of plane") + ")", color="#2ecc71", fontsize=6,
+                    + ("" if in_plane else ", out of plane") + ")", color="#16a34a", fontsize=6,
                     ha="left" if x < 0 else "right", va="center")
     pos = rec["source"].get("position_mm")
     if pos is not None:
         r = float(np.hypot(pos[0], pos[1]))
-        ax.plot([r], [pos[2]], "*", color="#ff6b6b", ms=12, zorder=5)
+        ax.plot([r], [pos[2]], "*", color="#dc2626", ms=12, zorder=5)
         if labels:
             ax.text(r, pos[2] + 3, f"source {rec['source'].get('isotope', '')}\nr = {r:.0f} mm, z = {pos[2]:.0f} mm",
-                    color="#ff6b6b", fontsize=7, ha="center", va="bottom")
+                    color="#dc2626", fontsize=7, ha="center", va="bottom")
     return level
 
 
@@ -332,7 +326,7 @@ def fig_cross_section(rec):
     # with blank space above and below it.
     width = 9.0
     height = width * (ylim[1] - ylim[0]) / (xlim[1] - xlim[0]) + 1.4
-    fig, ax = plt.subplots(figsize=(width, max(3.5, height)), facecolor="#111b2e")
+    fig, ax = plt.subplots(figsize=(width, max(3.5, height)), facecolor="#ffffff")
     _style(ax)
     _draw_detector(ax, rec)
     ax.set_xlim(*xlim)
@@ -353,10 +347,10 @@ def _note_figure(rec, text):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(figsize=(8, 2.2), facecolor="#111b2e")
-    ax.set_facecolor("#111b2e")
+    fig, ax = plt.subplots(figsize=(8, 2.2), facecolor="#ffffff")
+    ax.set_facecolor("#ffffff")
     ax.axis("off")
-    ax.text(0.5, 0.5, f"{rec['run_id']}: {text}", ha="center", va="center", color="#dce7ff", fontsize=11,
+    ax.text(0.5, 0.5, f"{rec['run_id']}: {text}", ha="center", va="center", color="#12141a", fontsize=11,
             transform=ax.transAxes)
     return fig
 
@@ -380,15 +374,15 @@ def fig_field(rec):
     iy = int(np.argmin(np.abs(f["y"])))
     ex, ez = f["Ex"][:, iy, :].T, f["Ez"][:, iy, :].T
     emag = np.sqrt(ex ** 2 + f["Ey"][:, iy, :].T ** 2 + ez ** 2)
-    fig, axs = plt.subplots(1, 2, figsize=(14, 7), facecolor="#111b2e", gridspec_kw=dict(wspace=0.25))
+    fig, axs = plt.subplots(1, 2, figsize=(14, 7), facecolor="#ffffff", gridspec_kw=dict(wspace=0.25))
     for ax in axs:
         _style(ax)
     ax = axs[0]
     m = ax.pcolormesh(x, z, np.clip(emag, 10, None), norm=LogNorm(10, 2e4), cmap="viridis", shading="auto", zorder=0)
     ax.streamplot(x, z, ex, ez, color="w", linewidth=0.4, density=1.4, arrowsize=0.5, zorder=1)
     cb = fig.colorbar(m, ax=ax, fraction=0.04)
-    cb.set_label("|E| [V/cm]", color="#dce7ff")
-    cb.ax.tick_params(colors="#9fb4d8")
+    cb.set_label("|E| [V/cm]", color="#12141a")
+    cb.ax.tick_params(colors="#4a5160")
     level = _draw_detector(ax, rec, labels=False, liquid=False)
     ax.set(xlim=(x[0], x[-1]), ylim=(z[0], z[-1]), xlabel="x [mm]", ylabel="z [mm]",
            title="field strength and field lines (y = 0)")
@@ -413,7 +407,7 @@ def fig_field(rec):
         jy = int(np.argmin(np.abs(dd["y"])))
         end = dd["end"][:, jy, :].T.astype(float)
         names = [str(c) for c in dd["codes"]]
-        colors = ["#555555", "#2ecc71", "#8e44ad", "#e67e22", "#ff6b6b", "#4db6ff", "#2a3a58", "#f1c40f"]
+        colors = ["#555555", "#16a34a", "#8e44ad", "#e67e22", "#dc2626", "#0284c7", "#c9cdd6", "#ca8a04"]
         ax.pcolormesh(dd["x"], dd["z"], end, cmap=ListedColormap(colors[:len(names)]), vmin=-0.5,
                       vmax=len(names) - 0.5, shading="auto", zorder=0)
         t = dd["t_us"][:, jy, :].T
@@ -423,7 +417,7 @@ def fig_field(rec):
         from matplotlib.patches import Patch
         present = sorted(set(np.unique(end[np.isfinite(end)]).astype(int)))
         ax.legend(handles=[Patch(color=colors[k], label=names[k].lower()) for k in present], loc="lower right",
-                  fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58", title="electron ends at",
+                  fontsize=7, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6", title="electron ends at",
                   title_fontsize=7)
         ax.set(xlim=(dd["x"][0], dd["x"][-1]), ylim=(dd["z"][0], dd["z"][-1]))
     else:
@@ -431,7 +425,7 @@ def fig_field(rec):
     _draw_detector(ax, rec, labels=False, liquid=False)
     ax.set(xlabel="x [mm]", ylabel="z [mm]", title="where drifting electrons end; drift time to the surface")
     ax.set_aspect("equal")
-    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}  —  " + ",  ".join(texts), color="#dce7ff", fontsize=10)
+    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}  —  " + ",  ".join(texts), color="#12141a", fontsize=10)
     return fig
 
 
@@ -445,7 +439,7 @@ def fig_top_view(rec):
     from matplotlib import patheffects
     from matplotlib.patches import Circle, Rectangle
 
-    halo = [patheffects.withStroke(linewidth=3, foreground="#0b1220")]
+    halo = [patheffects.withStroke(linewidth=3, foreground="#ffffff")]
     g = rec["geometry"]
     mc = g["mesh_common"]
     gate = next(m for m in g["meshes"] if m["name"] == "gate")
@@ -465,8 +459,8 @@ def fig_top_view(rec):
     top = next(q for q in g["pmts"] if q["name"] == "top")
     quad = top.get("sector_quadrant", {})
     chan = {v: k for k, v in top.get("sector_to_channel", {}).items()}
-    colors = {"ch1": "#e74c3c", "ch2": "#3498db", "ch3": "#2ecc71", "ch4": "#f39c12"}
-    fig, axs = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1.25, 1]))
+    colors = {"ch1": "#e74c3c", "ch2": "#3498db", "ch3": "#16a34a", "ch4": "#ea580c"}
+    fig, axs = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#ffffff", gridspec_kw=dict(width_ratios=[1.25, 1]))
     for k, ax in enumerate(axs):
         _style(ax)
         for sec, (sx, sy) in quad.items():                  # top-PMT sectors (photocathode quadrants), channel colours
@@ -476,31 +470,31 @@ def fig_top_view(rec):
             if k == 0:
                 ax.text(sx * half / 2, sy * half / 2, f"{ch}\n({sec})", color=colors.get(ch, "#ddd"), fontsize=11,
                         ha="center", va="center", zorder=3, fontweight="bold", path_effects=halo)
-        ax.add_patch(Rectangle((-half, -half), 2 * half, 2 * half, fill=False, ec="#b3a7ff", lw=1, zorder=2))
+        ax.add_patch(Rectangle((-half, -half), 2 * half, 2 * half, fill=False, ec="#6d5dd3", lw=1, zorder=2))
         # the holes as outlines (the steel bars between them), so the sector colours show through
-        ax.add_collection(PolyCollection(polys, facecolors="none", edgecolors="#f1c40f", linewidths=0.35 if k == 0 else 1.4,
+        ax.add_collection(PolyCollection(polys, facecolors="none", edgecolors="#ca8a04", linewidths=0.35 if k == 0 else 1.4,
                                          alpha=0.8, zorder=1))
-        ax.add_patch(Circle((0, 0), r_cage, fill=False, ec="#d9d9d9", lw=1.2, zorder=2))
+        ax.add_patch(Circle((0, 0), r_cage, fill=False, ec="#a3a9b3", lw=1.2, zorder=2))
         ax.set_aspect("equal")
     ax = axs[0]
-    ax.add_patch(Circle((0, 0), r_cage + pt["wall_thickness_mm"], fill=False, ec="#d9d9d9", lw=0.8, ls="--", zorder=2))
-    ax.add_patch(Circle((0, 0), mc["ring"]["outer_diameter_mm"] / 2, fill=False, ec="#8a96a8", lw=1, zorder=2))
+    ax.add_patch(Circle((0, 0), r_cage + pt["wall_thickness_mm"], fill=False, ec="#a3a9b3", lw=0.8, ls="--", zorder=2))
+    ax.add_patch(Circle((0, 0), mc["ring"]["outer_diameter_mm"] / 2, fill=False, ec="#5f6775", lw=1, zorder=2))
     hp, bk = g.get("pmt_ptfe"), g.get("ptfe_bucket")
     if hp:                                                               # PTFE PMT holder: outline and opening
-        ax.add_patch(Circle((0, 0), hp["outer_diameter_mm"] / 2, fill=False, ec="#d9d9d9", lw=0.8, ls=":", zorder=2))
+        ax.add_patch(Circle((0, 0), hp["outer_diameter_mm"] / 2, fill=False, ec="#a3a9b3", lw=0.8, ls=":", zorder=2))
         ap = hp["aperture_square_mm"] / 2
-        ax.add_patch(Rectangle((-ap, -ap), 2 * ap, 2 * ap, fill=False, ec="#d9d9d9", lw=0.8, ls=":", zorder=2))
+        ax.add_patch(Rectangle((-ap, -ap), 2 * ap, 2 * ap, fill=False, ec="#a3a9b3", lw=0.8, ls=":", zorder=2))
     if bk:                                                               # PTFE bucket wall
         from matplotlib.patches import Wedge
         ax.add_patch(Wedge((0, 0), bk["outer_diameter_mm"] / 2, 0, 360, width=(bk["outer_diameter_mm"] - bk["inner_diameter_mm"]) / 2,
-                           color="#d9d9d9", alpha=0.5, lw=0, zorder=2))
-        ax.text(0, -bk["outer_diameter_mm"] / 2 + 2, "PTFE bucket", color="#d9d9d9", fontsize=8, ha="center", va="bottom",
+                           color="#a3a9b3", alpha=0.5, lw=0, zorder=2))
+        ax.text(0, -bk["outer_diameter_mm"] / 2 + 2, "PTFE bucket", color="#a3a9b3", fontsize=8, ha="center", va="bottom",
                 zorder=4, path_effects=halo)
     sp = g["sipms"]
     for i, az in enumerate(np.atleast_1d(sp["azimuth_deg"]).astype(float)):
         x, y = r_cage * np.cos(np.radians(az)), r_cage * np.sin(np.radians(az))
-        ax.plot([x], [y], "s", color="#2ecc71", ms=7, mec="w", mew=0.6, zorder=4)
-        ax.text(x * 0.8, y * 0.8, f"SiPM {i + 1}\n{az:.0f}°", color="#2ecc71", fontsize=8, ha="center", va="center",
+        ax.plot([x], [y], "s", color="#16a34a", ms=7, mec="w", mew=0.6, zorder=4)
+        ax.text(x * 0.8, y * 0.8, f"SiPM {i + 1}\n{az:.0f}°", color="#16a34a", fontsize=8, ha="center", va="center",
                 zorder=4, path_effects=halo)
     pos = rec["source"].get("position_mm")
     lim = 70
@@ -509,20 +503,20 @@ def fig_top_view(rec):
         if r > lim:                                          # outside the view: an arrow towards it
             ux, uy = pos[0] / r, pos[1] / r
             ax.annotate("", xy=(ux * (lim - 4), uy * (lim - 4)), xytext=(ux * (lim - 14), uy * (lim - 14)),
-                        arrowprops=dict(arrowstyle="<-", color="#ff6b6b", lw=1.5))
-            ax.text(ux * (lim - 9) + 3, uy * (lim - 9), f"source\nr = {r:.0f} mm", color="#ff6b6b", fontsize=8,
+                        arrowprops=dict(arrowstyle="<-", color="#dc2626", lw=1.5))
+            ax.text(ux * (lim - 9) + 3, uy * (lim - 9), f"source\nr = {r:.0f} mm", color="#dc2626", fontsize=8,
                     ha="left", va="center")
         else:
-            ax.plot([pos[0]], [pos[1]], "*", color="#ff6b6b", ms=12, zorder=5)
+            ax.plot([pos[0]], [pos[1]], "*", color="#dc2626", ms=12, zorder=5)
     ax.set(xlim=(-lim, lim), ylim=(-lim, lim), xlabel="x [mm]", ylabel="y [mm]",
            title=f"top view: gate mesh ({len(polys)} holes, {np.degrees(a):.1f}° to the anodes), "
                  f"field cage r {r_cage:.0f} mm, top PMT, PTFE (dotted: PMT holder)")
     z = 3.5 * p
     axs[1].set(xlim=(-z, z), ylim=(-z, z), xlabel="x [mm]", ylabel="y [mm]",
                title=f"centre: pitch {p} mm, holes {h} mm, bars {mc.get('bar_width_mm')} mm")
-    axs[1].axhline(0, color="#b3a7ff", lw=0.6)
-    axs[1].axvline(0, color="#b3a7ff", lw=0.6)
-    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}, detector {rec['detector']}", color="#dce7ff", fontsize=10)
+    axs[1].axhline(0, color="#6d5dd3", lw=0.6)
+    axs[1].axvline(0, color="#6d5dd3", lw=0.6)
+    fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}, detector {rec['detector']}", color="#12141a", fontsize=10)
     return fig
 
 
@@ -547,11 +541,11 @@ def fig_field_axis(rec):
     zm = {m["name"]: m["z_mm"] for m in g["meshes"]}
     level = zm["gate"] + rec["state"]["liquid_level_mm"]
     hv = rec["hv_case"]
-    fig, (ax, axv) = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1.6, 1]))
+    fig, (ax, axv) = plt.subplots(1, 2, figsize=(13, 6.4), facecolor="#ffffff", gridspec_kw=dict(width_ratios=[1.6, 1]))
     for a_ in (ax, axv):
         _style(a_)
-    shades = [("drift region", zm["cathode"], zm["gate"], "#1d4f7a"), ("liquid above gate", zm["gate"], level, "#2a6f97"),
-              ("gas gap", level, zm["anode"], "#3d3d5c")]
+    shades = [("drift region", zm["cathode"], zm["gate"], "#93c5fd"), ("liquid above gate", zm["gate"], level, "#bfdbfe"),
+              ("gas gap", level, zm["anode"], "#e5e7eb")]
     regions = []
     ix0 = int(np.argmin(np.abs(x)))
     emag0 = np.sqrt(f["Ex"][ix0, iy, :] ** 2 + f["Ey"][ix0, iy, :] ** 2 + f["Ez"][ix0, iy, :] ** 2)
@@ -563,7 +557,7 @@ def fig_field_axis(rec):
             m = (z > lo + 5) & (z < hi - 5)
         val = float(np.median(emag0[m])) if m.any() else np.nan
         regions.append((name, val))
-    for r, col, lab in ((0.0, "#ffffff", "axis"), (15.0, "#4db6ff", "r = 15 mm"), (25.0, "#f39c12", "r = 25 mm")):
+    for r, col, lab in ((0.0, plotstyle.C["ink"], "axis"), (15.0, "#0284c7", "r = 15 mm"), (25.0, "#ea580c", "r = 25 mm")):
         ix = int(np.argmin(np.abs(x - r)))
         em = np.sqrt(f["Ex"][ix, iy, :] ** 2 + f["Ey"][ix, iy, :] ** 2 + f["Ez"][ix, iy, :] ** 2)
         ax.plot(z, np.clip(em, 1, None), color=col, lw=1.4 if r == 0 else 1.0, label=lab, zorder=3)
@@ -571,20 +565,20 @@ def fig_field_axis(rec):
     for name, zz in zm.items():
         v = hv.get(MESH_HV.get(name, ""))
         for a_ in (ax, axv):
-            a_.axvline(zz, color="#f1c40f", lw=1, zorder=2)
-        ax.text(zz, 1.2, f"{name.replace('_', ' ')}\n{v:+g} V" if v is not None else name, color="#f1c40f", fontsize=7,
+            a_.axvline(zz, color="#ca8a04", lw=1, zorder=2)
+        ax.text(zz, 1.2, f"{name.replace('_', ' ')}\n{v:+g} V" if v is not None else name, color="#ca8a04", fontsize=7,
                 ha="center", va="bottom", rotation=90, zorder=4)
     for a_ in (ax, axv):
-        a_.axvline(level, color="#4db6ff", lw=0.8, ls="--", zorder=2)
+        a_.axvline(level, color="#0284c7", lw=0.8, ls="--", zorder=2)
         a_.set_xlim(z[0], z[-1])
     ax.set(yscale="log", ylim=(1, 2e4), xlabel="z [mm]", ylabel="|E| [V/cm]",
            title="field strength along z (dashed: liquid level)")
-    leg = ax.legend(loc="lower center", fontsize=8, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58",
+    leg = ax.legend(loc="lower center", fontsize=8, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6",
                     title="shaded: drift region, liquid above gate, gas gap", title_fontsize=7)
-    leg.get_title().set_color("#9fb4d8")
+    leg.get_title().set_color("#4a5160")
     axv.set(xlabel="z [mm]", ylabel="potential [kV]", title="potential along z")
     fig.suptitle(f"{rec['run_id']}: state {rec['state_name']}  —  " + ",  ".join(
-        f"{n} {v / 1e3:.2f} kV/cm" if v >= 1e3 else f"{n} {v:.0f} V/cm" for n, v in regions), color="#dce7ff", fontsize=10)
+        f"{n} {v / 1e3:.2f} kV/cm" if v >= 1e3 else f"{n} {v:.0f} V/cm" for n, v in regions), color="#12141a", fontsize=10)
     return fig
 
 
@@ -615,7 +609,7 @@ def fig_results(rec):
     e = _events(rec)
     both = (e["s1_area"] > 0) & (e["s2_area"] > 0) & np.isfinite(e["cs1"]) & np.isfinite(e["cs2"])
     peak = both & (e["energy_drift"] > 650)
-    fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#111b2e", gridspec_kw=dict(hspace=0.32, wspace=0.42))
+    fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#ffffff", gridspec_kw=dict(hspace=0.32, wspace=0.42))
     for ax in axs.flat:
         _style(ax)
     cmap, norm = "viridis", LogNorm()
@@ -626,13 +620,13 @@ def fig_results(rec):
         c.ax.yaxis.set_major_locator(LogLocator(base=10))
         c.ax.yaxis.set_minor_locator(NullLocator())
         c.ax.yaxis.set_minor_formatter(NullFormatter())
-        c.set_label("events", color="#9fb4d8")
-        c.ax.tick_params(colors="#9fb4d8")
+        c.set_label("events", color="#4a5160")
+        c.ax.tick_params(colors="#4a5160")
 
     ax = axs[0, 0]
     ed = e["energy_drift"][e["energy_drift"] > 0]
-    ax.hist(ed, bins=np.arange(0, 720, 5), histtype="step", color="#4db6ff")
-    ax.hist(e["energy_drift"][both], bins=np.arange(0, 720, 5), histtype="step", color="#2ecc71")
+    ax.hist(ed, bins=np.arange(0, 720, 5), histtype="step", color="#0284c7")
+    ax.hist(e["energy_drift"][both], bins=np.arange(0, 720, 5), histtype="step", color="#16a34a")
     ax.set(yscale="log", xlabel="energy in the drift region [keV]", ylabel="decays / 5 keV",
            title="energy per decay (blue: all, green: with S1 and S2)")
     ax = axs[0, 1]
@@ -662,23 +656,23 @@ def fig_results(rec):
     sel = peak if peak.sum() > 20 else both
     if sel.any():
         k = np.arange(len(CHANNEL_NAMES))
-        ax.bar(k - 0.2, e["s1_area_ch"][sel].mean(axis=0), 0.4, color="#4db6ff", label="S1")
-        ax.bar(k + 0.2, e["s2_area_ch"][sel].mean(axis=0) / 100, 0.4, color="#f1c40f", label="S2 / 100")
+        ax.bar(k - 0.2, e["s1_area_ch"][sel].mean(axis=0), 0.4, color="#0284c7", label="S1")
+        ax.bar(k + 0.2, e["s2_area_ch"][sel].mean(axis=0) / 100, 0.4, color="#ca8a04", label="S2 / 100")
         ax.set_xticks(k, [c.replace("top_", "") for c in CHANNEL_NAMES], rotation=30)
-        ax.legend(fontsize=8, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+        ax.legend(fontsize=8, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6")
     ax.set(yscale="log", ylabel="mean PE per event",
            title="PE per channel (" + ("photopeak" if sel is peak else "all S1 + S2") + " events)")
     med = (lambda a: f"{np.median(a):.0f}" if len(a) else "-")
     fig.suptitle(f"{rec['run_id']}: {len(e)} decays with energy in XAMS, {both.sum()} with S1 and S2, {peak.sum()} in the "
                  f"photopeak (> 650 keV in the drift region): median cS1 {med(e['cs1'][peak])} PE, "
-                 f"cS2 {med(e['cs2'][peak])} PE", color="#dce7ff", fontsize=10)
+                 f"cS2 {med(e['cs2'][peak])} PE", color="#12141a", fontsize=10)
     return fig
 
 
 RESULT_FIGURES = {"results": ("Results (xams_events)", fig_results)}
 
 
-FIGURE_VERSION = 9              # part of the figure file names: raise it when a figure changes, so old ones are remade
+FIGURE_VERSION = 10                  # 10: light style (plotstyle.py, 2026-11-05); part of the figure file names: raise it when a figure changes, so old ones are remade
 FIGURES = {"cross_section": ("TPC cross-section", fig_cross_section),
            "field": ("Field and drift", fig_field),
            "top_view": ("Top view", fig_top_view),
@@ -694,8 +688,10 @@ def figure(run_id: str, name: str) -> Path:
     f, rec = recs[-1]
     out = f.parent / "figures" / f"{name}_v{FIGURE_VERSION}_{f.stem}.png"
     if not out.exists():
+        plotstyle.apply()
         out.parent.mkdir(exist_ok=True)
         fig = {**FIGURES, **RESULT_FIGURES}[name][1](rec)
+        plotstyle.finish(fig)
         fig.savefig(out, dpi=110, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.15)
         import matplotlib.pyplot as plt
         plt.close(fig)
@@ -720,7 +716,7 @@ OPTICS_LABELS = {
     "pmt_window_refractive_index": "PMT window refractive index",
 }
 OPTICAL_KINDS = ("s1_light", "s2_pattern")
-MAP_FIGURE_VERSION = 1
+MAP_FIGURE_VERSION = 2              # 2026-11-05: light style
 # s1_outer (the liquid outside the TPC) has its own key (light inputs + outer model + bucket); it belongs to the optical
 # key whose light inputs it shares and is shown with it.
 OUTER_SHARED = ("geometry", "optics", "liquid_level_mm")
@@ -800,7 +796,7 @@ def fig_s2_pattern(key: str):
     p, x, y, inside = d["p"], d["x"], d["y"], d["inside"]
     names = [str(n) for n in d["channel_names"]]
     panels = [("all channels", p.sum(0))] + list(zip(names, p))
-    fig, axs = plt.subplots(2, 4, figsize=(13, 6.6), facecolor="#111b2e",
+    fig, axs = plt.subplots(2, 4, figsize=(13, 6.6), facecolor="#ffffff",
                             gridspec_kw=dict(wspace=0.35, hspace=0.35))
     ext = (x[0], x[-1], y[0], y[-1])
     for ax, (name, img) in zip(axs.flat, panels):
@@ -810,12 +806,12 @@ def fig_s2_pattern(key: str):
         ax.set_aspect("equal")
         ax.tick_params(labelsize=7)
         cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
-        cb.ax.tick_params(labelsize=7, colors="#9fb4d8")
+        cb.ax.tick_params(labelsize=7, colors="#4a5160")
     for ax in axs[1]:
         ax.set_xlabel("x [mm]", fontsize=8)
     for ax in axs[:, 0]:
         ax.set_ylabel("y [mm]", fontsize=8)
-    fig.suptitle("S2: probability that a photon from the gas gap gives a photoelectron", color="#dce7ff", fontsize=11)
+    fig.suptitle("S2: probability that a photon from the gas gap gives a photoelectron", color="#12141a", fontsize=11)
     return fig
 
 
@@ -828,7 +824,7 @@ def fig_s1_light(key: str):
     names = [str(n) for n in d["channel_names"]]
     total = p.sum(0)                                               # (x, y, z)
     top = p[[i for i, n in enumerate(names) if n.startswith("top")]].sum(0)
-    fig, axs = plt.subplots(2, 3, figsize=(13, 7.6), facecolor="#111b2e",
+    fig, axs = plt.subplots(2, 3, figsize=(13, 7.6), facecolor="#ffffff",
                             gridspec_kw=dict(wspace=0.35, hspace=0.38))
     ext = (x[0], x[-1], y[0], y[-1])
     vmax = float(total[inside].max())
@@ -840,7 +836,7 @@ def fig_s1_light(key: str):
         ax.set_xlabel("x [mm]", fontsize=8)
         ax.set_ylabel("y [mm]", fontsize=8)
         ax.tick_params(labelsize=7)
-        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03).ax.tick_params(labelsize=7, colors="#9fb4d8")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03).ax.tick_params(labelsize=7, colors="#4a5160")
     iy = len(y) // 2
     xz_ext = (x[0], x[-1], z[0], z[-1])
     keep = inside[:, iy][:, None]
@@ -855,19 +851,19 @@ def fig_s1_light(key: str):
         ax.set_xlabel("x [mm]", fontsize=8)
         ax.set_ylabel("z [mm]", fontsize=8)
         ax.tick_params(labelsize=7)
-        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03).ax.tick_params(labelsize=7, colors="#9fb4d8")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03).ax.tick_params(labelsize=7, colors="#4a5160")
     ax = axs[1, 2]
     _style(ax)
     mean = np.array([total[:, :, k][inside].mean() for k in range(len(z))])
     mtop = np.array([top[:, :, k][inside].mean() for k in range(len(z))])
-    ax.plot(mean, z, color="#4db6ff", label="all channels")
-    ax.plot(mtop, z, color="#f1c40f", label="top PMT")
+    ax.plot(mean, z, color="#0284c7", label="all channels")
+    ax.plot(mtop, z, color="#ca8a04", label="top PMT")
     ax.set_xlabel("mean detection probability", fontsize=8)
     ax.set_ylabel("z [mm]", fontsize=8)
     ax.set_title("mean over the cylinder", fontsize=10)
     ax.tick_params(labelsize=7)
-    ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
-    fig.suptitle("S1: probability that a photon from the liquid gives a photoelectron", color="#dce7ff", fontsize=11)
+    ax.legend(fontsize=7, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6")
+    fig.suptitle("S1: probability that a photon from the liquid gives a photoelectron", color="#12141a", fontsize=11)
     return fig
 
 
@@ -890,12 +886,12 @@ def fig_s1_outer(key: str):
     o_ok = (o["liquid"] >= 0.3) & ~((rr < ex_r)[:, :, None] & ((oz >= ex_z0) & (oz <= ex_z1))[None, None, :])
     vals = np.concatenate([t_tot[t_in].ravel(), o_tot[o_ok].ravel()])
     norm = LogNorm(vmin=max(float(np.percentile(vals[vals > 0], 1)), 1e-6), vmax=float(vals.max()))
-    fig, axs = plt.subplots(2, 2, figsize=(12.5, 9), facecolor="#111b2e", gridspec_kw=dict(wspace=0.3, hspace=0.32))
+    fig, axs = plt.subplots(2, 2, figsize=(12.5, 9), facecolor="#ffffff", gridspec_kw=dict(wspace=0.3, hspace=0.32))
 
     def _cb(ax, im, label):
         cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
-        cb.ax.tick_params(labelsize=7, colors="#9fb4d8")
-        cb.set_label(label, color="#9fb4d8", fontsize=8)
+        cb.ax.tick_params(labelsize=7, colors="#4a5160")
+        cb.set_label(label, color="#4a5160", fontsize=8)
 
     def _frac(a, b):
         return np.divide(a, b, out=np.zeros_like(a), where=b > 0)
@@ -938,20 +934,20 @@ def fig_s1_outer(key: str):
     ax = axs[1, 1]
     _style(ax)
     w = o["liquid"] * o_ok
-    for img, col, lab in ((o_tot, "#4db6ff", "outside, all channels"), (o_top, "#f1c40f", "outside, top PMT")):
+    for img, col, lab in ((o_tot, "#0284c7", "outside, all channels"), (o_top, "#ca8a04", "outside, top PMT")):
         m = np.array([np.sum(img[:, :, k] * w[:, :, k]) / np.sum(w[:, :, k]) if w[:, :, k].sum() > 0 else np.nan
                       for k in range(len(oz))])
         ax.plot(m, oz, color=col, label=lab)
-    for img, col, lab in ((t_tot, "#4db6ff", "TPC, all channels"), (t_top, "#f1c40f", "TPC, top PMT")):
+    for img, col, lab in ((t_tot, "#0284c7", "TPC, all channels"), (t_top, "#ca8a04", "TPC, top PMT")):
         ax.plot([img[:, :, k][t_in].mean() for k in range(len(t["z"]))], t["z"], color=col, ls="--", label=lab)
     ax.set_xscale("log")
     ax.set_xlabel("mean detection probability", fontsize=8)
     ax.set_ylabel("z [mm]", fontsize=8)
     ax.set_title("mean per height (outside: weighted with the liquid fraction)", fontsize=10)
     ax.tick_params(labelsize=7)
-    ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    ax.legend(fontsize=7, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6")
     fig.suptitle("S1: probability that a photon from the liquid gives a photoelectron, whole liquid (TPC and outside)",
-                 color="#dce7ff", fontsize=11)
+                 color="#12141a", fontsize=11)
     return fig
 
 
@@ -975,13 +971,16 @@ def map_figure(kind: str, key: str) -> Path:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    plotstyle.apply()
     fig = MAP_FIGURES[kind][1](key)
     try:
         out.parent.mkdir(exist_ok=True)
+        plotstyle.finish(fig)
         fig.savefig(out, dpi=100, facecolor=fig.get_facecolor())
     except PermissionError:
         out = cached
         out.parent.mkdir(parents=True, exist_ok=True)
+        plotstyle.finish(fig)
         fig.savefig(out, dpi=100, facecolor=fig.get_facecolor())
     finally:
         plt.close(fig)
@@ -1074,22 +1073,22 @@ def fig_spe(rec):
     d = rec["settings"]["xams_daq"]
     dt = float(d["digitizer"]["dt_ns"])
     chans = sorted(d["templates"], key=int)
-    fig, axs = plt.subplots(1, len(chans), figsize=(2.6 * len(chans), 2.9), facecolor="#111b2e", sharey=False)
+    fig, axs = plt.subplots(1, len(chans), figsize=(2.6 * len(chans), 2.9), facecolor="#ffffff", sharey=False)
     for ax, ch in zip(np.atleast_1d(axs), chans):
         _style(ax)
         t = np.asarray(d["templates"][ch], float)
         c = d["channels"][ch]
         amp = t * float(c["gain"])                                 # ADC per sample of one PE
         x = (np.arange(len(t)) - int(d.get("template_peaks", {}).get(ch, 10))) * dt
-        ax.step(x, amp, where="mid", color="#4db6ff", lw=1.3)
-        ax.axhline(float(c["threshold"]), color="#ff6b6b", lw=0.8, ls=":")
-        ax.axhspan(-float(c["noise"]), float(c["noise"]), color="#8a96a8", alpha=0.25, lw=0)
+        ax.step(x, amp, where="mid", color="#0284c7", lw=1.3)
+        ax.axhline(float(c["threshold"]), color="#dc2626", lw=0.8, ls=":")
+        ax.axhspan(-float(c["noise"]), float(c["noise"]), color="#5f6775", alpha=0.25, lw=0)
         ax.set(title=f"ch{ch} ({c['light']})", xlabel="time from max [ns]", xlim=(min(-40, x[0]), max(120, min(x[-1], 400))))
         ax.text(0.97, 0.95, f"gain {c['gain']:g}\nnoise {c['noise']:g} ADC\nthreshold {c['threshold']:g}",
-                transform=ax.transAxes, ha="right", va="top", fontsize=7, color="#dce7ff")
+                transform=ax.transAxes, ha="right", va="top", fontsize=7, color="#12141a")
     np.atleast_1d(axs)[0].set_ylabel("one PE [ADC per 4 ns sample]")
     fig.suptitle(f"{rec['run_id']}: single-PE response per channel (red dotted: trigger threshold, grey: noise rms)",
-                 color="#dce7ff", fontsize=9)
+                 color="#12141a", fontsize=9)
     fig.tight_layout()
     return fig
 
@@ -1142,7 +1141,7 @@ def fig_nest(rec):
     from .nestfig import WIDTH_KEYS, Nest, quanta_stats
     field, sd, rho, nest, line, iso = _nest_inputs(rec)
     energies = np.logspace(np.log10(0.5), 3, 40)
-    fig, axs = plt.subplots(1, 3, figsize=(16, 4.8), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1, 1, 1.15]))
+    fig, axs = plt.subplots(1, 3, figsize=(16, 4.8), facecolor="#ffffff", gridspec_kw=dict(width_ratios=[1, 1, 1.15]))
     for ax in axs[:2]:
         _style(ax)
     run, default = Nest(nest), Nest()
@@ -1163,20 +1162,20 @@ def fig_nest(rec):
         gamma = run.curves("gamma", field, rho, energies, 2)
         used, other = "β-ER", "γ-ER (reference: whole γ in one deposit)"
     for ax, k, lab in ((axs[0], "ly", "Ly [photons/keV]"), (axs[1], "qy", "Qy [electrons/keV]")):
-        ax.plot(energies, beta[k], color="#4db6ff", lw=1.6, label=f"{used} (used by the chain)")
-        ax.fill_between(energies, beta[k] - beta[k + "_sd"], beta[k] + beta[k + "_sd"], color="#4db6ff", alpha=0.2, lw=0)
-        ax.plot(energies, gamma[k], color="#f39c12", lw=1.0, label=other)
+        ax.plot(energies, beta[k], color="#0284c7", lw=1.6, label=f"{used} (used by the chain)")
+        ax.fill_between(energies, beta[k] - beta[k + "_sd"], beta[k] + beta[k + "_sd"], color="#0284c7", alpha=0.2, lw=0)
+        ax.plot(energies, gamma[k], color="#ea580c", lw=1.0, label=other)
         if nest and not zero:
-            ax.plot(energies, default.curves("beta", field, rho, energies, 2)[k], color="#dce7ff", lw=0.9, ls="--",
+            ax.plot(energies, default.curves("beta", field, rho, energies, 2)[k], color="#12141a", lw=0.9, ls="--",
                     label="β-ER, NEST defaults")
-        ax.axvline(line, color="#8a96a8", lw=0.7, ls=":")
+        ax.axvline(line, color="#5f6775", lw=0.7, ls=":")
         ax.set(xscale="log", xlabel="energy [keV]", ylabel=lab, ylim=(0, None), xlim=(energies[0], energies[-1]))
-    axs[0].set_title(f"light yield at {field:.0f} V/cm", color="#dce7ff", fontsize=10)
-    axs[1].set_title(f"charge yield at {field:.0f} V/cm", color="#dce7ff", fontsize=10)
-    axs[0].legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    axs[0].set_title(f"light yield at {field:.0f} V/cm", color="#12141a", fontsize=10)
+    axs[1].set_title(f"charge yield at {field:.0f} V/cm", color="#12141a", fontsize=10)
+    axs[0].legend(fontsize=7, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6")
     # text panel: settings and the line in quanta (one deposit; the chain's own sum over clusters: results section)
     t = axs[2]
-    t.set_facecolor("#111b2e")
+    t.set_facecolor("#ffffff")
     t.axis("off")
     w = dict(zip(WIDTH_KEYS, run.widths))
     changed = set((nest.get("widths") or {}))
@@ -1197,19 +1196,19 @@ def fig_nest(rec):
              f"LXe density {rho:g} g/cm³",
              "ER widths: " + ", ".join(ws[:3]),
              "           " + ", ".join(ws[3:])]
-    t.text(0.0, 1.0, "\n".join(lines), transform=t.transAxes, va="top", ha="left", fontsize=8, color="#dce7ff",
+    t.text(0.0, 1.0, "\n".join(lines), transform=t.transAxes, va="top", ha="left", fontsize=8, color="#12141a",
            family="monospace", linespacing=1.5)
     y = 0.58
     for i, r in enumerate(rows):
         for x, c in zip((0.0, 0.40, 0.66, 0.92), r):
             t.text(x, y, c, transform=t.transAxes, va="top", ha="left", fontsize=8, family="monospace",
-                   color="#9fb4d8" if i == 0 else "#dce7ff")
+                   color="#4a5160" if i == 0 else "#12141a")
         y -= 0.09
     t.text(0.0, y - 0.03, "the chain uses β-ER per cluster (Compton and photo electrons);\nits sum over the clusters of "
-           "the photopeak: results section", transform=t.transAxes, va="top", fontsize=7.5, color="#8a96a8")
+           "the photopeak: results section", transform=t.transAxes, va="top", fontsize=7.5, color="#5f6775")
     fig.suptitle(f"{rec['run_id']}: NEST yields — state {rec['state_name']}; lines: mean, band: ±1σ per event "
                  f"(β-ER); dotted: {iso} {line:.0f} keV" + ("; * = set by the run" if changed else ""),
-                 color="#dce7ff", fontsize=9)
+                 color="#12141a", fontsize=9)
     fig.tight_layout()
     return fig
 
@@ -1281,13 +1280,13 @@ def fig_nest_photopeak(rec):
     ref = {k: quanta_stats(*run.quanta(ref_yields(k), 3000)) for k in ("beta", "gamma")}
     rname = {"beta": f"prop. {frac:g}" if zero else "β-ER", "gamma": "γ-ER" + (" 0 V/cm" if zero else "")}
     pk = (np.abs(e["energy_drift"] - line) < 2.0) & (e["energy_outside"] < 0.5)
-    groups = [("1 cluster", e["n_clusters"] == 1, "#4db6ff"), ("2 clusters", e["n_clusters"] == 2, "#2ecc71"),
-              ("3 clusters", e["n_clusters"] == 3, "#f39c12"), ("≥ 4 clusters", e["n_clusters"] >= 4, "#ff6b6b")]
-    fig, axs = plt.subplots(1, 3, figsize=(18, 5.2), facecolor="#111b2e", gridspec_kw=dict(width_ratios=[1, 1, 1.15]))
+    groups = [("1 cluster", e["n_clusters"] == 1, "#0284c7"), ("2 clusters", e["n_clusters"] == 2, "#16a34a"),
+              ("3 clusters", e["n_clusters"] == 3, "#ea580c"), ("≥ 4 clusters", e["n_clusters"] >= 4, "#dc2626")]
+    fig, axs = plt.subplots(1, 3, figsize=(18, 5.2), facecolor="#ffffff", gridspec_kw=dict(width_ratios=[1, 1, 1.15]))
     for ax in axs[:2]:
         _style(ax)
     t = axs[2]
-    t.set_facecolor("#111b2e")
+    t.set_facecolor("#ffffff")
     t.axis("off")
     cen = pk & e["central"]
     # (1) photons by number of clusters, central volume
@@ -1295,34 +1294,34 @@ def fig_nest_photopeak(rec):
     if cen.sum() > 10:
         lo, hi = np.percentile(e["photons"][cen], [0.5, 99.5])
         bins = np.linspace(lo, hi, 40)
-        ax.hist(e["photons"][cen], bins=bins, histtype="step", color="#dce7ff", lw=1.4, label=f"all ({cen.sum()})")
+        ax.hist(e["photons"][cen], bins=bins, histtype="step", color="#12141a", lw=1.4, label=f"all ({cen.sum()})")
         for lab, m, col in groups:
             if (cen & m).sum():
                 ax.hist(e["photons"][cen & m], bins=bins, histtype="step", color=col, lw=1.0, label=f"{lab} ({(cen & m).sum()})")
     for k, ls in (("beta", ":"), ("gamma", "--")):
-        ax.axvline(ref[k]["photons"], color="#8a96a8", lw=0.8, ls=ls)
+        ax.axvline(ref[k]["photons"], color="#5f6775", lw=0.8, ls=ls)
         ax.text(ref[k]["photons"], ax.get_ylim()[1] * 0.97, f" NEST {rname[k]}, 1 deposit",
-                color="#8a96a8", fontsize=7, rotation=90, va="top", ha="right")
+                color="#5f6775", fontsize=7, rotation=90, va="top", ha="right")
     ax.set(xlabel="photons per event (sum over its clusters)", ylabel="events",
            title=f"central volume (r < {CENTRAL['r_mm']:g} mm, {CENTRAL['dz_mm']:g} mm from gate / cathode)")
     ax.title.set_fontsize(9)
-    ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+    ax.legend(fontsize=7, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6")
     # (2) one-cluster events: photons vs local field, with NEST beta-ER in one deposit
     ax = axs[1]
     one = pk & (e["n_clusters"] == 1)
     if zero and one.sum() > 10:                          # no field to vary: photons of the 1-cluster events
-        ax.hist(e["photons"][one], bins=50, histtype="step", color="#4db6ff", lw=1.2)
+        ax.hist(e["photons"][one], bins=50, histtype="step", color="#0284c7", lw=1.2)
         for k, ls in (("gamma", "--"), ("beta", ":")):
-            ax.axvline(ref[k]["photons"], color="#ff6b6b", lw=1.0, ls=ls, label=f"NEST {rname[k]}, 1 deposit")
-        ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+            ax.axvline(ref[k]["photons"], color="#dc2626", lw=1.0, ls=ls, label=f"NEST {rname[k]}, 1 deposit")
+        ax.legend(fontsize=7, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6")
         ax.set(xlabel="photons", ylabel="events", title=f"1-cluster events at 0 V/cm ({one.sum()})")
     elif one.sum() > 10:
         flo, fhi = np.percentile(e["field"][one], [1, 99])
         ax.hist2d(e["field"][one], e["photons"][one], bins=[np.linspace(flo, fhi, 40), 50], cmap="viridis", cmin=1)
         fs = np.linspace(flo, fhi, 25)
-        ax.plot(fs, [run.yields("beta", line, f_, rho).PhotonYield for f_ in fs], color="#ff6b6b", lw=1.4,
+        ax.plot(fs, [run.yields("beta", line, f_, rho).PhotonYield for f_ in fs], color="#dc2626", lw=1.4,
                 label="NEST β-ER, 1 deposit (mean)")
-        ax.legend(fontsize=7, facecolor="#0f1729", labelcolor="#dce7ff", edgecolor="#2a3a58")
+        ax.legend(fontsize=7, facecolor="#ffffff", labelcolor="#12141a", edgecolor="#c9cdd6")
     if not zero:
         ax.set(xlabel="local field at the cluster [V/cm]", ylabel="photons",
                title=f"1-cluster events, all positions ({one.sum()})")
@@ -1344,7 +1343,7 @@ def fig_nest_photopeak(rec):
     for i, r_ in enumerate(rows):
         for x, c in zip((0.0, 0.40, 0.55, 0.80), r_):
             t.text(x, y, c, transform=t.transAxes, va="top", fontsize=7.8, family="monospace",
-                   color="#9fb4d8" if i == 0 or c.startswith("NEST") else "#dce7ff")
+                   color="#4a5160" if i == 0 or c.startswith("NEST") else "#12141a")
         y -= 0.056
     t.text(0.0, y - 0.02,
            f"{iso} {line:.0f} keV, full energy in the drift region (|E − line| < 2 keV, nothing outside); quanta as\n"
@@ -1353,9 +1352,9 @@ def fig_nest_photopeak(rec):
               "light; more clusters still shift the mean slightly. Real or not: data." if zero else
               "Each cluster gets NEST β-ER at its local field: 1-cluster events follow NEST β-ER; more and smaller\n"
               "clusters give more light; the field varies most near wall, gate and cathode. Real or not: data."),
-           transform=t.transAxes, va="top", fontsize=7.5, color="#8a96a8")
+           transform=t.transAxes, va="top", fontsize=7.5, color="#5f6775")
     fig.suptitle(f"{rec['run_id']}: what makes the width of the {iso} line in quanta (simulation bookkeeping)",
-                 color="#dce7ff", fontsize=10)
+                 color="#12141a", fontsize=10)
     fig.tight_layout()
     return fig
 
@@ -1476,7 +1475,7 @@ def fig_reconstruction(number, ev_path: str, run_id: str):
     from . import amstrax_io
     ev = _load(ev_path)
     ok = np.isfinite(ev["cs1"]) & np.isfinite(ev["cs2"]) & (ev["cs1"] > 0) & (ev["cs2"] > 0)
-    fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#111b2e")
+    fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#ffffff")
     for a in axs.flat:
         _style(a)
     kw = dict(norm=LogNorm(), cmap="viridis")
@@ -1485,17 +1484,17 @@ def fig_reconstruction(number, ev_path: str, run_id: str):
                                                   np.linspace(0, np.nanpercentile(ev["cs2"][ok], 99.5), 120)], **kw)
     a.set(xlabel="cS1 [PE]", ylabel="cS2 [PE]", title=f"cS1 vs cS2 ({ok.sum()} events with S1 and S2)")
     a = axs[0, 1]
-    a.hist(ev["drift_time"][ok] / 1e3, bins=np.arange(0, 60, 0.25), histtype="step", color="#4db6ff")
+    a.hist(ev["drift_time"][ok] / 1e3, bins=np.arange(0, 60, 0.25), histtype="step", color="#0284c7")
     a.set(xlabel="drift time [µs]", ylabel="events", title="drift time")
     a = axs[0, 2]
     a.hist2d(ev["s2_x"][ok & np.isfinite(ev["s2_x"])], ev["s2_y"][ok & np.isfinite(ev["s2_y"])],
              bins=[np.linspace(-35, 35, 141)] * 2, **kw)
     a.set(xlabel="x [mm]", ylabel="y [mm]", title="position of the main S2", aspect="equal")
     a = axs[1, 0]
-    a.hist(np.log10(ev["s1_area"][ok]), bins=120, histtype="step", color="#4db6ff")
+    a.hist(np.log10(ev["s1_area"][ok]), bins=120, histtype="step", color="#0284c7")
     a.set(xlabel="log10 S1 area [PE]", ylabel="events", title="S1 spectrum")
     a = axs[1, 1]
-    a.hist(np.log10(ev["s2_area"][ok]), bins=120, histtype="step", color="#4db6ff")
+    a.hist(np.log10(ev["s2_area"][ok]), bins=120, histtype="step", color="#0284c7")
     a.set(xlabel="log10 S2 area [PE]", ylabel="events", title="S2 spectrum")
     a = axs[1, 2]                                          # against the simulation's own values (truth file)
     tf = Path(amstrax_io.STORE) / f"{int(number):06d}-truth.npz" if amstrax_io.STORE is not None else None
@@ -1506,12 +1505,12 @@ def fig_reconstruction(number, ev_path: str, run_id: str):
         j = np.where(np.abs(t["time"][i - 1] - ev["time"]) < np.abs(t["time"][i] - ev["time"]), i - 1, i)
         m = ok & (np.abs(t["time"][j] - ev["time"]) < 200_000) & (t["cs2"][j] > 0)
         a.hist2d(ev["drift_time"][m] / 1e3, ev["cs2"][m] / t["cs2"][j][m], bins=[np.arange(0, 60, 0.5), np.linspace(0, 2, 81)], **kw)
-        a.axhline(1, color="#ff6b6b", lw=0.8)
+        a.axhline(1, color="#dc2626", lw=0.8)
         a.set(xlabel="drift time [µs]", ylabel="cS2 amstrax / simulation", title=f"cS2 against the simulation ({m.sum()} matched)")
     else:
-        a.text(0.5, 0.5, "no truth file", transform=a.transAxes, ha="center", color="#8a96a8")
+        a.text(0.5, 0.5, "no truth file", transform=a.transAxes, ha="center", color="#5f6775")
     fig.suptitle(f"{run_id} = run {int(number):06d}: amstrax event_info ({Path(ev_path).name.split('-')[-1]})",
-                 color="#dce7ff", fontsize=10)
+                 color="#12141a", fontsize=10)
     fig.tight_layout()
     return fig
 
@@ -1526,7 +1525,9 @@ def reconstruction_figure(run_id: str, number, ev_hash: str) -> Path:
     out = base / "figures" / f"reconstruction_v{FIGURE_VERSION}_{ev_hash}.png"
     if not out.exists():
         out.parent.mkdir(parents=True, exist_ok=True)
+        plotstyle.apply()
         fig = fig_reconstruction(number, ev["path"], run_id)
+        plotstyle.finish(fig)
         fig.savefig(out, dpi=100, facecolor=fig.get_facecolor(), bbox_inches="tight")
         import matplotlib.pyplot as plt
         plt.close(fig)
