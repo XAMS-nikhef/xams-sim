@@ -247,7 +247,8 @@ def _write_truth(store: Path, res: Resolved, rid: str, sim_id: str, sim) -> None
                                       "amstrax units (times and drift_time in ns, x, y, z in mm, data frame)"))
 
 
-# the truth file in the units of amstrax (event_info), so that truth and reconstruction compare directly; the chain
+# the truth file in the units of amstrax (ns, mm: events / sites, event_info before amstrax 3), so that truth and
+# reconstruction compare directly; the chain
 # itself works in fuse's units (cm, drift time in µs). Files without `units` (before 2026-10-23) are in the chain's.
 TRUTH_UNITS = "amstrax"
 _TO_AMSTRAX = {"x": (10.0, "mm"), "y": (10.0, "mm"), "z": (10.0, "mm"), "drift_time": (1e3, "ns")}
