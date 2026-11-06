@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import os
 
-from flask import Flask, abort, redirect, render_template, request, send_file, url_for
+from flask import Flask, abort, g, redirect, render_template, request, send_file, url_for
 
 from xamssim import compose
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
+from web import access  # noqa: E402
+
+access.install(app)                  # token (private) / key for actions (central) on a shared host: web/access.py
 # The reconstruction of an MC run is shown in Processing (xams-dashboard run page), opened through the XAMS launcher,
 # which knows the tunnels and passes the key (central) or token (private runs).
 LAUNCHER = os.environ.get("XAMSSIM_LAUNCHER_URL", "http://127.0.0.1:8090").rstrip("/")
@@ -83,13 +86,14 @@ def rerun(run_id):
         plan = compose.rerun_plan(run_id)
     except (FileNotFoundError, ValueError) as e:
         return render_template("rerun.html", run_id=run_id, plan=None, result=None, error=str(e), page="overview")
-    if request.method == "POST":
+    if request.method == "POST":                     # web/access.py has refused it already without the rights
         try:
             result = compose.rerun(run_id)
         except (PermissionError, FileExistsError, OSError) as e:
             error = str(e)
     return render_template("rerun.html", run_id=run_id, plan=plan, result=result, error=error,
-                           can_submit=os.environ.get("XAMSSIM_WEB_SUBMIT") == "1", page="overview")
+                           can_submit=os.environ.get("XAMSSIM_WEB_SUBMIT") == "1" and g.get("can_act", False),
+                           page="overview")
 
 
 @app.route("/sim/<run_id>/figure/<name>.png")
