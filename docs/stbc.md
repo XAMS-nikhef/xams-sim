@@ -47,11 +47,17 @@ private run therefore cannot end up in the database, whichever command you use.
 5. **Private app** (optional): the simulation app on your own data, as your account on stbc-i1, in a screen:
 
     ```bash
-    XAMSSIM_WEB_SCREEN=xamssim_web_private XAMSSIM_WEB_PORT=8077 XAMSSIM_WEB_LOG=/data/xenon/xams_v2/users/<you>/xamssim/logs/xamssim_web_private.log \
+    XAMSSIM_WEB_PRIVATE=1 XAMSSIM_WEB_LOG=/data/xenon/xams_v2/users/<you>/xamssim/logs/xamssim_web_private.log \
         /data/xenon/xams_v2/software/xams-sim/web/start_stbc.sh
     ```
 
-    The launcher tile "Simulations (private)" tunnels to it (port 8077). Restart it after a `git pull` of the software.
+    Port: `sim_port` of `~/.xams/private.json`, else your entry in the dashboards' `users.yaml`, else 8077. Every
+    request needs your token (the `token` of `~/.xams/private.json`, the same as the private processing dashboard);
+    the launcher passes it. The launcher tile "Simulations → Private" tunnels to it. Restart it after a `git pull` of
+    the software (`... start_stbc.sh stop`, then start).
+
+    The production app (xamsdata, 8075) is open for reading; a rerun (condor jobs as xamsdata) needs the dashboard key
+    of a user with `central_actions` in `users.yaml` (`web/access.py`).
 
 ## A private MC
 
