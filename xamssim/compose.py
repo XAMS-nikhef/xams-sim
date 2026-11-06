@@ -100,18 +100,32 @@ STEPS = [
     ("optical", ("clustered_interactions", "microphysics_summary", "volume_properties", "drifted_electrons",
                  "extracted_electrons", "s1_photoelectrons", "s2_photoelectrons", "peak_areas", "xams_events")),
     ("waveforms", ("xams_raw_records", "xams_raw_records_sipm")),
-    ("reconstruction", ("event_info",)),               # amstrax (Processing), in the MC folders
+    ("reconstruction", ("events", "event_info")),      # amstrax (Processing), in the MC folders: amstrax 3 `events`
+                                                       # (the event table; not the old windows) or event_info (amstrax 2)
 ]
 
 
+def _is_event_table(d: Path) -> bool:
+    """A stored `events` folder of amstrax 3 (the event table, with cs1), not the old event windows of that name."""
+    md = next(iter(d.glob("*metadata.json")), None)
+    try:
+        return md is not None and "'cs1'" in json.loads(md.read_text()).get("dtype", "")
+    except Exception:                                       # noqa: BLE001
+        return False
+
+
 def _recon_present(number) -> bool:
-    """Whether amstrax made event_info for the run (MC folders; a glob, no metadata read)."""
+    """Whether amstrax reconstructed the run: an amstrax 3 event table or (amstrax 2) event_info in the MC folders."""
     if number is None:
         return False
     from . import amstrax_io
     rid = f"{int(number):06d}"
     for folder in (Path(amstrax_io.STORE) if amstrax_io.STORE is not None else None, processed_dir()):
-        if folder is not None and folder.is_dir() and any(not d.name.endswith("_temp") for d in folder.glob(f"{rid}-event_info-*")):
+        if folder is None or not folder.is_dir():
+            continue
+        if any(not d.name.endswith("_temp") for d in folder.glob(f"{rid}-event_info-*")):
+            return True
+        if any(not d.name.endswith("_temp") and _is_event_table(d) for d in folder.glob(f"{rid}-events-*")):
             return True
     return False
 
@@ -131,8 +145,8 @@ def _steps(r: dict, making: list) -> list:
                 st, tip = "current", f"{g.get('events') or ''} events".strip()
         elif name == "reconstruction":
             ok = _recon_present(r.get("number"))
-            st, tip = ("current" if ok else "missing"), ("event_info made by amstrax (see Processing)" if ok
-                                                         else "not reconstructed (no event_info)")
+            st, tip = ("current" if ok else "missing"), ("reconstructed by amstrax (see Processing)" if ok
+                                                         else "not reconstructed (no events / event_info)")
         else:
             have = {t: by_type[t] for t in types if t in by_type}
             busy = [t for t in types if t in (making or [])]
@@ -1454,7 +1468,8 @@ def prerender(run_id: str, log=print) -> dict:
 # ------------------------------------------------------------------------------------------------ reconstruction
 # What amstrax made of a run with a number (plan S11): the stored data types in the raw-records store and the
 # processed folder, read from their strax metadata (no amstrax, no database), the corrections the run document holds,
-# and a fixed set of figures from event_info (made once per event_info version, next to the provenance).
+# and a fixed set of figures from the event table (amstrax 3 `events` joined with `sites` and `event_peaks`; amstrax 2:
+# event_info), made once per version, next to the provenance.
 
 def processed_dir() -> Path:
     import os
@@ -1483,6 +1498,8 @@ def _stored(number) -> list:
                             cal = int(v.split("calibration=")[1].split("&")[0])
                         elif ".calibrated." not in v:
                             cal = 0
+            if dtype == "events" and "'cs1'" not in meta.get("dtype", ""):
+                dtype = "event_windows"           # the old windows were stored as `events` (amstrax 2)
             out.append(dict(type=dtype, hash=h, folder=str(folder), n_chunks=len(chunks),
                             rows=sum(c.get("n", 0) for c in chunks), size_mb=sum(f.stat().st_size for f in d.iterdir()) / 1e6,
                             made=time.strftime("%Y-%m-%d %H:%M", time.localtime(meta["writing_ended"])) if meta.get("writing_ended") else "",
@@ -1503,7 +1520,7 @@ def reconstruction(number) -> dict | None:
     table = [dict(name=k, truth=(corr.get("truth") or {}).get(k), calibrated=(corr.get("calibrated") or {}).get(k))
              for k in keys]
     cal = corr.get("calibrated") or {}
-    ev = [p for p in prods if p["type"] == "event_info"]
+    ev = [p for p in prods if p["type"] in ("events", "event_info")]
     # the two kept reconstructions (plan S10): latest = the newest calibration version present, truth = version 0
     versions = sorted({p["calibration"] for p in ev if p["calibration"] is not None})
     views = {}
@@ -1527,13 +1544,51 @@ def _load(path: str) -> np.ndarray:
     return np.concatenate(parts) if parts else np.zeros(0, dtype)
 
 
-def fig_reconstruction(number, ev_path: str, run_id: str):
+def _flat(ev_prod: dict, prods: list) -> np.ndarray:
+    """One row per event with time, cs1, cs2, drift_time, s2_x, s2_y, s1_area, s2_area: event_info as it is (amstrax 2),
+    or the amstrax 3 event table joined with its main site (sites rank 1) and the main S1 / S2 (event_peaks), taking the
+    sites / event_peaks of the same calibration version."""
+    ev = _load(ev_prod["path"])
+    if ev_prod["type"] == "event_info":
+        return ev
+    fields = ["time", "cs1", "cs2", "drift_time", "s2_x", "s2_y", "s1_area", "s2_area"]
+    out = np.full(len(ev), np.nan, dtype=[(f, np.float64) for f in fields])
+    out["time"], out["cs1"], out["cs2"] = ev["time"], ev["cs1"], ev["cs2"]
+    pick = lambda t: next((p for p in sorted(prods, key=lambda p: p["made"], reverse=True)  # noqa: E731
+                           if p["type"] == t and p["calibration"] == ev_prod["calibration"]), None)
+    sp, pp = pick("sites"), pick("event_peaks")
+    en = np.asarray(ev["event_number"]); order = np.argsort(en)
+
+    def put(keys, values, field):
+        if not len(en) or not len(keys):
+            return
+        i = np.clip(np.searchsorted(en, keys, sorter=order), 0, len(en) - 1)
+        hit = en[order[i]] == keys
+        out[field][order[i[hit]]] = values[hit]
+    pk = _load(pp["path"]) if pp else None
+    if pk is not None:
+        s1 = pk[(pk["type"] == 1) & (pk["dt_s1"] == 0)]
+        put(s1["event_number"], s1["area"], "s1_area")
+    if sp:
+        st = _load(sp["path"]); main = st[st["rank"] == 1]
+        put(main["event_number"], main["drift_time"], "drift_time")
+        put(main["event_number"], main["x"], "s2_x"); put(main["event_number"], main["y"], "s2_y")
+        if pk is not None and len(pk):
+            pi = np.argsort(pk["peak_index"])
+            j = np.clip(np.searchsorted(pk["peak_index"], main["peak_index"], sorter=pi), 0, len(pk) - 1)
+            ok = pk["peak_index"][pi[j]] == main["peak_index"]
+            put(main["event_number"][ok], pk["area"][pi[j[ok]]], "s2_area")
+    return out
+
+
+def fig_reconstruction(number, ev_prod: dict, run_id: str, prods: list | None = None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
     from . import amstrax_io
-    ev = _load(ev_path)
+    ev = _flat(ev_prod, prods if prods is not None else _stored(number))
+    ev_path = ev_prod["path"]
     ok = np.isfinite(ev["cs1"]) & np.isfinite(ev["cs2"]) & (ev["cs1"] > 0) & (ev["cs2"] > 0)
     fig, axs = plt.subplots(2, 3, figsize=(16, 9), facecolor="#ffffff")
     for a in axs.flat:
@@ -1569,24 +1624,26 @@ def fig_reconstruction(number, ev_path: str, run_id: str):
         a.set(xlabel="drift time [µs]", ylabel="cS2 amstrax / simulation", title=f"cS2 against the simulation ({m.sum()} matched)")
     else:
         a.text(0.5, 0.5, "no truth file", transform=a.transAxes, ha="center", color="#5f6775")
-    fig.suptitle(f"{run_id} = run {int(number):06d}: amstrax event_info ({Path(ev_path).name.split('-')[-1]})",
+    fig.suptitle(f"{run_id} = run {int(number):06d}: amstrax {ev_prod['type']} ({Path(ev_path).name.split('-')[-1]})",
                  color="#12141a", fontsize=10)
     fig.tight_layout()
     return fig
 
 
 def reconstruction_figure(run_id: str, number, ev_hash: str) -> Path:
-    """PNG of the reconstruction figures for one event_info version, made once next to the run's provenance."""
-    ev = next((p for p in _stored(number) if p["type"] == "event_info" and p["hash"] == ev_hash), None)
+    """PNG of the reconstruction figures for one event table version (amstrax 3 events, or event_info), made once next
+    to the run's provenance."""
+    prods = _stored(number)
+    ev = next((p for p in prods if p["type"] in ("events", "event_info") and p["hash"] == ev_hash), None)
     if ev is None:
-        raise FileNotFoundError(f"no event_info {ev_hash} for run {number}")
+        raise FileNotFoundError(f"no events / event_info {ev_hash} for run {number}")
     recs = records(run_id)
     base = recs[-1][0].parent if recs else DATA / "provenance" / run_id
     out = base / "figures" / f"reconstruction_v{FIGURE_VERSION}_{ev_hash}.png"
     if not out.exists():
         out.parent.mkdir(parents=True, exist_ok=True)
         plotstyle.apply()
-        fig = fig_reconstruction(number, ev["path"], run_id)
+        fig = fig_reconstruction(number, ev, run_id, prods)
         plotstyle.finish(fig)
         fig.savefig(out, dpi=100, facecolor=fig.get_facecolor(), bbox_inches="tight")
         import matplotlib.pyplot as plt
