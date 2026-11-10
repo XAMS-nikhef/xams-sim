@@ -8,13 +8,15 @@
 # As xamsdata (production) these are the central MC folders and the run is registered in run.runs_mc; any other account
 # (a private MC) has no [mc] database account, so nothing is ever written to the database.
 # 1 xams-sim: Geant4 -> chain to raw records -> live data + run document (+ run.runs_mc for production)
-# 2 amstrax as for data (setup_py312.sh): live data -> raw_records -> peak_basics ... event_info
+# 2 amstrax as for data (setup_py312.sh): live data -> raw_records -> peak_basics ... events, sites, event_peaks,
+#   peak_context, event_cuts (amstrax 3 event format)
 # 3 production only: the processing recorded in run.runs_mc (data[] entries, processing_status)
 # 4 the app's figures of the run (xamssim figures), so its detail page opens at once
 # Corrections: an MC global version of amstrax_files (default MC2: the PROD4 cuts and position map v2 of the data, the
 # per-run corrections from the run's own run document: calibrated if stored, else the simulation's truth;
 # amstrax.contexts.for_mc_run puts the calibration version into the lineage). See xamssim corrections.
 # Reconstructions kept per run: the latest and, after a calibration, the truth one; older versions are deleted.
+# XAMSSIM_KEEP_OLD=1: delete nothing. Types amstrax no longer knows (the amstrax 2 event format) are always kept.
 set -o pipefail
 RUN=$(readlink -f "$1"); CV=${2:-MC2}; MODE=${3:-all}
 X=/data/xenon/xams_v2
@@ -39,7 +41,8 @@ import amstrax
 warnings.filterwarnings("ignore")
 rid, cv, raw, proc, entries_file, zf = sys.argv[1:]
 zf = zf == "1"
-TOP = "peak_basics" if zf else "event_info"                   # zero field: no S2, no events
+TARGETS = ("peak_basics",) if zf else ("peak_basics", "events", "sites", "event_peaks", "peak_context", "event_cuts")
+TOP = TARGETS[-1]                                             # zero field: no S2, no events
 
 
 def entry(st, target, folder):
@@ -69,17 +72,19 @@ base = st
 st = amstrax.contexts.for_mc_run(base, rid)                  # latest: the run's current corrections (version 0 = truth)
 cal = int(amstrax.xams_config.get_rundoc_value(rid, amstrax.xams_config.MC_CALIBRATION_VERSION, default=0) or 0)
 print(f"corrections {cv}, MC calibration version {cal} ({'truth' if not cal else 'calibrated'})", flush=True)
+st.make(rid, TARGETS, progress_bar=False)
 ev = st.get_array(rid, TOP, progress_bar=False)
-print(f"{TOP} ({proc}): {len(ev)} rows, {time.time() - t:.0f} s in total", flush=True)
+print(f"{', '.join(TARGETS)} ({proc}): {len(ev)} {TOP} rows, {time.time() - t:.0f} s in total", flush=True)
 keep = [st]
 if cal:                                                       # after a calibration also the truth reconstruction
     st_truth = amstrax.contexts.for_mc_run(base, rid, use="truth")
+    st_truth.make(rid, TARGETS, progress_bar=False)
     print(f"{TOP} truth: {len(st_truth.get_array(rid, TOP, progress_bar=False))} rows", flush=True)
     keep.append(st_truth)
 # keep at most the latest and the truth reconstruction: every other version of this run's processed products goes
 import shutil
 removed = []
-for d in sorted(os.listdir(proc)):
+for d in ([] if os.environ.get("XAMSSIM_KEEP_OLD") == "1" else sorted(os.listdir(proc))):
     if not d.startswith(rid + "-"):
         continue
     if d.endswith("_temp"):
@@ -87,13 +92,13 @@ for d in sorted(os.listdir(proc)):
     dtype, h = d.split("-")[1], d.split("-")[-1]
     try:
         wanted = {str(s_.key_for(rid, dtype).lineage_hash) for s_ in keep}
-    except Exception:                                         # a type amstrax does not know (any more)
-        wanted = set()
+    except Exception:                                         # a type amstrax does not know (any more): kept
+        continue
     if h not in wanted:
         shutil.rmtree(os.path.join(proc, d)); removed.append(d)
 print(f"older reconstructions removed: {len(removed)}" + (f" ({', '.join(removed[:6])}{' ...' if len(removed) > 6 else ''})" if removed else ""), flush=True)
 data = [entry(st, t_, raw) for t_ in ("raw_records", "raw_records_sipm")]
-data += [entry(st, t_, proc) for t_ in (("peak_basics",) if zf else ("peak_basics", "event_basics", "event_positions", "event_info"))]
+data += [entry(st, t_, proc) for t_ in TARGETS]
 json.dump(dict(data=data, corrections_version=cv), open(entries_file, "w"))
 PY
 rc=$?
