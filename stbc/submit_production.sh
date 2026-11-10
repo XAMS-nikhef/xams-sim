@@ -1,6 +1,8 @@
 #!/bin/bash
 # Submit MC runs to condor, one job per run file (production as xamsdata, or private as your own account):
 #   submit_production.sh <run file> [<run file> ...]
+#   RECO=1 submit_production.sh ...   reconstruct again only (amstrax; the simulation must be stored), CV=<version>
+#                                      (default MC2); XAMSSIM_KEEP_OLD=1 passes on: delete no older products
 # A run file without run_number gets the next number first (xamssim number: production account = last production
 # number + 1, like the DAQ; else private 99xxxx), written into the run file. Logs in $XAMSSIM_DATA/logs/<number>/
 # (from your ~/.config/xamssim/env). At most MAX_JOBS (10) xams-sim jobs of this account in condor at once (batch name
@@ -19,7 +21,8 @@ for f in "$@"; do
     mkdir -p "$LOGS/$name"
     cat > "$LOGS/$name/job.sub" <<SUB
 executable     = $HERE/production_job.sh
-arguments      = $run
+arguments      = $run ${CV:-MC2} $([ "${RECO:-0}" = 1 ] && echo reco || echo all)
+environment    = "XAMSSIM_KEEP_OLD=${XAMSSIM_KEEP_OLD:-0}"
 batch_name     = xamssim_$name
 log            = $LOGS/$name/job.log
 output         = $LOGS/$name/job.out
