@@ -72,13 +72,15 @@ base = st
 st = amstrax.contexts.for_mc_run(base, rid)                  # latest: the run's current corrections (version 0 = truth)
 cal = int(amstrax.xams_config.get_rundoc_value(rid, amstrax.xams_config.MC_CALIBRATION_VERSION, default=0) or 0)
 print(f"corrections {cv}, MC calibration version {cal} ({'truth' if not cal else 'calibrated'})", flush=True)
-st.make(rid, TARGETS, progress_bar=False)
+for t_ in TARGETS:                                            # one data kind per make
+    st.make(rid, t_, progress_bar=False)
 ev = st.get_array(rid, TOP, progress_bar=False)
 print(f"{', '.join(TARGETS)} ({proc}): {len(ev)} {TOP} rows, {time.time() - t:.0f} s in total", flush=True)
 keep = [st]
 if cal:                                                       # after a calibration also the truth reconstruction
     st_truth = amstrax.contexts.for_mc_run(base, rid, use="truth")
-    st_truth.make(rid, TARGETS, progress_bar=False)
+    for t_ in TARGETS:
+        st_truth.make(rid, t_, progress_bar=False)
     print(f"{TOP} truth: {len(st_truth.get_array(rid, TOP, progress_bar=False))} rows", flush=True)
     keep.append(st_truth)
 # keep at most the latest and the truth reconstruction: every other version of this run's processed products goes
