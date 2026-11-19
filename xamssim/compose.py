@@ -364,7 +364,7 @@ def _draw_detector(ax, rec, labels=True, liquid=True):
         if labels:
             ax.text(-half - 2, z + (h / 2 if up else -h / 2), f"PMT {p['name']}", color="#6d5dd3", fontsize=7,
                     ha="right", va="center")
-    sp = g["sipms"]
+    sp = g.get("sipms") or {"azimuth_deg": [], "z_mm": []}   # a detector may have no SiPMs
     az = np.radians(np.atleast_1d(sp["azimuth_deg"]).astype(float))
     for i, (a, zz) in enumerate(zip(az, np.atleast_1d(sp["z_mm"]))):
         in_plane = abs(np.cos(a)) > 0.5                  # this section is the x-z plane through the axis
@@ -564,7 +564,7 @@ def fig_top_view(rec):
                            color="#a3a9b3", alpha=0.5, lw=0, zorder=2))
         ax.text(0, -bk["outer_diameter_mm"] / 2 + 2, "PTFE bucket", color="#a3a9b3", fontsize=8, ha="center", va="bottom",
                 zorder=4, path_effects=halo)
-    sp = g["sipms"]
+    sp = g.get("sipms") or {"azimuth_deg": []}           # a detector may have no SiPMs
     for i, az in enumerate(np.atleast_1d(sp["azimuth_deg"]).astype(float)):
         x, y = r_cage * np.cos(np.radians(az)), r_cage * np.sin(np.radians(az))
         ax.plot([x], [y], "s", color="#16a34a", ms=7, mec="w", mew=0.6, zorder=4)

@@ -58,7 +58,7 @@ def geometry_numbers(res: Resolved) -> dict:
     mc = g["mesh_common"]
     ang = {m["name"]: m.get("angle_to_anodes_deg", 0.0) for m in g["meshes"]}
     pt = g["ptfe_cylinder"]
-    sp = g["sipms"]
+    sp = g.get("sipms") or {"azimuth_deg": [], "z_mm": [], "active_mm": [0.0]}   # a detector may have no SiPMs
     pz = [p["window_z_mm"] for p in g["pmts"]]
     return dict(z_gate=z["gate"], z_cathode=z["cathode"], z_bottom_screen=z["bottom_screen"],
                 z_surface=z["gate"] + res.state["liquid_level_mm"],

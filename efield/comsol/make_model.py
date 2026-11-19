@@ -101,7 +101,10 @@ def main():
     pz = {p["name"]: p["window_z_mm"] for p in G["pmts"]}
     ph = G["pmt_ptfe"]
     ap50 = ph["aperture_square_mm"]
-    sg = G["sipms"]                                    # SiPMs from geometry.yaml (data frame)
+    sg = G.get("sipms")                                # SiPMs from geometry.yaml (data frame)
+    if sg is None:                                     # detector without SiPMs: none in the model; the probe points
+        a.no_sipm = True                               # "at the SiPM height" go to the old SiPM place (90°, -25 mm)
+        sg = dict(azimuth_deg=[90.0], z_mm=[-25.0], active_mm=[3.0, 3.0], recess_mm=1.0)
     if len(set(sg["z_mm"])) != 1:
         raise SystemExit("make_model: SiPMs at different heights not supported yet")
     sp = dict(azimuth_deg=sg["azimuth_deg"], z_mm=sg["z_mm"][0], size_mm=sg["active_mm"][0], recess_mm=sg["recess_mm"])

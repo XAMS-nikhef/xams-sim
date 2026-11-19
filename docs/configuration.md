@@ -17,8 +17,12 @@ config/runs/<run>.yaml ─┬─ state ──► config/states/<state>.yaml ─�
 
 One folder per detector: `geometry.yaml` and the files it refers to (`mesh_holes.json`), and `sensors.yaml` (the
 sensor response per channel; separate, so a change there renews only the sensor step), `daq.yaml` and
-`spe_templates.npz` (digitizer, channels, thresholds, baselines, noise, gains, single-PE pulse shapes: the waveforms, S8). Now one detector,
-`xams2026` (the current XAMS). A different detector (e.g. a SiPM top array) is a new folder; its states name it, and
+`spe_templates.npz` (digitizer, channels, thresholds, baselines, noise, gains, single-PE pulse shapes: the waveforms, S8). Detectors:
+`xams2026` (the drawing values, SiPMs from the data fit; the states made up to 2026-11-18), `xams2026_flip` (anode
+flipped, hypothesis of 2026-11-01), `xams_sr2026_3` (XAMS up to and including SR-2026.3 from the survey of 2026-11-17:
+anode foil up, gate–anode 9.65 mm, SiPMs at 128° / 52°, z −25 mm) and `xams_sr2026_4` (after the 2026-11-17 opening:
+anode foil down, 8 mm, no SiPMs; DAQ a placeholder). A detector without a `sipms` section has no SiPMs in Geant4,
+COMSOL and the drift map; its light channels `sipm_1` / `sipm_2` stay empty. A different detector (e.g. a SiPM top array) is a new folder; its states name it, and
 since every key (Geant4, maps, lineage) follows the resolved geometry, runs of one detector never make those of another
 old. Small changes for a study belong in a new detector folder too (copy and edit) — never edit the geometry of a
 detector whose data you still use, it makes all its runs old.
