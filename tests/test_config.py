@@ -39,13 +39,13 @@ def test_keys_depend_only_on_their_inputs():
 
 def test_bad_run_rejected(tmp_path: Path):
     p = tmp_path / "bad.yaml"
-    p.write_text("state: cmb50\nsource: cs137_raised\nn_events: 10\nseed: 1\nstop_after: banana\n")
+    p.write_text("state: cmb50\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\nstop_after: banana\n")
     with pytest.raises(config.ConfigError):
         config.resolve(p)
-    p.write_text("state: nosuchstate\nsource: cs137_raised\nn_events: 10\nseed: 1\n")
+    p.write_text("state: nosuchstate\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\n")
     with pytest.raises(config.ConfigError):
         config.resolve(p)
-    p.write_text("state: cmb50\nsource: cs137_raised\nn_events: 10\nseed: 1\nextra: 3\n")
+    p.write_text("state: cmb50\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\nextra: 3\n")
     with pytest.raises(config.ConfigError):
         config.resolve(p)
 
@@ -170,3 +170,24 @@ def test_materials_at_measured_pressure():
     assert mat["materials"]["gas_xenon"]["density_g_cm3"] == 0.018694          # the reference stays as it is
     with pytest.raises(ConfigError):
         at_pressure(mat, 9.0)
+
+
+def test_named_position(tmp_path: Path):
+    """An isotope source plus a position of positions.yaml: z from the tape height (survey: gate at tape 19.3 cm)."""
+    p = tmp_path / "pos.yaml"
+    p.write_text("state: cmb50\nsource: cs137\nposition: t16\nn_events: 10\nseed: 1\n")
+    res = config.resolve(p)
+    assert res.source_name == "cs137 @ t16"
+    assert res.source["isotope"] == "Cs-137" and res.source["tape_cm"] == 16.0
+    assert res.source["position_mm"][2] == pytest.approx(-33.0)
+    assert res.source["position_mm"][0] == pytest.approx(-122.7, abs=0.1)          # azimuth 198 deg
+    p.write_text("state: cmb50\nsource: cs137\nposition: t18\nn_events: 10\nseed: 1\n")
+    assert config.resolve(p).source["position_mm"][2] == pytest.approx(-13.0)
+    p.write_text("state: cmb50\nsource: cs137\nposition: nowhere\nn_events: 10\nseed: 1\n")
+    with pytest.raises(config.ConfigError):
+        config.resolve(p)
+    p.write_text("state: cmb50\nsource: cs137_side_zm8\nposition: t16\nn_events: 10\nseed: 1\n")   # legacy file has its own place
+    with pytest.raises(config.ConfigError):
+        config.resolve(p)
+    p.write_text("state: cmb50\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\n")                 # legacy name still resolves
+    assert config.resolve(p).source["position_mm"][2] == -8.0

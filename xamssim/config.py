@@ -6,7 +6,8 @@ referenced:
     run  ─┬─ state  (config/states/<name>.yaml) ─┬─ detector ── config/detectors/<detector>/geometry.yaml (shapes,
           │                                       │               positions, which part is which material)
           │                                       └─ hv_case ── efield/cases.yaml (voltages, field cage, SiPMs)
-          ├─ source (config/sources/<name>.yaml)
+          ├─ source (config/sources/<name>.yaml: an isotope; old isotope-at-a-place files in sources/legacy/)
+          ├─ position (optional; config/positions.yaml: source place by its height on the z tape, from the survey)
           └─ materials (config/materials.yaml: the single source of material properties incl. optics)
 
 Several detectors can live side by side (e.g. today's XAMS, a future one with a SiPM top array): each state says which
@@ -21,6 +22,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 from dataclasses import dataclass
 import os
 from pathlib import Path
@@ -67,7 +69,7 @@ NUM = (int, float)
 OPT_NUM = (int, float, type(None))
 SCHEMA = {
     "run": ({"state": str, "source": str, "n_events": int, "seed": int, "stop_after": str, "physics": dict,
-             "run_number": int, "tags": list, "supersedes": int},
+             "run_number": int, "tags": list, "supersedes": int, "position": str},
             {"state", "source", "n_events", "seed"}),
     "state": ({"description": str, "detector": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
                "electron_lifetime_us": OPT_NUM, "sensors": dict, "zero_field": bool, "daq": str,
@@ -75,7 +77,7 @@ SCHEMA = {
               {"detector", "hv_case", "liquid_level_mm"}),
     "source": ({"isotope": str, "activity_bq": OPT_NUM, "position_mm": (list, type(None)), "collimator": (dict, str, type(None)),
                 "type": str, "energy_keV": OPT_NUM, "direction": str, "half_angle_deg": NUM, "z_target_mm": NUM,
-                "description": str},
+                "description": str, "position": str, "tape_cm": NUM, "azimuth_deg": NUM, "r_mm": NUM},
                {"isotope"}),
 }
 HV_KEYS = ("A", "G", "C", "BS", "TS", "PMT_T", "PMT_B", "SIPM")
@@ -203,7 +205,29 @@ def short_hash(obj) -> str:
 
 
 def _named(kind: str, name: str) -> Path:
-    return CONFIG / f"{kind}s" / f"{name}.yaml"
+    p = CONFIG / f"{kind}s" / f"{name}.yaml"
+    old = CONFIG / f"{kind}s" / "legacy" / f"{name}.yaml"     # sources: the old isotope-at-a-place files
+    return old if not p.exists() and old.exists() else p
+
+
+POSITIONS = CONFIG / "positions.yaml"
+
+
+def source_position(name: str) -> dict:
+    """A named source position of config/positions.yaml -> {position, tape_cm, azimuth_deg, r_mm, position_mm}.
+    z from the height on the z tape with the survey relation of the file (z = 0 at the gate, mm)."""
+    pf = load_yaml(POSITIONS)
+    pos = pf.get("positions", {})
+    if name not in pos:
+        raise ConfigError(f"position '{name}' not in {POSITIONS} (known: {sorted(pos)})")
+    p = pos[name]
+    for k in ("tape_cm", "azimuth_deg", "r_mm"):
+        if not isinstance(p.get(k), NUM):
+            raise ConfigError(f"{POSITIONS}: position '{name}' needs a number for {k}")
+    a = math.radians(p["azimuth_deg"])
+    z = (p["tape_cm"] - pf["gate_tape_cm"]) * 10.0
+    xyz = [round(p["r_mm"] * math.cos(a), 1), round(p["r_mm"] * math.sin(a), 1), round(z, 1)]
+    return dict(position=name, tape_cm=p["tape_cm"], azimuth_deg=p["azimuth_deg"], r_mm=p["r_mm"], position_mm=xyz)
 
 
 @dataclass
@@ -319,6 +343,12 @@ def resolve(run_path) -> Resolved:
     src_p = _named("source", run["source"])
     source = load_yaml(src_p)
     check(source, "source", str(src_p))
+    source_name = run["source"]
+    if "position" in run:                              # isotope file + a named position (positions.yaml)
+        if source.get("position_mm") is not None:
+            raise ConfigError(f"{run_path}: `position` given, but source '{run['source']}' has its own position_mm")
+        source = {**source, **source_position(run["position"])}
+        source_name = f"{run['source']} @ {run['position']}"
     pos = source.get("position_mm")
     if pos is not None and (len(pos) != 3 or not all(isinstance(x, NUM) for x in pos)):
         raise ConfigError(f"{src_p}: position_mm must be [x, y, z] in mm or null")
@@ -333,7 +363,7 @@ def resolve(run_path) -> Resolved:
         raise ConfigError(f"{HV_CASES}: case '{hv_name}' lacks {missing_hv}")
 
     geo, mat = load_materials_and_geometry(state["detector"])
-    return Resolved(run_path=run_path, run=run, state_name=run["state"], state=state, source_name=run["source"],
+    return Resolved(run_path=run_path, run=run, state_name=run["state"], state=state, source_name=source_name,
                     source=source, geometry=geo, materials=with_extraction(at_pressure(mat, state.get("pressure_bar")), state.get("extraction")),
                     detector=state["detector"],
                     hv_case=hv_case, hv_global={k: cases[k] for k in ("field_cage",) if k in cases})

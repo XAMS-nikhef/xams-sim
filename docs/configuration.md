@@ -7,7 +7,8 @@ Every kind of information has exactly one place:
 config/runs/<run>.yaml ─┬─ state ──► config/states/<state>.yaml ─┬─ detector ─► config/detectors/<detector>/geometry.yaml
                         │                                          │               (dimensions; which part is which material)
                         │                                          └─ hv_case ──► efield/cases.yaml (voltages, field cage, SiPMs)
-                        ├─ source ─► config/sources/<source>.yaml
+                        ├─ source ─► config/sources/<source>.yaml   (an isotope)
+                        ├─ position ─► config/positions.yaml        (where: height on the z tape)
                         └─ config/materials.yaml  (all material properties incl. optics)
 ```
 
@@ -107,8 +108,17 @@ chain, the SiPM model and which field maps to export. Shared by the states and t
 | `half_angle_deg`, `z_target_mm` | cone half angle and its target on the axis |
 | `activity_bq`, `collimator`, `description` | bookkeeping (collimator not yet modelled) |
 
-Existing: `cs137_raised`, `cs137_r130_cathode`, `cs137_r130_below`,
-`cs137_vis_cone` (viewer).
+Existing: the isotopes `cs137`, `na22`, `co60` (no place: the run's `position` gives it) and `cs137_vis_cone`
+(viewer). The old isotope-at-a-place files (`cs137_side_zm8`, `*_zerofield`, `*_middrift_2611`, `cs137_sept_*`,
+`cs137_r130_*`, `cs137_raised`) are in `config/sources/legacy/`; runs that name them still resolve.
+
+## Source positions — `config/positions.yaml`
+
+Named places of a source outside the cryostat, by the height on the z tape of the outer vessel: `tape_cm`,
+`azimuth_deg`, `r_mm`, `description`. z = (tape_cm − `gate_tape_cm`) × 10 mm with `gate_tape_cm` 19.3 from the survey of
+2026-11-17 (height above the floor = tape + 71.4 cm, gate 90.7 cm). Now `t16` (z −33 mm), `t16.5`, `t18` (z −13 mm),
+`t19.5` (P4a), all at the centre of the z tape: azimuth 198° ± 6° (survey pictures 1749, 1823–1825: marker at 180° on the top flange, left tape edge 6° right of it), r 129 mm. A run with `position` names an isotope source without
+`position_mm`; the source is then shown as `cs137 @ t16` (listing, web app, run document).
 
 ## Simulation runs — `config/runs/<name>.yaml`
 
@@ -116,6 +126,7 @@ Existing: `cs137_raised`, `cs137_r130_cathode`, `cs137_r130_below`,
 |---|---|---|
 | `state` | yes | detector state |
 | `source` | yes | source |
+| `position` | | source position of `config/positions.yaml` (with an isotope source) |
 | `n_events` | yes | number of primaries (decays or gammas) |
 | `seed` | yes | random seed |
 | `stop_after` | | last product of the chain: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`, `extracted_electrons`, `s2_photons`, `photoelectrons`, `events`, `raw_records` (default; digitizer output for amstrax) |
