@@ -302,7 +302,7 @@ def main(argv=None) -> int:
                    help="make all missing maps of the state in dependency order (field, mesh cells, drift, EL, light), "
                         "running the commands the status shows (COMSOL on this machine, licence needed)")
     p.add_argument("--dry-run", action="store_true", help="with --make: only show the commands")
-    p.add_argument("--photons-s1", type=float, default=5e7, help="light: photons for the S1 map (default 5e7)")
+    p.add_argument("--photons-s1", type=float, default=5e8, help="light: photons for the S1 map (default 5e8)")
     p.add_argument("--photons-s2", type=float, default=1e8, help="light: photons for the S2 map (default 1e8)")
     p.add_argument("--jobs", type=int, default=8, help="light: parallel Geant4 runs (default 8)")
     p.set_defaults(func=cmd_maps)
