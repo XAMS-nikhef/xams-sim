@@ -5,7 +5,7 @@ Picks one liquid-level scenario, applies --set overrides (scans), checks that ev
 present and that every optical parameter is a single value, and adds derived quantities (liquid surface z, mesh list
 sorted by z).
 
-    python -m xamssim.g4config --level 4.0 --out <data>/config.json            (detector xams2026; --detector NAME)
+    python -m xamssim.g4config --level 4.0 --out <data>/config.json            (detector xams_sr2026_3; --detector NAME)
     python -m xamssim.g4config --level 2.0 --set optics.ptfe_in_gas.reflectivity=0.75 --out /tmp/scan_01.json
 """
 import argparse
@@ -56,7 +56,8 @@ def check_single(x, path="optics"):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--detector", default="xams2026", help="config/detectors/<detector>/geometry.yaml (default xams2026)")
+    from .config import DEFAULT_DETECTOR
+    ap.add_argument("--detector", default=DEFAULT_DETECTOR, help=f"config/detectors/<detector>/geometry.yaml (default {DEFAULT_DETECTOR})")
     ap.add_argument("--geometry", help="another geometry file (instead of the detector's)")
     ap.add_argument("--materials", default=str(ROOT / "config" / "materials.yaml"))
     ap.add_argument("--level", type=float, required=True, help="liquid level above the gate (mm)")

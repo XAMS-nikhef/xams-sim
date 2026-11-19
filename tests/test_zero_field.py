@@ -11,7 +11,7 @@ from test_chain import ROWS, write_g4
 def run_file(tmp_path, **physics):
     p = tmp_path / "zf.yaml"
     phys = "".join(f"\n  {k}: {v}" for k, v in physics.items())
-    p.write_text(f"state: zero\nsource: cs137_zerofield\nn_events: 6\nseed: 1\nrun_number: 999950\n"
+    p.write_text(f"state: zero\nsource: cs137\nposition: t16\nn_events: 6\nseed: 1\nrun_number: 999950\n"
                  + (f"physics:{phys}\n" if physics else ""))
     return p
 

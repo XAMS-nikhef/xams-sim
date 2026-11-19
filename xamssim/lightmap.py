@@ -19,7 +19,7 @@ cylinder). Channels: CHANNELS (sensor id of xamsg4: 0 bottom PMT, 1-4 top-PMT se
 azimuths of geometry.yaml). Registry files `<data>/maps/s1_light/<key>/s1.npz`, `s2_pattern/<key>/s2.npz` (one key:
 both depend on the geometry, the optics and the level only, not on the voltages).
 
-    xamssim maps --state sept --export light [--photons-s1 5e8 --photons-s2 1e8 --jobs 8]   (~12 min on 8 cores;
+    xamssim maps --state r900 --export light [--photons-s1 5e8 --photons-s2 1e8 --jobs 8]   (~12 min on 8 cores;
     5e8 S1 photons write ~18 GB of temporary records in <data>/maps/_work_light)
 
 Both maps are smoothed with a Gaussian of SMOOTH_MM in x, y (not in z): the light pattern on the sensors changes over

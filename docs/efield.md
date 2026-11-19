@@ -14,7 +14,7 @@ field_cage:
 sipm: {azimuth_deg: [90.0, 180.0], z_mm: -25.325, size_mm: 3.0, recess_mm: 1.0}   # grounded planes in the PTFE wall
 liquid_level_mm: 4.0
 cases:
-  cmb50: {A: 2503, G: 303, C: -215, BS: -65, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
+  r900: {A: 2101, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes],
           note: "CM-B with margin"}
 ```
 
@@ -25,9 +25,9 @@ planes, in V. The field-shaping rings follow from the resistor chain. Detector s
 ## Full-TPC model
 
 ```bash
-efield/comsol/run.sh --states sept,cmb50,refa [--cases X --level L] [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm]
+efield/comsol/run.sh --states d25,r900,pg2 [--cases X --level L] [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm]
 python efield/comsol/plot_rz.py [case ...]           # (r, z) plane through a SiPM with drift lines
-python efield/comsol/plot_compare.py cmb_m100 cmb50 cmb cmb_p100   # half-planes side by side, catchment edge
+python efield/comsol/plot_compare.py d25 d50 d75 d140   # half-planes side by side, catchment edge
 ```
 
 `run.sh` writes the Java model (`make_model.py` → `efield/comsol/build/XAMS_efield.java`), compiles it, solves all
@@ -35,7 +35,7 @@ listed cases in one sweep (~1.5 min, ~2.3 M elements), saves `build/XAMS_efield.
 parses the log (`parse_log.py`) into `<data>/efield/comsol/checks.json` and `maps_rz.npz` (a failed solve, e.g. no
 licence, leaves both unchanged). The 3D field of a solved case goes to the [simulation chain](chain.md#field-map) with
 `xamssim maps --state <state> --export field`, which reads the `.mph` through COMSOL's API (package `mph`). All
-geometry, including the SiPMs, comes from the detector of the states (`config/detectors/<d>/geometry.yaml`; with `--cases`: `--detector`, default xams2026); the model carries a geometry tag that the exports check; `cases.yaml` holds only voltages.
+geometry, including the SiPMs, comes from the detector of the states (`config/detectors/<d>/geometry.yaml`; with `--cases`: `--detector`, default xams_sr2026_3); the model carries a geometry tag that the exports check; `cases.yaml` holds only voltages.
 
 Model: the inside of the grounded vessel; PTFE bucket with liquid xenon up to the level, gas elsewhere; the meshes as
 solid conducting discs with their rings (etched holes not resolved — see the mesh cell below); PTFE cylinder with
@@ -48,11 +48,11 @@ in the extraction gap, chain current, wall potential at the SiPM height.
 ## Mesh cell (gate, cathode, gate + anode)
 
 ```bash
-efield/comsol/run_cell.sh gate    --states sept,refa,cmb50      # drift region below, extraction above
-efield/comsol/run_cell.sh cathode --states sept,cmb50 --map3d    # drift region above, reverse field below
-efield/comsol/run_cell.sh stack   --states sept,cmb50,cmb50_a36 # gate + liquid surface + anode + top screen (aligned)
-efield/comsol/run_cell.sh stackx  --states sept                 # the same, anode shifted half a pitch in x
-python efield/comsol/plot_cell3d.py cathode sept                # interactive 3D view (HTML; needs --map3d)
+efield/comsol/run_cell.sh gate    --states d25,r900,pg2      # drift region below, extraction above
+efield/comsol/run_cell.sh cathode --states d25,r900 --map3d    # drift region above, reverse field below
+efield/comsol/run_cell.sh stack   --states d25,r900,d140 # gate + liquid surface + anode + top screen (aligned)
+efield/comsol/run_cell.sh stackx  --states r900                 # the same, anode shifted half a pitch in x
+python efield/comsol/plot_cell3d.py cathode r900                # interactive 3D view (HTML; needs --map3d)
 ```
 
 A quarter of one cell of the etched mesh (holes 2.45 mm, bars 0.15 × 0.15 mm, pitch 2.6 mm) with mirror-symmetric

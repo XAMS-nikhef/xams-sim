@@ -1,6 +1,6 @@
 """Geant4 particle mode for a simulation run (plan S2).
 
-    xamssim particle config/runs/cs137_cmb50_001.yaml [--events N] [--seed S] [--out <data>/g4/<name>] [--dry-run]
+    xamssim particle config/runs/cs137_r900_001.yaml [--events N] [--seed S] [--out <data>/g4/<name>] [--dry-run]
     xamssim particle config/runs/vis_cs137.yaml --vis      interactive viewer (Qt): /run/beamOn N in the window
 
 Steps: resolve the run (config.py) -> config.json from geometry.yaml + materials.yaml (xamssim.g4config, liquid

@@ -12,7 +12,7 @@ focuses them near u = v = 0) and are tracked against the gas field to the anode 
     t_q        times [µs] at which 5 %, 10 %, ..., 95 % of the electron's EL light has been emitted (S2 shape)
 Registry file `<data>/maps/extraction_el/<key>/el.npz`.
 
-    xamssim maps --state sept --export el
+    xamssim maps --state r900 --export el
 """
 from __future__ import annotations
 

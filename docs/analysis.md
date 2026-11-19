@@ -8,7 +8,7 @@ In the `xamssim` env. Reading needs only numpy. All outputs are in the data fold
 ```python
 from xamssim import g4io
 from xamssim.config import DATA
-h, dep, ev = g4io.read(DATA / "g4" / "cs137_cmb50_001")     # header (dict), deposits, events (numpy structured arrays)
+h, dep, ev = g4io.read(DATA / "g4" / "cs137_r900_001")     # header (dict), deposits, events (numpy structured arrays)
 g4io.names(h, "particle", dep["particle"])           # codes -> names
 g4io.code(h, "process", "phot")                       # name -> code (-1 if it never occurred)
 h, dep, ev = g4io.read(DATA / "g4" / "big_run", mmap=True)   # memory-mapped deposits for large files
@@ -68,5 +68,5 @@ fractions depend on the top-PMT load.
 import numpy as np
 from xamssim.config import DATA
 M = np.load(DATA / "efield" / "comsol" / "maps_rz.npz")      # r, z axes; <case>_V, <case>_Er, <case>_Ez (V, V/m)
-E = np.hypot(M["cmb50_Er"], M["cmb50_Ez"]) / 100       # |E| in V/cm on the (r, z) plane through a SiPM
+E = np.hypot(M["r900_Er"], M["r900_Ez"]) / 100       # |E| in V/cm on the (r, z) plane through a SiPM
 ```

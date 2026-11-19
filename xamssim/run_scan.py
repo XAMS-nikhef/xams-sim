@@ -5,7 +5,7 @@
 
 The scan file:
     name: s2_reference
-    detector: xams2026         # config/detectors/<detector> (default xams2026)
+    detector: xams_sr2026_3    # config/detectors/<detector> (default config.DEFAULT_DETECTOR)
     source: s2                 # s2 (gas gap) | s1 (drift region); uniform in the volume, r < rmax_mm
     rmax_mm: 30
     photons: 2000000           # per scan point
@@ -34,7 +34,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-from xamssim.config import DATA  # noqa: E402
+from xamssim.config import DATA, DEFAULT_DETECTOR  # noqa: E402
 sys.path.insert(0, str(ROOT))
 from xamssim import g4bin  # noqa: E402  (starts xamsg4 in the g4 env from any env)
 BUILD = ROOT / "g4" / "build"
@@ -77,7 +77,7 @@ def main():
     jobs = []
     for p in points:
         cfg = out / f"point_{p['id']}.json"
-        args = [sys.executable, "-m", "xamssim.g4config", "--detector", spec.get("detector", "xams2026"),
+        args = [sys.executable, "-m", "xamssim.g4config", "--detector", spec.get("detector", DEFAULT_DETECTOR),
                 "--level", str(p["level"]), "--out", str(cfg)]
         for k, v in p["set"].items():
             args += ["--set", f"{k}={json.dumps(v)}"]

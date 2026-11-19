@@ -74,8 +74,8 @@ Status: plan (2026-10-16; fuse clustering and the repository decided 2026-10-18)
 A simulation run is one file; everything else is referenced:
 
 ```yaml
-# runs/cs137_cmb50_001.yaml
-state: cmb50              # -> states/cmb50.yaml: HV case, liquid level, pressure, electron lifetime, gains, noise
+# runs/cs137_r900_001.yaml
+state: r900               # -> states/r900.yaml: HV case, liquid level, pressure, electron lifetime, gains, noise
 source: cs137_raised      # -> sources/cs137_raised.yaml: isotope, activity, position, collimator
 n_events: 200000          # or: live_time_s
 seed: 1
@@ -85,7 +85,7 @@ physics:                  # only overrides; defaults live in materials.yaml / th
   diffusion: on
 ```
 
-`xamssim run runs/cs137_cmb50_001.yaml` then:
+`xamssim run runs/cs137_r900_001.yaml` then:
 
 1. resolves the state → which maps are needed (field, drift, extraction/EL, S1, S2), looks them up in the **map
    registry** (`maps/manifest.json`: state hash → files + provenance);
@@ -95,7 +95,7 @@ physics:                  # only overrides; defaults live in materials.yaml / th
 4. builds the strax context (XAMS plugins + chosen fuse plugins + amstrax) with **all** settings from the config, and
    produces the requested data type.
 
-Each producer and each stage can also be run alone, e.g. `efield field --state cmb50`, `xams-g4 particle
+Each producer and each stage can also be run alone, e.g. `efield field --state r900`, `xams-g4 particle
 --source cs137_raised -n 1e5`, or in Python `st.get_array(run, "drifted_electrons")`.
 
 ## Repository layout

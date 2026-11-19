@@ -19,10 +19,10 @@ config/runs/<run>.yaml ─┬─ state ──► config/states/<state>.yaml ─�
 One folder per detector: `geometry.yaml` and the files it refers to (`mesh_holes.json`), and `sensors.yaml` (the
 sensor response per channel; separate, so a change there renews only the sensor step), `daq.yaml` and
 `spe_templates.npz` (digitizer, channels, thresholds, baselines, noise, gains, single-PE pulse shapes: the waveforms, S8). Detectors:
-`xams2026` (the drawing values, SiPMs from the data fit; the states made up to 2026-11-18), `xams2026_flip` (anode
-flipped, hypothesis of 2026-11-01), `xams_sr2026_3` (XAMS up to and including SR-2026.3 from the survey of 2026-11-17:
-anode foil up, gate–anode 9.65 mm, SiPMs at 128° / 52°, z −25 mm) and `xams_sr2026_4` (after the 2026-11-17 opening:
-anode foil down, 8 mm, no SiPMs; DAQ a placeholder). A detector without a `sipms` section has no SiPMs in Geant4,
+`xams_sr2026_3` (XAMS up to and including SR-2026.3 from the survey of 2026-11-17: anode foil up, gate–anode 9.65 mm,
+SiPMs at 128° / 52°, z −25 mm; the default, `config.DEFAULT_DETECTOR`) and `xams_sr2026_4` (after the 2026-11-17
+opening: anode foil down, 8 mm, no SiPMs; DAQ a placeholder). The older detectors `xams2026` / `xams2026_flip` were
+removed on 2026-11-19 (wrong geometry; in git history). A detector without a `sipms` section has no SiPMs in Geant4,
 COMSOL and the drift map; its light channels `sipm_1` / `sipm_2` stay empty. A different detector (e.g. a SiPM top array) is a new folder; its states name it, and
 since every key (Geant4, maps, lineage) follows the resolved geometry, runs of one detector never make those of another
 old. Small changes for a study belong in a new detector folder too (copy and edit) — never edit the geometry of a
@@ -87,8 +87,7 @@ One operating condition of the detector.
 | `sensors` | | e.g. `pmt_hv_v: {top: -1000, bottom: -1000}` |
 | `description` | | free text |
 
-Existing: `sept` (SR-2026.2), `cmb50` (short-fill CM-B with −50 V SiPM margin), `cmb50_a36` (cmb50 with the anode at
-+3.6 kV: extraction 0.23 instead of ≈ 0), `refa` (short-fill REF-a).
+Existing (2026-11-19): one state per HV configuration of SR-2026.3 on `xams_sr2026_3` (`zero`, `e27`, `e27b`, `e27c`, `r900`, `r900_a22`, `r900_a23`, `d25` … `d150`, `pg1` … `pg5`, `pg4b`, `mh2` … `mh6`, `th85`, `th11`) and states that share an HV case but differ in DAQ or lifetime (`p4b`, `ma`, `fn25` / `fn50` / `fn75` / `fn140`). HV cases in `efield/cases.yaml`, from sc_snapshot. All older states were removed (wrong geometry).
 
 ## HV cases — `efield/cases.yaml`
 
@@ -109,8 +108,7 @@ chain, the SiPM model and which field maps to export. Shared by the states and t
 | `activity_bq`, `collimator`, `description` | bookkeeping (collimator not yet modelled) |
 
 Existing: the isotopes `cs137`, `na22`, `co60` (no place: the run's `position` gives it) and `cs137_vis_cone`
-(viewer). The old isotope-at-a-place files (`cs137_side_zm8`, `*_zerofield`, `*_middrift_2611`, `cs137_sept_*`,
-`cs137_r130_*`, `cs137_raised`) are in `config/sources/legacy/`; runs that name them still resolve.
+(viewer). The old isotope-at-a-place files were removed on 2026-11-19.
 
 ## Source positions — `config/positions.yaml`
 

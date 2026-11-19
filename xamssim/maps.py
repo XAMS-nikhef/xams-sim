@@ -3,7 +3,7 @@
 Maps live in `<data>/maps/` (xamssim.config.DATA, default ../simulations/data; not in git) and are listed in
 `<data>/maps/manifest.json`:
 
-    {"maps": [{"kind": "field", "key": "<12-char input hash>", "state": "cmb50", "files": ["field/<key>/field.npz"],
+    {"maps": [{"kind": "field", "key": "<12-char input hash>", "state": "r900", "files": ["field/<key>/field.npz"],
                "producer": "efield (COMSOL)", "producer_version": "<git describe>", "created": "<ISO time>",
                "inputs": {...}}]}
 

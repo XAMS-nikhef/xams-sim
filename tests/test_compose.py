@@ -8,7 +8,7 @@ def _rec(**over):
     rec = dict(run_id="r", run_key="k", run_file="/x/runs/r.yaml", created="2026-10-21T10:00:00",
                run=dict(n_events=1000, seed=1, run_number=900101, stop_after="events"), state_name="sept",
                state=dict(liquid_level_mm=4.0, electron_lifetime_us=159, hv_case="sept"), source_name="cs",
-               source=dict(isotope="Cs-137", position_mm=[0, 130, -120]), detector="xams2026",
+               source=dict(isotope="Cs-137", position_mm=[0, 130, -120]), detector="xams_sr2026_3",
                geometry=dict(meta=dict(version=5)), hv_case=dict(A=2500, G=-2500, C=-3250, BS=-1000, TS=-100),
                physics=dict(clustering="lineage"), settings=dict(electron_lifetime_us=159),
                maps=dict(field=dict(key="f1", present=True)), code=dict(commit="abcdef1234567"))

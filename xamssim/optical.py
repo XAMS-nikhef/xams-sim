@@ -18,6 +18,7 @@ from pathlib import Path
 import yaml
 
 from . import g4bin
+from .config import DEFAULT_DETECTOR
 from .config import DATA, ROOT, ConfigError
 
 
@@ -65,7 +66,7 @@ def vis(scan_file, point: int = 0) -> None:
     out = (DATA / "vis_optical" / f"{spec['name']}_point{point}").resolve()
     out.mkdir(parents=True, exist_ok=True)
     cfg = out / "config.json"
-    args = [sys.executable, "-m", "xamssim.g4config", "--detector", spec.get("detector", "xams2026"),
+    args = [sys.executable, "-m", "xamssim.g4config", "--detector", spec.get("detector", DEFAULT_DETECTOR),
             "--level", str(p["level"]), "--out", str(cfg)]
     for k, v in p["set"].items():
         args += ["--set", f"{k}={json.dumps(v)}"]

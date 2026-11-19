@@ -10,7 +10,7 @@ TPC field gives there (drift field from (V_gate - V_cathode) / 51.8 mm; the anod
 All cases of the selection are solved in one auxiliary sweep. The plane y = 0 (through the hole centre and across a bar,
 a symmetry plane) is printed to the log as MAP lines; plot_cell.py draws |E|, equipotentials, field and drift lines.
 
-    python efield/comsol/make_cell.py gate|cathode --states sept,cmb50,refa   (writes build/XAMS_cell_<el>.java)
+    python efield/comsol/make_cell.py gate|cathode --states d25,r900,pg2   (writes build/XAMS_cell_<el>.java)
     efield/comsol/run_cell.sh gate|cathode --states ...                       (generate, solve, parse, plot)
     (--cases X --level L for HV cases without a state)
 """
@@ -33,7 +33,7 @@ def main():
                     help="stack = gate + liquid surface + anode mesh + top screen, anode aligned with the gate; "
                          "stackx = the same with the anode shifted by half a pitch in x")
     ap.add_argument("--states", default="", help="states (config/states): their HV cases and liquid level")
-    ap.add_argument("--detector", help="detector for --cases without --states (default xams2026; with --states: theirs)")
+    ap.add_argument("--detector", help="detector for --cases without --states (default config.DEFAULT_DETECTOR; with --states: theirs)")
     ap.add_argument("--cases", default="", help="extra HV cases of cases.yaml (without --states: needs --level)")
     ap.add_argument("--level", type=float, help="liquid level above the gate [mm] for --cases without --states")
     ap.add_argument("--hmax", type=float, default=0.06)

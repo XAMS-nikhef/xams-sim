@@ -39,13 +39,13 @@ def test_keys_depend_only_on_their_inputs():
 
 def test_bad_run_rejected(tmp_path: Path):
     p = tmp_path / "bad.yaml"
-    p.write_text("state: cmb50\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\nstop_after: banana\n")
+    p.write_text("state: r900\nsource: cs137\nposition: t16\nn_events: 10\nseed: 1\nstop_after: banana\n")
     with pytest.raises(config.ConfigError):
         config.resolve(p)
-    p.write_text("state: nosuchstate\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\n")
+    p.write_text("state: nosuchstate\nsource: cs137\nn_events: 10\nseed: 1\n")
     with pytest.raises(config.ConfigError):
         config.resolve(p)
-    p.write_text("state: cmb50\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\nextra: 3\n")
+    p.write_text("state: r900\nsource: cs137\nposition: t16\nn_events: 10\nseed: 1\nextra: 3\n")
     with pytest.raises(config.ConfigError):
         config.resolve(p)
 
@@ -68,7 +68,7 @@ def test_register_and_find(tmp_path, monkeypatch):
 
 
 def test_materials_single_source():
-    geo, mat = config.load_materials_and_geometry("xams2026")
+    geo, mat = config.load_materials_and_geometry("xams_sr2026_3")
     assert "optics" not in geo and "optics" in mat
     for part in ("mesh_common", "field_shaping_rings", "cryostat_vessel", "ptfe_cylinder", "ptfe_bucket", "pmt_ptfe"):
         assert geo[part]["material"] in mat["materials"]
@@ -80,7 +80,7 @@ def test_list_runs():
     """xamssim list: collects without error; a filter that matches nothing gives no runs, but the map overview."""
     from xamssim import listing
     d = listing.collect("no-such-run-id")
-    assert d["runs"] == [] and "sept" in d["maps"]["states"]
+    assert d["runs"] == [] and "r900" in d["maps"]["states"]
 
 
 def test_list_remove(tmp_path, monkeypatch):
@@ -101,7 +101,7 @@ def test_particle_is_current(tmp_path):
     """xamssim particle skips Geant4 only for complete output with the same Geant4 key, events and seed."""
     import json
     from xamssim import particle
-    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
     assert not particle.is_current(res, tmp_path, 10, 1)                    # nothing there
     (tmp_path / "config.json").write_text(json.dumps({"xamssim": {"g4_key": res.g4_key(), "n_events": 10, "seed": 1}}))
     assert not particle.is_current(res, tmp_path, 10, 1)                    # incomplete: no deposits.json
@@ -136,8 +136,8 @@ def test_detectors():
     """A state names its detector; the geometry comes from config/detectors/<detector>/ with its hole pattern read in;
     an unknown detector is an error."""
     import copy as _copy
-    res = config.resolve_state("sept")
-    assert res.detector == "xams2026" and res.geometry_path.parent.name == "xams2026"
+    res = config.resolve_state("r900")
+    assert res.detector == "xams_sr2026_3" and res.geometry_path.parent.name == "xams_sr2026_3"
     assert len(res.geometry["mesh_common"]["holes"]) == 456
     with pytest.raises(config.ConfigError):
         config.load_geometry("no_such_detector")
@@ -161,7 +161,7 @@ def test_stale_code_warning(tmp_path, monkeypatch, capsys):
 def test_materials_at_measured_pressure():
     """A state with a measured pressure gets liquid and gas at saturation there; the reference pressure is unchanged."""
     from xamssim.config import ConfigError, at_pressure, load_materials_and_geometry
-    _, mat = load_materials_and_geometry("xams2026")
+    _, mat = load_materials_and_geometry("xams_sr2026_3")
     assert at_pressure(mat, None) is mat and at_pressure(mat, 2.0) is mat
     m = at_pressure(mat, 1.4897)["materials"]
     assert m["liquid_xenon"]["temperature_k"] == pytest.approx(172.07)
@@ -175,19 +175,14 @@ def test_materials_at_measured_pressure():
 def test_named_position(tmp_path: Path):
     """An isotope source plus a position of positions.yaml: z from the tape height (survey: gate at tape 19.3 cm)."""
     p = tmp_path / "pos.yaml"
-    p.write_text("state: cmb50\nsource: cs137\nposition: t16\nn_events: 10\nseed: 1\n")
+    p.write_text("state: r900\nsource: cs137\nposition: t16\nn_events: 10\nseed: 1\n")
     res = config.resolve(p)
     assert res.source_name == "cs137 @ t16"
     assert res.source["isotope"] == "Cs-137" and res.source["tape_cm"] == 16.0
     assert res.source["position_mm"][2] == pytest.approx(-33.0)
     assert res.source["position_mm"][0] == pytest.approx(-122.7, abs=0.1)          # azimuth 198 deg
-    p.write_text("state: cmb50\nsource: cs137\nposition: t18\nn_events: 10\nseed: 1\n")
+    p.write_text("state: r900\nsource: cs137\nposition: t18\nn_events: 10\nseed: 1\n")
     assert config.resolve(p).source["position_mm"][2] == pytest.approx(-13.0)
-    p.write_text("state: cmb50\nsource: cs137\nposition: nowhere\nn_events: 10\nseed: 1\n")
+    p.write_text("state: r900\nsource: cs137\nposition: nowhere\nn_events: 10\nseed: 1\n")
     with pytest.raises(config.ConfigError):
         config.resolve(p)
-    p.write_text("state: cmb50\nsource: cs137_side_zm8\nposition: t16\nn_events: 10\nseed: 1\n")   # legacy file has its own place
-    with pytest.raises(config.ConfigError):
-        config.resolve(p)
-    p.write_text("state: cmb50\nsource: cs137_side_zm8\nn_events: 10\nseed: 1\n")                 # legacy name still resolves
-    assert config.resolve(p).source["position_mm"][2] == -8.0

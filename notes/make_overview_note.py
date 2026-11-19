@@ -48,7 +48,7 @@ h2 = ParagraphStyle("h2", parent=base, fontName="Arial-Bold", fontSize=11.5, lea
 hdr = ParagraphStyle("hdr", parent=small, fontName="Arial-Bold", textColor=colors.white)
 W = A4[0] - 30 * mm
 FIG = ROOT / "notes" / "figures"
-EXAMPLE_RUN = ROOT / "config" / "runs" / "cs137_cmb50_001.yaml"
+EXAMPLE_RUN = ROOT / "config" / "runs" / "cs137_r900_001.yaml"
 
 # what each chain plugin does (written here; a plugin without an entry stops the script)
 WHAT = {
@@ -286,7 +286,7 @@ def main():
     commit, dirty = git("rev-parse", "--short", "HEAD"), git("status", "--porcelain")
     gitinfo = commit + (" + local changes" if dirty else "")
     from xamssim.config import load_geometry
-    geo = load_geometry("xams2026")
+    geo = load_geometry("xams_sr2026_3")
     res = config.resolve(EXAMPLE_RUN)
     pl = [plugin_info(c) for c in chain.plugins("lineage")]
     alt = [plugin_info(c) for c in chain.plugins("dbscan") if c not in chain.plugins("lineage")]

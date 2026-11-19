@@ -1,10 +1,12 @@
-# Detector state: SR-2026.3 R900* 7790-7902, R900T 7929, BG16, P4B 7957-7980. Sources: analysis_SR2026.3/config/runs/*.csv, sc_snapshot of the runs.
-description: "SR-2026.3 r900: anode +2101, gate -646, cathode -1146, BS -445, SiPM -900 V; PMTs -900 / -950 V"
-detector: xams2026           # config/detectors/xams2026/geometry.yaml
+# Detector state of SR-2026.3 on detector xams_sr2026_3 (survey 2026-11-17: anode foil up, gate-anode 9.65 mm; SiPMs 128 / 52 deg).
+# Data: R900 7790-7837 (+ S / F / P90 / M90 / B / T). HV case r900 (efield/cases.yaml, from sc_snapshot). Made 2026-11-19.
+description: "SR-2026.3 r900: anode +2101, gate -646, cathode -1146 V (97 V/cm), BS -445, SiPM -900 V; PMTs -900 / -950 V"
+detector: xams_sr2026_3
 hv_case: r900
-daq: sr2026_3_p4             # detectors/xams2026/daq_sr2026_3_p4.yaml (gains P4)
-liquid_level_mm: 4.0         # above the gate, as for this fill
-pressure_bar: 1.49           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
-electron_lifetime_us: 424.0    # SR2026.3_v4 lifetime (mean over the runs of R900 7790-7837 (48 runs, 357-487); later blocks on this field: S 533, F 574, P90/M90 ~600, B 629, T/BG16/P4B 707)
+daq: sr2026_3_p4           # detectors/xams_sr2026_3/daq_sr2026_3_p4.yaml (gains P4, ch0 threshold 60, Science_Rev2.5)
+liquid_level_mm: 4.0         # above the gate: 4 mm LXe + 5.65 mm GXe (S2 widths, 2026-11-01)
+pressure_bar: 1.49           # pmain in sc_snapshot (absolute)
+electron_lifetime_us: 424.0    # SR2026.3_v4, mean over R900 7790-7837
+extraction: {model: nest, shift_kV_cm: 0.30, note: "fit to cS2 vs dV of the anode / gate scan of SR-2026.3, 2026-11-02 (flipped anode)"}
 sensors:
   pmt_hv_v: {top: -900, bottom: -950}

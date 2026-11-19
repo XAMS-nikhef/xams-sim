@@ -6,7 +6,7 @@ referenced:
     run  ─┬─ state  (config/states/<name>.yaml) ─┬─ detector ── config/detectors/<detector>/geometry.yaml (shapes,
           │                                       │               positions, which part is which material)
           │                                       └─ hv_case ── efield/cases.yaml (voltages, field cage, SiPMs)
-          ├─ source (config/sources/<name>.yaml: an isotope; old isotope-at-a-place files in sources/legacy/)
+          ├─ source (config/sources/<name>.yaml: an isotope)
           ├─ position (optional; config/positions.yaml: source place by its height on the z tape, from the survey)
           └─ materials (config/materials.yaml: the single source of material properties incl. optics)
 
@@ -205,9 +205,10 @@ def short_hash(obj) -> str:
 
 
 def _named(kind: str, name: str) -> Path:
-    p = CONFIG / f"{kind}s" / f"{name}.yaml"
-    old = CONFIG / f"{kind}s" / "legacy" / f"{name}.yaml"     # sources: the old isotope-at-a-place files
-    return old if not p.exists() and old.exists() else p
+    return CONFIG / f"{kind}s" / f"{name}.yaml"
+
+
+DEFAULT_DETECTOR = "xams_sr2026_3"   # the detector of tools run without states (g4config, scans, COMSOL --cases)
 
 
 POSITIONS = CONFIG / "positions.yaml"
@@ -386,7 +387,7 @@ def resolve_state(state_name: str) -> Resolved:
 
 
 def efield_detector(states: str = "", detector: str | None = None) -> str:
-    """The detector of one COMSOL solve: that of the states (all the same), else --detector (default xams2026)."""
+    """The detector of one COMSOL solve: that of the states (all the same), else --detector (default DEFAULT_DETECTOR)."""
     if states:
         dets = {load_yaml(_named("state", n))["detector"] for n in states.split(",")}
         if len(dets) != 1:
@@ -395,13 +396,13 @@ def efield_detector(states: str = "", detector: str | None = None) -> str:
         if detector and detector != d:
             raise ConfigError(f"--detector {detector} differs from the states' detector {d}")
         return d
-    return detector or "xams2026"
+    return detector or DEFAULT_DETECTOR
 
 
 def efield_selection(states: str = "", cases: str = "", level: float | None = None) -> tuple[dict, float]:
     """HV cases and liquid level for one COMSOL solve (all cases of a solve share the geometry, so one level).
 
-    states="sept,cmb50": the states' HV cases and their (common) liquid level — the normal way;
+    states="d25,r900": the states' HV cases and their (common) liquid level — the normal way;
     cases="cmb_p100,..." + level: HV cases without a state (field studies), level given explicitly.
     """
     all_cases = load_yaml(HV_CASES)["cases"]

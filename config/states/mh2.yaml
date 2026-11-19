@@ -1,0 +1,12 @@
+# Detector state of SR-2026.3 on detector xams_sr2026_3 (survey 2026-11-17: anode foil up, gate-anode 9.65 mm; SiPMs 128 / 52 deg).
+# Data: MH2 8021-8025 (3-11). HV case mh2 (efield/cases.yaml, from sc_snapshot). Made 2026-11-19.
+description: "SR-2026.3 mh2: anode +2501, gate -846, cathode -1346 V (97 V/cm), BS -645, SiPM -1090 V; PMTs -900 / -950 V"
+detector: xams_sr2026_3
+hv_case: mh2
+daq: sr2026_3_p4b           # detectors/xams_sr2026_3/daq_sr2026_3_p4b.yaml (gains P4 (later sets ran with P5: not in xams-sim), ch0 threshold 16, Science_Rev2.6)
+liquid_level_mm: 4.0         # above the gate: 4 mm LXe + 5.65 mm GXe (S2 widths, 2026-11-01)
+pressure_bar: 1.49           # pmain in sc_snapshot (absolute)
+electron_lifetime_us: 900.0    # asymptote of the SR2026.3 v7 time model (1/tau -> 1.11 /ms); per-block fits of 3-11 noisy
+extraction: {model: nest, shift_kV_cm: 0.30, note: "fit to cS2 vs dV of the anode / gate scan of SR-2026.3, 2026-11-02 (flipped anode)"}
+sensors:
+  pmt_hv_v: {top: -900, bottom: -950}

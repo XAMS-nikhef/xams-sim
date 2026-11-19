@@ -11,7 +11,7 @@ Registry file `<data>/maps/mesh_cells/<key>/cells.npz`, per electrode (`gate_*`,
 Ex, Ey, Ez [V/cm] (NaN inside the bars), and the cell average of each component per z (the uniform field the cell
 assumes far from the mesh). Used by xamssim.driftmap to build the composite field near each mesh.
 
-    xamssim maps --state sept --export cells          # needs the solved cell models (.mph) and the COMSOL licence
+    xamssim maps --state r900 --export cells          # needs the solved cell models (.mph) and the COMSOL licence
 """
 from __future__ import annotations
 

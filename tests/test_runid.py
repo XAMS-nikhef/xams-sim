@@ -7,7 +7,7 @@ import pytest
 from xamssim import amstrax_io, runid
 from xamssim.config import ConfigError
 
-RUN = "# a test run\n\nstate: sept\nsource: cs137_sept_middrift\nn_events: 10\nseed: 1\n"
+RUN = "# a test run\n\nstate: r900\nsource: cs137\nposition: t16\nn_events: 10\nseed: 1\n"
 
 
 @pytest.fixture

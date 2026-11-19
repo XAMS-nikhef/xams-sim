@@ -4,7 +4,7 @@ import pytest
 
 from xamssim import amstrax_io, compose
 
-RUN = "# test\nrun_number: {n}\ntags: [test]\nstate: sept\nsource: cs137_sept_middrift\nn_events: 1000\nseed: 1\n"
+RUN = "# test\nrun_number: {n}\ntags: [test]\nstate: r900\nsource: cs137\nposition: t16\nn_events: 1000\nseed: 1\n"
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 """Monte Carlo study of the position reconstruction (plan S9): a fast toy from the maps, no Geant4, no chain.
 
-    xamssim posrec --state sept [--n 300000] [--sizes 30,300,3000,30000] [--data-map pos_rec_map_v1.json] [--out f.png]
+    xamssim posrec --state r900 [--n 300000] [--sizes 30,300,3000,30000] [--data-map pos_rec_map_v1.json] [--out f.png]
 
 Per event, as in the detector and in amstrax:
   1. a true position, uniform in the drift region (r < field-cage radius, cathode < z < gate);
@@ -188,7 +188,7 @@ def data_map(name: str = "pos_rec_map_v1.json") -> dict:
 
 
 # ---------------------------------------------------------------------------------------------------------- study
-def run(state: str = "sept", n: int = 300_000, sizes=(30, 300, 3000, 30000), data_map_name: str = "pos_rec_map_v1.json",
+def run(state: str = "r900", n: int = 300_000, sizes=(30, 300, 3000, 30000), data_map_name: str = "pos_rec_map_v1.json",
         seed: int = 1, out: str | None = None) -> dict:
     rng = np.random.default_rng(seed)
     res = resolve_state(state)

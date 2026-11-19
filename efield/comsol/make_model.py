@@ -16,7 +16,7 @@ Checks (printed as CHECK lines, parsed by run.sh -> <data>/efield/comsol/checks.
 (V_gate - V_cathode) / 51.8 mm, liquid / gas field ratio in the extraction gap, potential at the SiPM height near the
 wall, field in the SiPM hole.
 
-    python efield/comsol/make_model.py --states sept,cmb50 [--cases X --level L] [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm]
+    python efield/comsol/make_model.py --states d25,r900 [--cases X --level L] [--hmax-tpc 1.5] [--hmax-sipm 0.25] [--no-sipm]
 """
 import argparse
 import math
@@ -56,7 +56,7 @@ def main():
     ap.add_argument("--hmax", type=float, default=8.0, help="global max element size [mm]")
     ap.add_argument("--no-sipm", action="store_true", help="leave the SiPMs out (axisymmetric reference)")
     ap.add_argument("--states", default="", help="states (config/states): their HV cases and liquid level")
-    ap.add_argument("--detector", help="detector for --cases without --states (default xams2026; with --states: theirs)")
+    ap.add_argument("--detector", help="detector for --cases without --states (default config.DEFAULT_DETECTOR; with --states: theirs)")
     ap.add_argument("--cases", default="", help="extra HV cases of cases.yaml (without --states: needs --level)")
     ap.add_argument("--level", type=float, help="liquid level above the gate [mm] for --cases without --states")
     a = ap.parse_args()
