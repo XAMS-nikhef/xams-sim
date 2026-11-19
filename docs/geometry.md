@@ -1,6 +1,6 @@
 # Geometry
 
-All dimensions of a detector live in `config/detectors/<detector>/geometry.yaml` (now one detector: `xams2026`) (material properties and optics in `config/materials.yaml`), each with its source (drawings in `reference/XAMS design/`: grid assembly,
+All dimensions of a detector live in `config/detectors/<detector>/geometry.yaml` (detectors: `xams2026`, `xams2026_flip`, `xams_sr2026_3`, `xams_sr2026_4`; see configuration) (material properties and optics in `config/materials.yaml`), each with its source (drawings in `reference/XAMS design/`: grid assembly,
 PTFE cylinder, field shaping, PTFE bucket, inner cryostat vessel, the cryostat `XAMS_cryostat.pdf`; thesis; position reconstruction v2; the user).
 Built by `g4/src/XamsGeometry.cc`; the COMSOL field model (`efield/comsol/make_model.py`) reads the same file.
 

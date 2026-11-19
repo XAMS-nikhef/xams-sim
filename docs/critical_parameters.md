@@ -20,7 +20,7 @@ E_gas = f_mesh × ΔV / (d_g + d_l / 1.96), with f_mesh ≈ 0.92 for the etched 
 
 | parameter | where | how known |
 |---|---|---|
-| gate–anode gap | `config/detectors/<d>/geometry.yaml` (`meshes`: z, `foil_side`) | drawing (8 mm); orientation of the anode ring matters (flipped: 9.65 mm, `xams2026_flip`) |
+| gate–anode gap | `config/detectors/<d>/geometry.yaml` (`meshes`: z, `foil_side`) | survey 2026-11-17: up to SR-2026.3 the anode foil was up, 9.65 mm (`xams_sr2026_3`); flipped back at that opening, 8 mm (`xams_sr2026_4`) |
 | liquid level above the gate | `config/states/<s>.yaml` `liquid_level_mm` | **not measured directly**; from the S2 width (below) |
 | gas pressure / temperature | state `pressure_bar`; Magboltz table at 1118 Torr, 172.3 K | sc_snapshot (pmain absolute), PT100s |
 | gas drift velocity v_gas(E) | `config/materials.yaml` `gas_xenon.transport.drift_velocity_table` | PyBoltz (Magboltz, Biagi cross sections) |
