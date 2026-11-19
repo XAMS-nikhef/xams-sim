@@ -5,19 +5,19 @@
 #   survey 2026-11-17 (measurements/survey_20261117/README.md): height above the floor = tape + 71.4 cm, gate at
 #   90.7 +- 0.5 cm above the floor -> gate at tape 19.3 cm; cathode at tape 14.1, drift centre at tape 16.7 (z -25.9).
 #   The "stick" of the run comments is this tape (user 2026-11-19).
-# azimuth: the source shines on the z tape (user 2026-11-19), at the tape centre: 186 deg +- 6. Survey pictures:
-#   the PMT x / y axes are parallel to the cryostat-frame axes (user); a marker at 180 deg on the top-flange rim
-#   (IMG_1823-1825, ruler along the frame beam): the black line = left edge of the tape (seen from outside) is 1.5 cm left
-#   of it on the rim (r 145 mm) -> 174 deg; the tape is ~5.5 cm wide (~25 deg on r 127, IMG_1749) -> centre ~186 deg.
-#   The TARGET bullseye next to the tape (~240 deg) is not the source place. Data fit: 169 +- 15 (agrees within ~1 sigma).
-#   Kapton mark on the flanges ~36 deg right of the black line: ~210 deg.
+# azimuth: the source shines on the z tape (user 2026-11-19), at the tape centre: 198 deg +- 6. Survey pictures:
+#   the PMT x / y axes are parallel to the cryostat-frame axes (user); on the top-flange rim (IMG_1823-1825, ruler along
+#   the frame beam) the fat dots mark 180 deg and the thin black line = left edge of the tape (seen from outside) is
+#   1.5 cm right of them on the rim (r 145 mm) -> 186 deg; the tape is ~5.5 cm wide (~25 deg on r 127, IMG_1749) -> centre
+#   ~198 deg. The TARGET bullseye next to the tape is not the source place. Data fit: 169 +- 15 (~2 sigma off).
+#   Kapton mark on the flanges ~36 deg right of the thin line: ~222 deg.
 #   r ~129 mm (on the outer vessel, r 127). Data frame (+x towards top-PMT sectors 1 and 3, +y towards 1 and 2).
 # Which data runs had which height: measurements/SR2026.3/config/runs/*.csv, column src_tape_cm.
 
 gate_tape_cm: 19.3
 
 positions:
-  t16:   {tape_cm: 16.0, azimuth_deg: 186, r_mm: 129, description: "SR-2026.3 MA, FN*, MH*, MN*, TH* (2-3 Nov): z -33 mm"}
-  t16.5: {tape_cm: 16.5, azimuth_deg: 186, r_mm: 129, description: "SR-2026.3 R900S (P4a - 3 cm): z -28 mm"}
-  t18:   {tape_cm: 18.0, azimuth_deg: 186, r_mm: 129, description: "SR-2026.3 D25-D150, P4B, PG*: z -13 mm"}
-  t19.5: {tape_cm: 19.5, azimuth_deg: 186, r_mm: 129, description: "SR-2026.3 P4a, standard position of R900*: z +2 mm"}
+  t16:   {tape_cm: 16.0, azimuth_deg: 198, r_mm: 129, description: "SR-2026.3 MA, FN*, MH*, MN*, TH* (2-3 Nov): z -33 mm"}
+  t16.5: {tape_cm: 16.5, azimuth_deg: 198, r_mm: 129, description: "SR-2026.3 R900S (P4a - 3 cm): z -28 mm"}
+  t18:   {tape_cm: 18.0, azimuth_deg: 198, r_mm: 129, description: "SR-2026.3 D25-D150, P4B, PG*: z -13 mm"}
+  t19.5: {tape_cm: 19.5, azimuth_deg: 198, r_mm: 129, description: "SR-2026.3 P4a, standard position of R900*: z +2 mm"}

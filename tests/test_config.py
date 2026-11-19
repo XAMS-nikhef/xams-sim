@@ -180,7 +180,7 @@ def test_named_position(tmp_path: Path):
     assert res.source_name == "cs137 @ t16"
     assert res.source["isotope"] == "Cs-137" and res.source["tape_cm"] == 16.0
     assert res.source["position_mm"][2] == pytest.approx(-33.0)
-    assert res.source["position_mm"][0] == pytest.approx(-128.3, abs=0.1)          # azimuth 186 deg
+    assert res.source["position_mm"][0] == pytest.approx(-122.7, abs=0.1)          # azimuth 198 deg
     p.write_text("state: cmb50\nsource: cs137\nposition: t18\nn_events: 10\nseed: 1\n")
     assert config.resolve(p).source["position_mm"][2] == pytest.approx(-13.0)
     p.write_text("state: cmb50\nsource: cs137\nposition: nowhere\nn_events: 10\nseed: 1\n")
