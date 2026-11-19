@@ -113,7 +113,7 @@ Existing: the isotopes `cs137`, `na22`, `co60` (no place: the run's `position` g
 Named places of a source outside the cryostat, by the height on the z tape of the outer vessel: `tape_cm`,
 `azimuth_deg`, `r_mm`, `description`. z = (tape_cm − `gate_tape_cm`) × 10 mm with `gate_tape_cm` 19.3 from the survey of
 2026-11-17 (height above the floor = tape + 71.4 cm, gate 90.7 cm). Now `t16` (z −33 mm), `t16.5`, `t18` (z −13 mm),
-`t19.5` (P4a), all at the September azimuth 169°, r 129 mm. A run with `position` names an isotope source without
+`t19.5` (P4a), all at the z tape: azimuth 180° (−x, ± 5°: PMT axes parallel to the cryostat frame, tape along a frame axis), r 129 mm. A run with `position` names an isotope source without
 `position_mm`; the source is then shown as `cs137 @ t16` (listing, web app, run document).
 
 ## Simulation runs — `config/runs/<name>.yaml`

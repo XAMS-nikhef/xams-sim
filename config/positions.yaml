@@ -5,14 +5,17 @@
 #   survey 2026-11-17 (measurements/survey_20261117/README.md): height above the floor = tape + 71.4 cm, gate at
 #   90.7 +- 0.5 cm above the floor -> gate at tape 19.3 cm; cathode at tape 14.1, drift centre at tape 16.7 (z -25.9).
 #   The "stick" of the run comments is this tape (user 2026-11-19).
-# azimuth / r: the September place on the outer vessel (azimuth ~169 deg +- 15 from the data, r ~129 mm on the vessel);
-#   the survey gives no source azimuth. Data frame (+x towards top-PMT sectors 1 and 3, +y towards 1 and 2).
+# azimuth: the source sits on the z tape, which is at 180 deg (-x) +- 5: the PMT x / y axes are parallel to the axes of the
+#   cryostat frame (user 2026-11-19) and IMG_1748 looks along a frame beam with the tape in the middle of the vessel, so
+#   the tape is at 0 / 90 / 180 / 270 deg; the data (169 +- 15) pick 180. Kapton mark on the flanges ~24 deg right of the
+#   tape seen from outside (IMG_1748, IMG_1765; black mark on the top flange = left edge of the tape): ~204 deg.
+#   r ~129 mm (on the outer vessel, r 127). Data frame (+x towards top-PMT sectors 1 and 3, +y towards 1 and 2).
 # Which data runs had which height: measurements/SR2026.3/config/runs/*.csv, column src_tape_cm.
 
 gate_tape_cm: 19.3
 
 positions:
-  t16:   {tape_cm: 16.0, azimuth_deg: 169, r_mm: 129, description: "SR-2026.3 MA, FN*, MH*, MN*, TH* (2-3 Nov): z -33 mm"}
-  t16.5: {tape_cm: 16.5, azimuth_deg: 169, r_mm: 129, description: "SR-2026.3 R900S (P4a - 3 cm): z -28 mm"}
-  t18:   {tape_cm: 18.0, azimuth_deg: 169, r_mm: 129, description: "SR-2026.3 D25-D150, P4B, PG*: z -13 mm"}
-  t19.5: {tape_cm: 19.5, azimuth_deg: 169, r_mm: 129, description: "SR-2026.3 P4a, standard position of R900*: z +2 mm"}
+  t16:   {tape_cm: 16.0, azimuth_deg: 180, r_mm: 129, description: "SR-2026.3 MA, FN*, MH*, MN*, TH* (2-3 Nov): z -33 mm"}
+  t16.5: {tape_cm: 16.5, azimuth_deg: 180, r_mm: 129, description: "SR-2026.3 R900S (P4a - 3 cm): z -28 mm"}
+  t18:   {tape_cm: 18.0, azimuth_deg: 180, r_mm: 129, description: "SR-2026.3 D25-D150, P4B, PG*: z -13 mm"}
+  t19.5: {tape_cm: 19.5, azimuth_deg: 180, r_mm: 129, description: "SR-2026.3 P4a, standard position of R900*: z +2 mm"}
