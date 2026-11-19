@@ -1,0 +1,13 @@
+# Detector state on the SR-2026.3 survey detector xams_sr2026_3 (2026-11-19): anode foil up (9.65 mm), SiPMs 128 / 52 deg,
+# extraction NEST + 0.30 kV/cm (fit 2026-11-02, as r900b_flip_x30), 4 mm LXe.
+# SR-2026.3 FN75 8012-8020 (2-11-2026). HV = hv_case d75 (same anode / gate / cathode as D75; SiPM HV of the case, not checked per FN run).
+description: "SR-2026.3 FN75 on xams_sr2026_3 (source tape 16 cm, Na / Co / Cs): anode +2106, gate -646, cathode -1035; 75 V/cm; PMTs -900 / -950 V"
+detector: xams_sr2026_3     # config/detectors/xams_sr2026_3/geometry.yaml (survey 2026-11-17)
+hv_case: d75
+daq: sr2026_3_p4b           # detectors/xams_sr2026_3/daq_sr2026_3_p4b.yaml (gains P4 (FN ran with P5: not in xams-sim yet), ch0 threshold 16, Science_Rev2.6)
+liquid_level_mm: 4.0         # above the gate: 4 mm LXe + 5.65 mm GXe in the middle
+pressure_bar: 1.49           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
+electron_lifetime_us: 1044.0    # FN140 block of SR2026.3 corrections/05_lifetime (lifetime.json); low-field blocks unreliable (wide island), one value for the FN scan of 2-11
+extraction: {model: nest, shift_kV_cm: 0.30, note: "fit to cS2 vs dV of the anode / gate scan, 2026-11-02 (r900b_flip_x30)"}
+sensors:
+  pmt_hv_v: {top: -900, bottom: -950}
