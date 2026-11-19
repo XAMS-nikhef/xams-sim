@@ -19,7 +19,8 @@ cylinder). Channels: CHANNELS (sensor id of xamsg4: 0 bottom PMT, 1-4 top-PMT se
 azimuths of geometry.yaml). Registry files `<data>/maps/s1_light/<key>/s1.npz`, `s2_pattern/<key>/s2.npz` (one key:
 both depend on the geometry, the optics and the level only, not on the voltages).
 
-    xamssim maps --state sept --export light [--photons-s1 5e7 --photons-s2 1e8 --jobs 8]   (~3 min on 8 cores)
+    xamssim maps --state sept --export light [--photons-s1 5e8 --photons-s2 1e8 --jobs 8]   (~12 min on 8 cores;
+    5e8 S1 photons write ~18 GB of temporary records in <data>/maps/_work_light)
 
 Both maps are smoothed with a Gaussian of SMOOTH_MM in x, y (not in z): the light pattern on the sensors changes over
 ~10 mm, the bin-to-bin noise of the raw map (S2 at 2e7 photons: ~12 % per 1 mm bin and top sector) scrambles the
@@ -47,7 +48,8 @@ CHANNEL_NAMES = ("bottom", "top_ch1", "top_ch2", "top_ch3", "top_ch4", "sipm_1",
 N_CHANNELS = len(CHANNELS)
 S1_STEP_MM, S2_STEP_MM = 2.0, 1.0
 SMOOTH_MM = 2.0                  # Gaussian smoothing in x, y (statistical noise; the light pattern changes over ~10 mm)
-PHOTONS_S1, PHOTONS_S2 = 5e7, 1e8
+PHOTONS_S1, PHOTONS_S2 = 5e8, 1e8   # S1 5e8 (2026-11-19, was 5e7): top sector ~5 % noise per 2 mm voxel after smoothing
+                                    # (was ~16 %: 6.5 detected photons per voxel and sector); S2 1e8: ~1 % per 1 mm bin
 MODEL = (f"lightmap v2: Geant4 optical, S1 {PHOTONS_S1:.0e} / S2 {PHOTONS_S2:.0e} photons, bins {S1_STEP_MM} / "
          f"{S2_STEP_MM} mm, smoothed sigma {SMOOTH_MM} mm in x, y")      # part of the light key (config.map_inputs)
 FILES = {"s1_light": "s1.npz", "s2_pattern": "s2.npz"}
@@ -237,8 +239,12 @@ def _run_geant4(res: Resolved, work: Path, shape: str, n: int, z: tuple, r: floa
 
 def _detected(files):
     from .read_output import read
-    rec = np.concatenate([read(f)[0] for f, _ in files])
-    return rec[rec["end_code"] == 1]
+    out = []
+    for f, _ in files:                                # one part at a time: 5e8 photons are 18 GB of records
+        rec = read(f)[0]
+        out.append(rec[rec["end_code"] == 1])
+        del rec
+    return np.concatenate(out)
 
 
 def compute(res: Resolved, photons_s1: float = PHOTONS_S1, photons_s2: float = PHOTONS_S2, jobs: int = 8, seed: int = 1,
