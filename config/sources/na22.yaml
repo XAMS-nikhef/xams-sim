@@ -1,0 +1,6 @@
+# Na-22, the decay as Geant4 has it (full decay chain of the radioactive-decay module). Its place: the run's
+# `position` (config/positions.yaml).
+description: "Na-22"
+isotope: Na-22
+activity_bq: null
+collimator: null

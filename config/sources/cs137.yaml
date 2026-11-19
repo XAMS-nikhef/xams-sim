@@ -1,0 +1,6 @@
+# Cs-137, the decay as Geant4 has it (full decay chain of the radioactive-decay module). Its place: the run's
+# `position` (config/positions.yaml).
+description: "Cs-137"
+isotope: Cs-137
+activity_bq: null
+collimator: null

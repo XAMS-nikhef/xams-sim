@@ -1,0 +1,6 @@
+# Co-60, the decay as Geant4 has it (full decay chain of the radioactive-decay module). Its place: the run's
+# `position` (config/positions.yaml).
+description: "Co-60"
+isotope: Co-60
+activity_bq: null
+collimator: null
