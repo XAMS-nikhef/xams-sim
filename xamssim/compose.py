@@ -790,7 +790,7 @@ OPTICS_LABELS = {
     "pmt_window_refractive_index": "PMT window refractive index",
 }
 OPTICAL_KINDS = ("s1_light", "s2_pattern")
-MAP_FIGURE_VERSION = 2              # 2026-11-05: light style
+MAP_FIGURE_VERSION = 3              # 3 (2026-11-19): s1_outer drawn with bin edges, ring outlines; 2 (2026-11-05): light style
 # s1_outer (the liquid outside the TPC) has its own key (light inputs + outer model + bucket); it belongs to the optical
 # key whose light inputs it shares and is shown with it.
 OUTER_SHARED = ("geometry", "optics", "liquid_level_mm")
@@ -956,8 +956,12 @@ def fig_s1_outer(key: str):
     t_in = t["inside"].astype(bool)
     ex_r, (ex_z0, ex_z1) = float(o["exclude_r_mm"]), o["exclude_z_mm"]
     ox, oy, oz = o["x"], o["y"], o["z"]
+    so = float(o["step_mm"])
     rr = np.hypot(ox[:, None], oy[None, :])
-    o_ok = (o["liquid"] >= 0.3) & ~((rr < ex_r)[:, :, None] & ((oz >= ex_z0) & (oz <= ex_z1))[None, None, :])
+    # an outer voxel is left to the TPC map only when it lies wholly inside the TPC cylinder; voxels that straddle its
+    # edge are drawn too (the TPC map is drawn on top), else a band at the bottom screen showed no map at all (2026-11-19)
+    whole = ((rr + so / np.sqrt(2) <= ex_r)[:, :, None] & ((oz - so / 2 >= ex_z0) & (oz + so / 2 <= ex_z1))[None, None, :])
+    o_ok = (o["liquid"] >= 0.3) & ~whole
     vals = np.concatenate([t_tot[t_in].ravel(), o_tot[o_ok].ravel()])
     norm = LogNorm(vmin=max(float(np.percentile(vals[vals > 0], 1)), 1e-6), vmax=float(vals.max()))
     fig, axs = plt.subplots(2, 2, figsize=(12.5, 9), facecolor="#ffffff", gridspec_kw=dict(wspace=0.3, hspace=0.32))
@@ -970,18 +974,47 @@ def fig_s1_outer(key: str):
     def _frac(a, b):
         return np.divide(a, b, out=np.zeros_like(a), where=b > 0)
 
+    def _ext(c):                                                         # imshow extent from the bin edges, not the centres
+        h = (c[1] - c[0]) / 2 if len(c) > 1 else 0.5
+        return c[0] - h, c[-1] + h
+
+    def _parts(ax):
+        """Outlines (x-z, y = 0) of the solid parts the light maps see but cannot resolve: the copper field-shaping
+        rings and the mesh rings (geometry of the map's registry entry)."""
+        from matplotlib.patches import Rectangle
+        g = ((find("s1_outer", str(o_key)) or {}).get("inputs") or {}).get("geometry") or {}
+        boxes = []
+        fs = g.get("field_shaping_rings") or {}
+        for zc in fs.get("z_center_mm", []):
+            boxes.append((fs["inner_diameter_mm"] / 2, fs["outer_diameter_mm"] / 2, zc - fs["thickness_mm"] / 2,
+                          fs["thickness_mm"], "#b45309"))
+        ring = (g.get("mesh_common") or {}).get("ring") or {}
+        for m in g.get("meshes", []):
+            if ring:
+                z0 = m["z_mm"] if m.get("foil_side", "down") == "down" else m["z_mm"] - ring["thickness_mm"]
+                boxes.append((ring["inner_diameter_mm"] / 2, ring["outer_diameter_mm"] / 2, z0, ring["thickness_mm"], "#475569"))
+        for r0, r1, z0, h, col in boxes:
+            for sgn in (-1, 1):
+                ax.add_patch(Rectangle((r0 if sgn > 0 else -r1, z0), r1 - r0, h, fill=False, ec=col, lw=0.7, zorder=5))
+        return bool(boxes)
+
+    from .maps import find
+    o_key = _map_file("s1_outer", key).parent.name                       # the outer map's own key (its registry folder)
     jt, jo = len(t["y"]) // 2, int(np.argmin(np.abs(oy)))
-    zlim = (min(oz[0], t["z"][0]), max(oz[-1], t["z"][-1]))
+    zlim = (min(_ext(oz)[0], _ext(t["z"])[0]), max(_ext(oz)[1], _ext(t["z"])[1]))
     for ax, (ti, oi, title, cmap, nrm, lab) in zip(axs[0], (
             (t_tot, o_tot, "all channels", "viridis", norm, "detection probability"),
             (_frac(t_top, t_tot), _frac(o_top, o_tot), "fraction on the top PMT", "magma", None, "top fraction"))):
         _style(ax)
         kw = dict(origin="lower", cmap=cmap, aspect="auto", interpolation="nearest")
         kw.update(norm=nrm) if nrm else kw.update(vmin=0, vmax=1)
-        im = ax.imshow(np.ma.masked_where(~o_ok[:, jo, :], oi[:, jo, :]).T, extent=(ox[0], ox[-1], oz[0], oz[-1]), **kw)
+        im = ax.imshow(np.ma.masked_where(~o_ok[:, jo, :], oi[:, jo, :]).T, extent=(*_ext(ox), *_ext(oz)), **kw)
         keep = np.broadcast_to(t_in[:, jt][:, None], ti[:, jt, :].shape)
-        ax.imshow(np.ma.masked_where(~keep, ti[:, jt, :]).T, extent=(t["x"][0], t["x"][-1], t["z"][0], t["z"][-1]), **kw)
-        ax.set_xlim(ox[0], ox[-1])
+        ax.imshow(np.ma.masked_where(~keep, ti[:, jt, :]).T, extent=(*_ext(t["x"]), *_ext(t["z"])), **kw)
+        if _parts(ax):
+            ax.text(0.01, 0.01, "outlines: copper rings (brown), mesh rings (grey)", transform=ax.transAxes, fontsize=6.5,
+                    color="#4a5160")
+        ax.set_xlim(*_ext(ox))
         ax.set_ylim(*zlim)
         ax.set_title(f"{title}, y = 0: TPC + liquid outside", fontsize=10)
         ax.set_xlabel("x [mm]", fontsize=8)
@@ -994,11 +1027,11 @@ def fig_s1_outer(key: str):
     ko = int(np.nonzero(o_ok.any(axis=(0, 1)))[0].max())
     kt = len(t["z"]) - 2
     im = ax.imshow(np.ma.masked_where(~o_ok[:, :, ko], o_tot[:, :, ko]).T, origin="lower", norm=norm, cmap="viridis",
-                   extent=(ox[0], ox[-1], oy[0], oy[-1]), interpolation="nearest")
+                   extent=(*_ext(ox), *_ext(oy)), interpolation="nearest")
     ax.imshow(np.ma.masked_where(~t_in, t_tot[:, :, kt]).T, origin="lower", norm=norm, cmap="viridis",
-              extent=(t["x"][0], t["x"][-1], t["y"][0], t["y"][-1]), interpolation="nearest")
-    ax.set_xlim(ox[0], ox[-1])
-    ax.set_ylim(oy[0], oy[-1])
+              extent=(*_ext(t["x"]), *_ext(t["y"])), interpolation="nearest")
+    ax.set_xlim(*_ext(ox))
+    ax.set_ylim(*_ext(oy))
     ax.set_aspect("equal")
     ax.set_title(f"all channels: outside z = {oz[ko]:.0f} mm, TPC z = {t['z'][kt]:.0f} mm", fontsize=10)
     ax.set_xlabel("x [mm]", fontsize=8)
