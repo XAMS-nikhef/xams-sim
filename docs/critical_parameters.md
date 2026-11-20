@@ -23,7 +23,8 @@ E_gas = f_mesh × ΔV / (d_g + d_l / 1.96), with f_mesh ≈ 0.92 for the etched 
 | gate–anode gap | `config/detectors/<d>/geometry.yaml` (`meshes`: z, `foil_side`) | survey 2026-11-17: up to SR-2026.3 the anode foil was up, 9.65 mm (`xams_sr2026_3`); flipped back at that opening, 8 mm (`xams_sr2026_4`) |
 | liquid level above the gate | `config/states/<s>.yaml` `liquid_level_mm` | **not measured directly**; from the S2 width (below) |
 | gas pressure / temperature | state `pressure_bar`; Magboltz table at 1118 Torr, 172.3 K | sc_snapshot (pmain absolute), PT100s |
-| gas drift velocity v_gas(E) | `config/materials.yaml` `gas_xenon.transport.drift_velocity_table` | PyBoltz (Magboltz, Biagi cross sections) |
+| gas drift velocity v_gas(E) | `config/materials.yaml` `gas_xenon.transport.drift_velocity_table` (0.1–7 kV/cm) | PyBoltz (Magboltz, Biagi cross sections) |
+| gas diffusion D_L, D_T (EL map v3) | `materials.yaml` `gas_xenon.transport.diffusion_table` | PyBoltz, as above (2026-11-20) |
 | extraction efficiency | `materials.yaml` `liquid_xenon.transport.extraction` (NEST) or the state's `extraction` (NEST moved by `shift_kV_cm`, or a table; `xamssim.elmap.extraction_curve`) | literature threshold 1.5–2 kV/cm: uncertain near threshold; fit to the S2 size vs ΔV (below) |
 
 ## How to determine the level from data
@@ -40,8 +41,15 @@ E_gas = f_mesh × ΔV / (d_g + d_l / 1.96), with f_mesh ≈ 0.92 for the etched 
 The S2 size vs ΔV alone does not choose the geometry: with a free shift both 2.5 + 5.5 mm (shift 0.09 kV/cm, chi2 9.0 / 7)
 and the flipped anode 4.0 + 5.65 mm (0.30 kV/cm, chi2 6.8 / 7) fit; the widths of both S2 populations do.
 
-Results so far (gap 8 mm): SR-2026.3 2.35 mm (believed 4), October 2024 fill 0.75 mm (believed 2). Both ~1.5 mm below
-the believed level; state `r900b_l25` (2.5 mm) is the compromise of width and size.
+**SR-2026.3 (current):** gate–anode 9.65 mm (anode foil up, survey 2026-11-17), 4.0 mm liquid + 5.65 mm gas, extraction
+NEST + 0.302 kV/cm (0.295–0.305): EE 0.060 at E_liq 1.70 kV/cm (R900 / MA voltages). The shift is relative to the NEST
+curve that `xamssim.elmap.extraction_table` builds with nestpy's default detector (T = 177 K); NEST's extraction
+depends on temperature (at 172 K, the SR-2026.3 liquid, the same efficiency needs about half the shift; to check). The
+fit and the MC use the same curve. Physics: [Physics of the chain](physics.md#extraction).
+
+Results with the 8 mm gap (before the survey; superseded for SR-2026.3 by the 9.65 mm gap above): SR-2026.3 2.35 mm
+(believed 4), October 2024 fill 0.75 mm (believed 2). Both ~1.5 mm below the believed level; state `r900b_l25` (2.5 mm)
+was the compromise of width and size.
 
 ## Not explained by these parameters
 

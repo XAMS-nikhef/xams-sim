@@ -36,7 +36,7 @@ Exit code 2 and a one-line message for configuration errors.
 | `fieldmap.py` | `read_comsol(case, geometry)`: 3D field from the solved COMSOL model via `mph`; `export(res)` → registry; `path(res)`; `FieldMap` (interpolation in x, y, z); `grid_axes` |
 | `plugins/field.py` | `XamsElectricField`: \|E\| at the cluster position from the 3D map (replaces fuse's (r, z) `ElectricField`) |
 | `cellmap.py` | mesh-cell fields (gate, cathode quarter cells; the gate + anode stack for S5) from the solved cell models via `mph`: `read_cell`, `export(res)`, `path(res)` |
-| `elmap.py` | extraction / EL map: `compute(res)` / `export(res)` (gas tracking in the stack cell, NEST extraction, Monteiro EL), `extraction_table`, `gas_model`, `ELMap`, `path(res)` |
+| `elmap.py` | extraction / EL map: `compute(res)` / `export(res)` (gas tracking in the stack cell with gas diffusion: 64 random-walking electrons per start point, NEST extraction with the state's shift, Monteiro EL), `extraction_table`, `extraction_curve`, `gas_model`, `gas_velocity`, `gas_diffusion`, `ELMap`, `path(res)` |
 | `plugins/extraction.py` | `XamsExtractionEL`: extracted electrons, S2 photons, S2 time and width per cluster |
 | `driftmap.py` | drift map: `compute(res)` / `export(res)` (tracking against the composite field: full TPC + mesh cells, NEST v(E)), `track`, `CODES`, `DriftMap` (look-up, `.at` with sub-grid shifts), `path(res)` |
 | `plugins/drift.py` | `XamsElectronDrift`: electrons at the surface, drift time and spread, gate position |

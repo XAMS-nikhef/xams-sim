@@ -64,7 +64,10 @@ materials:
                 extraction: nest}                                            # electrons in the liquid
   gas_xenon:
     ...
-    transport: {drift_velocity_mm_us: 3.1, el_yield: monteiro2007}       # electrons in the gas gap (S2)
+    transport:                                                           # electrons in the gas gap (S2), PyBoltz
+      drift_velocity_table: {E_kV_cm: [0.10, ...], v_mm_us: [0.93, ...]}      # v(|E|), 0.1-7 kV/cm
+      diffusion_table: {E_kV_cm: [...], DL_cm2_s: [...], DT_cm2_s: [...]}     # D_L, D_T for the EL random walk
+      el_yield: monteiro2007
   ...                     # gas_xenon, ptfe, stainless_steel, copper, silica, aluminium, kovar
 optics:                   # refractive indices, Rayleigh / absorption lengths, reflectivities; one value each (scans: --set)
   ...
