@@ -62,14 +62,17 @@ mesh_common:                 # all five meshes identical and aligned the same wa
 meshes:                      # z = foil mid-plane
   - name: top_screen
     z_mm: 18.0               # P: 10 mm above the anode
-    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05). SURVEY 2026-11-17 (user 2026-11-20): the top
+                             #   screen is rotated with respect to the gate / anode (angle not recorded); left at 29.4,
+                             #   8 mm above the anode it hardly matters (user)
     foil_side: down          # user, 2026-10-05 (ring body on the other side)
   - name: anode
     z_mm: 9.65               # SURVEY 2026-11-17: anode hangs ring side down, the foil on the upper face of its ring (was
                              #   the hypothesis of 2026-11-01). Foil 1.65 mm (ring + foil 1.8 − foil 0.15) above the 8 mm of
                              #   the spacers; survey "8 + about 1.5 = 9.5 mm" agrees. The ring body below the foil, its
                              #   lower face at ~8 mm: gate–anode 9.65 mm in the middle, ~8 mm at the ring
-    angle_to_anodes_deg: 29.4  # aligned with the gate (user, 2026-10-05)
+    angle_to_anodes_deg: 29.4  # aligned with the gate: confirmed by the SURVEY 2026-11-17 (user 2026-11-20: same
+                             #   orientation of the anode and gate meshes). Lateral offset of the two hole lattices not measured
     foil_side: up            # survey 2026-11-17 (xams2026: down)
   - name: gate
     z_mm: 0.0                # definition
