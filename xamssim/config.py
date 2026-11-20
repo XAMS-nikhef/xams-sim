@@ -231,6 +231,14 @@ def source_position(name: str) -> dict:
     return dict(position=name, tape_cm=p["tape_cm"], azimuth_deg=p["azimuth_deg"], r_mm=p["r_mm"], position_mm=xyz)
 
 
+def _drift_grid() -> str:
+    """The drift-map grid as it enters the drift key (a finer grid is a new map)."""
+    from .driftmap import GRID
+    if GRID == {"dxy": 1.0, "dz": 0.5}:
+        return "grid 1 x 1 x 0.5 mm"                       # the key of the maps made before 2026-11-20
+    return f"grid {GRID['dxy']:g} x {GRID['dxy']:g} x {GRID['dz']:g} mm"
+
+
 @dataclass
 class Resolved:
     run_path: Path
@@ -287,7 +295,7 @@ class Resolved:
                                                         if k in ("drift_velocity", "diffusion_longitudinal_cm2_s",
                                                                  "diffusion_transverse_cm2_s")}},
                       "mesh_cells": cells, "tracking": "driftmap v3: composite field (full TPC + mesh cells, cell average without x, y), against E, "
-                                                      "NEST v(E), step 0.1 / 0.02 mm, grid 1 x 1 x 0.5 mm"},
+                                                      "NEST v(E), step 0.1 / 0.02 mm, " + _drift_grid()},
             "mesh_cells": cells,
             "extraction_el": {"mesh_common": self.geometry.get("mesh_common"), "meshes": self.geometry.get("meshes"),
                               "hv": {k: hv[k] for k in ("A", "G", "C", "TS")}, "liquid_level_mm": level,

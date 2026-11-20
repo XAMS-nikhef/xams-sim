@@ -39,7 +39,10 @@ STEP_MM = 0.1
 STEP_NEAR_MESH_MM = 0.02           # within NEAR_MESH_MM of a mesh plane (holes 2.45 mm, bars 0.15 mm, channels ~0.5 mm)
 NEAR_MESH_MM = 1.0
 MAX_STEPS = 2500
-GRID = dict(dxy=1.0, dz=0.5)
+GRID = dict(dxy=0.25, dz=0.5)      # x, y step 0.25 mm (was 1.0 until 2026-11-20): the catchment of each gate hole (pitch
+                                   # 2.6 mm) needs a fine start grid, at 1 mm the hole boundaries were quantised to
+                                   # +-0.5 mm (catchments 2.3-3.45 mm wide) and clouds of 0.3 mm reached > 1 hole in 72 %
+CHUNK = 1_000_000                  # start points tracked together (memory)
 
 
 def mesh_holes(geometry: dict) -> set:
@@ -273,7 +276,12 @@ def compute(res: Resolved, field_file=None, cells_file="registry", dxy: float = 
     inside = np.hypot(X, Y) < geo["r_cage"]
     start = np.stack([X[inside], Y[inside], Z[inside]], axis=1)
     log(f"drift map, state {res.state_name}: {inside.sum()} start points ({len(x)} x {len(x)} x {len(z)} grid)")
-    tr = track(field, geo, start, velocity_table(res), max_steps=MAX_STEPS + 1000 * bool(field.cells), log=log)
+    vtab, steps = velocity_table(res), MAX_STEPS + 1000 * bool(field.cells)
+    parts, t0 = [], time.time()
+    for a in range(0, len(start), CHUNK):
+        parts.append(track(field, geo, start[a:a + CHUNK], vtab, max_steps=steps, log=lambda *_: None))
+        log(f"  tracked {min(a + CHUNK, len(start))} of {len(start)} ({time.time() - t0:.0f} s)")
+    tr = {k: np.concatenate([q[k] for q in parts]) for k in parts[0]}
     shape = X.shape
     out = dict(x=x, y=x, z=z)
     fill = {"end": OUT, "t_us": np.nan, "x_gate": np.nan, "y_gate": np.nan, "crossed": False, "path_mm": np.nan}
@@ -297,7 +305,8 @@ def export(res: Resolved) -> dict:
     (MAPS / rel).parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(MAPS / rel, **d)
     return register(res, "drift", [rel], producer_version=f"xamssim driftmap v3 (composite field, cell average without x, y), step {STEP_MM} / "
-                                                          f"{STEP_NEAR_MESH_MM} mm")
+                                                          f"{STEP_NEAR_MESH_MM} mm, grid {GRID['dxy']} x {GRID['dxy']} x "
+                                                          f"{GRID['dz']} mm")
 
 
 def path(res: Resolved) -> Path:
