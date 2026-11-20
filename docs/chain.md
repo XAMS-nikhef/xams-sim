@@ -120,7 +120,8 @@ The extraction / EL map (`xamssim/elmap.py`) comes from the stack cell model of 
 anode, top screen; real etched meshes, anode aligned with the gate). Electrons start on a 0.025 mm grid over one
 quarter of a gate-hole cell just above the liquid surface and are tracked through the gas to the anode bars. Per
 start point: the **extraction efficiency** from the field just below the surface (NEST `CalculateG2`, moved along
-the liquid field by the state's `extraction: {model: nest, shift_kV_cm: 0.30}`; fit 2026-11-02), the **EL photons per
+the liquid field by the state's `extraction: {model: nest, shift_kV_cm: 0.21}`, at the state's liquid temperature;
+fit 2026-11-20), the **EL photons per
 electron** along the path (140 E[kV/cm] − 116 p_eq[bar] per cm,
 Monteiro et al. 2007; p_eq = the pressure at 293 K with the density of the gas), the **transit time** with the gas
 drift velocity and the **emission-time quantiles** (5 … 95 % of the electron's light). `XamsExtractionEL` takes the

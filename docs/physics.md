@@ -23,7 +23,7 @@ cathode −1146 V, 97 V/cm). The same content, with figures, is in the PDF note
 | quanta | NEST β-ER yields and fluctuations (nestpy 2.0.6) | local \|E\|, density | [NEST](#quanta-nest) |
 | field | COMSOL: full TPC (solid meshes) + three mesh-cell models | voltages, geometry, permittivities | [Fields](#electric-fields) |
 | drift in the liquid | drift map in the composite field, NEST v(\|E\|), lifetime, electron cloud | τ, D_L, D_T | [Drift](#drift-in-the-liquid) |
-| extraction | NEST `CalculateG2`, moved +0.30 kV/cm in E_liq | liquid field below the surface | [Extraction](#extraction) |
+| extraction | NEST `CalculateG2` at the liquid temperature (172.07 K), moved +0.21 kV/cm in E_liq | liquid field below the surface | [Extraction](#extraction) |
 | electroluminescence | Monteiro et al. 2007 along the electron path | \|E\|(x), p_eq | [EL](#electroluminescence-yield) |
 | EL map | 64 random-walking electrons per start point, PyBoltz v, D_L, D_T | stack cell field | [EL map](#the-el-map-gas-transport-and-gas-diffusion) |
 | S2 time | EL emission quantiles ⊗ longitudinal diffusion | EL map, D_L | [S2 shape](#s2-time-profile-and-width) |
@@ -130,22 +130,32 @@ gate.
 
 ## Extraction
 
-NEST's `CalculateG2` extraction efficiency, parametrised in E_gas = E_liq · 1.96, moved along the liquid field:
+NEST's `CalculateG2` extraction efficiency at the liquid temperature T, parametrised in E_gas = E_liq · 1.96, moved
+along the liquid field:
 
 ```
-ε_ext(E_liq) = NEST_G2((E_liq + s) · ε_L / ε_G) ,   s = 0.30 kV/cm   (state key extraction: {model: nest, shift_kV_cm: 0.30})
+ε_ext(E_liq) = NEST_G2((E_liq + s) · ε_L / ε_G ; T) ,   s = 0.21 kV/cm   (state key extraction: {model: nest, shift_kV_cm: 0.21})
 ```
+
+T is the liquid temperature of the state: xenon at saturation at the state's `pressure_bar` (pmain, absolute; NIST table
+in `materials.yaml`), 172.07 K at 1.49 bar. It is taken from the pressure, not from the temperature sensors.
 
 with E_liq the field 0.05 mm below the surface per EL-map start point (`xamssim.elmap.extraction_curve`).
 
-- **Fit** (2026-11-02, study `2026-10-31_sr2026_3_r900`, `analysis/extraction_fit.py`): cS2 vs ΔV of the 9 anode /
-  gate sets at 4.0 mm LXe + 5.65 mm GXe, absolute scale free: **s = 0.302 kV/cm (0.295–0.305), χ² 6.8 / 7**
-  (unshifted NEST χ² 10 160: no S2 at R900). Result: **EE 0.060 at 1.70 kV/cm** (R900, ma, D, FN) … 0.19 at PG5
-  (2.13 kV/cm), 0.35 at TH11 (2.64 kV/cm, extrapolated beyond the fitted range 1.70–2.13 kV/cm).
-- **Temperature:** `extraction_table()` uses nestpy's default `VDetector` (T = 177 K). NEST's extraction depends on
-  temperature; at 172.07 K unshifted NEST already gives 0.11 at 2.0 kV/cm (177 K: 0.06). The fitted 0.30 kV/cm is a
-  shift relative to the 177 K curve (the fit used the same curve, so the MC is consistent); relative to 172 K it would
-  be about half (to check).
+- **Fit** (2026-11-20, study `2026-10-31_sr2026_3_r900`, `analysis/extraction_fit.py 172.07`): cS2 vs ΔV of the 9
+  anode / gate sets at 4.0 mm LXe + 5.65 mm GXe, absolute scale free: **s = 0.212 kV/cm (0.210–0.215), χ² 8.7 / 7**
+  (unshifted NEST χ² 4650). pmain of the scan runs 1.485–1.497 bar → 172.01–172.16 K → s 0.209–0.216. Result:
+  **EE 0.078 at 1.70 kV/cm** (R900, ma, D, FN) … 0.244 at PG5 (2.13 kV/cm).
+- **Before** (2026-11-02): the same fit on nestpy's default `VDetector` temperature (177 K, not set) gave s = 0.302
+  (χ² 6.8 / 7, EE 0.060 at R900). The shape fits equally well at both temperatures; at 172 K EE is ×1.30 higher in every
+  set (the free scale ×0.77).
+- **What the shift is not** (checks 2026-11-20): the field just below the surface is uniform over the cell (1.698
+  kV/cm at R900, min–max 1.697–1.698), so it does not depend on where the focused electrons cross; the 7 % below
+  parallel plates is mesh leakage (effective ΔV 2.559 of 2.747 kV; ~80 % at the anode), close to the analytic
+  estimate for a crossed mesh; the top screen is at 0 V, 8.35 mm above the anode (user), and even floating at anode
+  voltage would raise E_liq by only ~2.4 %; a higher liquid level would make the S2s too narrow. With the 9.5 mm gap
+  and ~4 mm liquid (user) the shift is an **effective correction of NEST's threshold** (or of something outside the
+  field model, e.g. surface / PTFE charge). Parallel plates (no mesh leakage) would need only 0.05 kV/cm.
 
 ## Electroluminescence yield
 
@@ -259,7 +269,7 @@ The data posrec map `pos_rec_map_v2` is an MC map of the old state `sept`.
 | data posrec compression at the edge | data (u, v) span 0.62 vs MC 0.75 |
 | excess above 750 keV | data ≈ 4× the measured background, mostly at large r |
 | S2 excess ≈ 1.17 | not the field null (gas diffusion: +9 % for focused electrons) |
-| extraction curve temperature | shift fitted on the NEST 177 K curve |
+| extraction threshold | NEST at 172 K needs +0.21 kV/cm; field model checked, origin open |
 | sharp bar edges | singular field, linear EL yield there |
 | absolute light scale | plan A |
 | gate–anode lattice offset, top-screen angle | not measured |

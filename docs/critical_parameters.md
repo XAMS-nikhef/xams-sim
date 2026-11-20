@@ -38,14 +38,14 @@ E_gas = f_mesh × ΔV / (d_g + d_l / 1.96), with f_mesh ≈ 0.92 for the etched 
    only the extraction from an EL map of the same geometry (no COMSOL).
 4. Run the MC at the fitted level and extraction.
 
-The S2 size vs ΔV alone does not choose the geometry: with a free shift both 2.5 + 5.5 mm (shift 0.09 kV/cm, chi2 9.0 / 7)
-and the flipped anode 4.0 + 5.65 mm (0.30 kV/cm, chi2 6.8 / 7) fit; the widths of both S2 populations do.
+The S2 size vs ΔV alone does not choose the geometry: with a free shift both 2.5 + 5.5 mm and the flipped anode
+4.0 + 5.65 mm fit (NEST at 177 K: 0.09 / 0.30 kV/cm; at 172 K: 0.00 / 0.21); the widths and the survey (9.5 mm gap,
+~4 mm liquid) choose the flipped anode.
 
 **SR-2026.3 (current):** gate–anode 9.65 mm (anode foil up, survey 2026-11-17), 4.0 mm liquid + 5.65 mm gas, extraction
-NEST + 0.302 kV/cm (0.295–0.305): EE 0.060 at E_liq 1.70 kV/cm (R900 / MA voltages). The shift is relative to the NEST
-curve that `xamssim.elmap.extraction_table` builds with nestpy's default detector (T = 177 K); NEST's extraction
-depends on temperature (at 172 K, the SR-2026.3 liquid, the same efficiency needs about half the shift; to check). The
-fit and the MC use the same curve. Physics: [Physics of the chain](physics.md#extraction).
+NEST at the liquid temperature (172.07 K, saturation at pmain 1.49 bar) + 0.212 kV/cm (0.210–0.215, chi2 8.7 / 7): EE
+0.078 at E_liq 1.70 kV/cm (R900 / MA voltages). Until 2026-11-20 NEST ran at its default 177 K with + 0.30 kV/cm (EE
+0.060). NEST's extraction depends on temperature: always fit and simulate with the same liquid temperature. Physics: [Physics of the chain](physics.md#extraction).
 
 Results with the 8 mm gap (before the survey; superseded for SR-2026.3 by the 9.65 mm gap above): SR-2026.3 2.35 mm
 (believed 4), October 2024 fill 0.75 mm (believed 2). Both ~1.5 mm below the believed level; state `r900b_l25` (2.5 mm)
