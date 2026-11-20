@@ -66,9 +66,17 @@ materials:
       # 2026-10-31_sr2026_3_r900 analysis/pyboltz_gxe_fine.py, 2026-11-01). Not tuned. Replaces the constant 4.15 mm/µs (tuned
       # 2026-10-20 on the median S2 width near the gate, which is dominated by the narrow edge-event population). Outside the
       # table: the end values (linear extrapolation is not done).
+      # Below 2.5 kV/cm (2026-11-20, the field null in the anode holes): PyBoltz, same gas, 1e7 collisions, 0.1-2.25 kV/cm
+      # (simulations/2026-11-19_sr2026_3_t16_t18 analysis/pyboltz_gxe_lowfield.py), smoothed by hand (~10 % noise).
       drift_velocity_table:
-        E_kV_cm: [2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00, 5.25, 5.50, 5.75, 6.00, 6.25, 6.50, 6.75, 7.00]
-        v_mm_us: [2.180, 2.359, 2.553, 2.760, 2.978, 3.205, 3.442, 3.685, 3.933, 4.186, 4.441, 4.697, 4.952, 5.206, 5.457, 5.703, 5.942, 6.174, 6.396]
+        E_kV_cm: [0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00, 5.25, 5.50, 5.75, 6.00, 6.25, 6.50, 6.75, 7.00]
+        v_mm_us: [0.93, 1.12, 1.26, 1.40, 1.48, 1.70, 1.85, 2.180, 2.359, 2.553, 2.760, 2.978, 3.205, 3.442, 3.685, 3.933, 4.186, 4.441, 4.697, 4.952, 5.206, 5.457, 5.703, 5.942, 6.174, 6.396]
+      diffusion_table:           # electron diffusion in the gas gap, PyBoltz as above (2026-11-20): 2.5-7 kV/cm from the fine
+        # run (1e8 collisions, 2026-11-01), below 2.5 kV/cm the low-field run (1e7 collisions), smoothed by hand. Used by the
+        # EL map (random walk of the electrons from the surface to the anode); D_T ~ 500-1000 cm²/s is ~0.5 mm over the gap
+        E_kV_cm: [0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00, 2.50, 3.25, 4.00, 4.75, 5.50, 6.25, 7.00]
+        DL_cm2_s: [90, 90, 90, 90, 90, 90, 95, 150, 162, 200, 201, 227, 243, 242]
+        DT_cm2_s: [1000, 1000, 1000, 800, 710, 650, 650, 553, 534, 513, 508, 503, 492, 506]
       el_yield: monteiro2007     # photons per electron per cm = 140 E[kV/cm] - 116 p_eq[bar], p_eq = pressure at 293 K with the same density (Monteiro et al. 2007)
   ptfe:                          # inner cylinder, PMT holders, bucket
     density_g_cm3: 2.2

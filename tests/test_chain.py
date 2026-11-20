@@ -113,9 +113,12 @@ def uniform_stack(e_liq=-3920.0, e_gas=-7600.0):
     return dict(u=u, z=z, Ex=zero, Ey=zero, Ez=ez)
 
 
-def test_el_map():
+def test_el_map(monkeypatch):
+    """Geometry of the EL tracking without gas diffusion (one electron per start point follows its field line)."""
     from xamssim import elmap
     res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
+    gas_model = elmap.gas_model
+    monkeypatch.setattr(elmap, "gas_model", lambda r: {**gas_model(r), "d_table": None})
     d = elmap.compute(res, cell=uniform_stack(), log=lambda *a: None)
     gm = elmap.gas_model(res)
     # at the hole centre the electron goes straight up through the anode hole to the top of the cell
@@ -128,6 +131,22 @@ def test_el_map():
     # the state's extraction model (r900: NEST shifted by +0.30 kV/cm) at the liquid field below the surface
     assert d["ext_eff"][0, 0] == pytest.approx(float(elmap.extraction_curve(res)(np.array([3.92]))[0]), rel=1e-6)
     assert d["end"][-1, 0] == 1                                            # under a bar: ends on the anode bar
+
+
+def test_el_map_diffusion():
+    """With the gas diffusion table: electrons random-walk off their field line; in the uniform cell the light per
+    electron and the uniform emission profile stay, and an electron under a bar mostly misses it (no focusing)."""
+    from xamssim import elmap
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
+    gm = elmap.gas_model(res)
+    assert gm["d_table"] is not None
+    d = elmap.compute(res, cell=uniform_stack(), log=lambda *a: None)
+    path = d["path_mm"][0, 0]
+    assert d["end"][0, 0] == 2 and path == pytest.approx(12.0 - 4.01, rel=0.05)
+    assert d["n_el"][0, 0] == pytest.approx((140 * 7.6 - 116 * gm["p_eq"]) * path / 10, rel=0.02)
+    q = d["t_q_us"][0, 0]
+    assert np.all(np.diff(q) > 0) and q[9] == pytest.approx(0.5 * d["t_transit_us"][0, 0], rel=0.05)
+    assert d["end"][-1, 0] == 2
 
 
 def drift_map(tmp_path, res):
