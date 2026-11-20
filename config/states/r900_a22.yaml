@@ -7,6 +7,6 @@ daq: sr2026_3_p4           # detectors/xams_sr2026_3/daq_sr2026_3_p4.yaml (gains
 liquid_level_mm: 4.0         # above the gate: 4 mm LXe + 5.65 mm GXe (S2 widths, 2026-11-01)
 pressure_bar: 1.49           # pmain in sc_snapshot (absolute)
 electron_lifetime_us: 497.0    # SR2026.3_v4
-extraction: {model: nest, shift_kV_cm: 0.30, note: "fit to cS2 vs dV of the anode / gate scan of SR-2026.3, 2026-11-02 (flipped anode)"}
+extraction: {model: nest, shift_kV_cm: 0.21, note: "NEST at the liquid temperature (saturation at pressure_bar: 172.07 K at 1.49 bar), moved by 0.21 kV/cm: fit to cS2 vs dV of the SR-2026.3 anode / gate scan (2026-11-20; 0.212, 0.210-0.215, chi2 8.7/7; was 0.30 at NEST default 177 K, 2026-11-02). Effective correction of the NEST threshold: field model checked (uniform surface field, top screen 0 V at 8.35 mm)"}
 sensors:
   pmt_hv_v: {top: -900, bottom: -950}

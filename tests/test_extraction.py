@@ -9,7 +9,7 @@ from xamssim import config, elmap, maps
 
 
 def _res(spec=None):
-    res = config.resolve_state("r900")                          # r900 has NEST + 0.30; tests start from plain NEST
+    res = config.resolve_state("r900")                          # r900 has NEST + 0.21; tests start from plain NEST
     res.materials = config.with_extraction(res.materials, spec if spec is not None else "nest")
     return res
 
@@ -75,3 +75,17 @@ def test_reextracted_from_other_map(tmp_path, monkeypatch):
     other_level = _res()
     other_level.state = {**other_level.state, "liquid_level_mm": 3.0}
     assert elmap._reextracted_from_other_model(other_level, log=lambda *a: None) is None
+
+
+def test_nest_at_the_liquid_temperature():
+    """NEST is evaluated at the state's liquid temperature (saturation at pressure_bar), not NEST's default 177 K; a
+    colder liquid gives a lower threshold. The temperature is part of the EL map key."""
+    res = _res()
+    assert res.materials["materials"]["liquid_xenon"]["temperature_k"] == pytest.approx(172.07, abs=0.05)
+    f172 = elmap.extraction_curve(res)
+    hot = _res()
+    hot.materials["materials"]["liquid_xenon"]["temperature_k"] = 177.0
+    f177 = elmap.extraction_curve(hot)
+    e = np.array([2.0])
+    assert f172(e)[0] == pytest.approx(0.112, abs=0.005) and f177(e)[0] == pytest.approx(0.060, abs=0.005)
+    assert res.map_keys()["extraction_el"] != hot.map_keys()["extraction_el"]

@@ -128,7 +128,7 @@ def test_el_map(monkeypatch):
     assert d["t_transit_us"][0, 0] == pytest.approx(path / elmap.gas_velocity(gm, 7600.0), rel=0.01)
     q = d["t_q_us"][0, 0]
     assert np.all(np.diff(q) > 0) and q[9] == pytest.approx(0.5 * d["t_transit_us"][0, 0], rel=0.02)   # uniform light
-    # the state's extraction model (r900: NEST shifted by +0.30 kV/cm) at the liquid field below the surface
+    # the state's extraction model (r900: NEST at 172.07 K shifted by +0.21 kV/cm) at the liquid field below the surface
     assert d["ext_eff"][0, 0] == pytest.approx(float(elmap.extraction_curve(res)(np.array([3.92]))[0]), rel=1e-6)
     assert d["end"][-1, 0] == 1                                            # under a bar: ends on the anode bar
 
