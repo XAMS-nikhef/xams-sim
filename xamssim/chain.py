@@ -1,7 +1,7 @@
 """The simulation chain as a strax context: one run file -> every setting (plan S3-S8: up to the raw records for amstrax).
 
-    xamssim chain config/runs/cs137_cmb50_001.yaml                 # -> <data>/strax/, prints a summary
-    st, run_id = chain.context("config/runs/cs137_cmb50_001.yaml")
+    xamssim chain config/runs/cs137_r900_001.yaml                 # -> <data>/strax/, prints a summary
+    st, run_id = chain.context("config/runs/cs137_r900_001.yaml")
     st.get_array(run_id, "microphysics_summary")
 
 Plugins (fuse 1.6.3 unless noted):

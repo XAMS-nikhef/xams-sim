@@ -40,7 +40,7 @@ private run therefore cannot end up in the database, whichever command you use.
     ln -s /data/xenon/xams_v2/mc/maps /data/xenon/xams_v2/users/<you>/xamssim/data/maps
     ```
 
-    `xamssim maps --state sept --make --dry-run` must say "all maps present". A state whose maps are missing needs
+    `xamssim maps --state r900 --make --dry-run` must say "all maps present". A state whose maps are missing needs
     them made on the Mac first (COMSOL); ask for it rather than making your own.
 
 4. **Run files:** a checkout of the `simulations` repository in `XAMSSIM_STUDIES` (your own study folder in it).
@@ -158,7 +158,7 @@ Two passes:
     ```bash
     xamssim corrections 990001                                         # show truth / calibrated
     xamssim corrections --calibrated cal.json --from-run 990001 990001 # this run
-    xamssim corrections --calibrated cal.json --from-run 990001 --state sept   # or all runs of the condition
+    xamssim corrections --calibrated cal.json --from-run 990001 --state r900   # or all runs of the condition
     ```
 
     (`--runs A-B`, `--tag T` select too; `--dry-run` shows first.) A calibration applies only to runs of the same

@@ -1,10 +1,12 @@
-# Detector state: SR-2026.3 E27c 7788-7789. Sources: analysis_SR2026.3/config/runs/*.csv, sc_snapshot of the runs.
-description: "SR-2026.3 e27c: anode +2801, gate +300, cathode -215, BS -65, SiPM +0 V; PMTs -900 / -950 V"
-detector: xams2026           # config/detectors/xams2026/geometry.yaml
+# Detector state of SR-2026.3 on detector xams_sr2026_3 (survey 2026-11-17: anode foil up, gate-anode 9.65 mm; SiPMs 128 / 52 deg).
+# Data: E27c 7788-7789. HV case e27c (efield/cases.yaml, from sc_snapshot). Made 2026-11-19.
+description: "SR-2026.3 e27c: anode +2801, gate 300, cathode -215 V (99 V/cm), BS -65, SiPM 0 V; PMTs -900 / -950 V"
+detector: xams_sr2026_3
 hv_case: e27c
-daq: sr2026_3                # detectors/xams2026/daq_sr2026_3.yaml (gains P1; 27-10 has no own LED run)
-liquid_level_mm: 4.0         # above the gate, as for this fill
-pressure_bar: 1.51           # measured: pmain in sc_snapshot (SR-2026.3 sets 1.48-1.52 bar)
-electron_lifetime_us: null   # time-dependent: analysis_SR2026.3/config/corrections/SR2026.3_v4.json (none before 28-10: give --lifetime-us)
+daq: sr2026_3           # detectors/xams_sr2026_3/daq_sr2026_3.yaml (gains P1, Science_Rev2.5 (26/27-10))
+liquid_level_mm: 4.0         # above the gate: 4 mm LXe + 5.65 mm GXe (S2 widths, 2026-11-01)
+pressure_bar: 1.5           # pmain in sc_snapshot (absolute)
+electron_lifetime_us: null    # no lifetime fit (2 runs)
+extraction: {model: nest, shift_kV_cm: 0.30, note: "fit to cS2 vs dV of the anode / gate scan of SR-2026.3, 2026-11-02 (flipped anode)"}
 sensors:
   pmt_hv_v: {top: -900, bottom: -950}

@@ -9,9 +9,8 @@ from xamssim import config, elmap, maps
 
 
 def _res(spec=None):
-    res = config.resolve_state("r900b_flip")
-    if spec is not None:
-        res.materials = config.with_extraction(res.materials, spec)
+    res = config.resolve_state("r900")                          # r900 has NEST + 0.30; tests start from plain NEST
+    res.materials = config.with_extraction(res.materials, spec if spec is not None else "nest")
     return res
 
 
@@ -49,7 +48,7 @@ def test_extraction_changes_only_the_el_key():
 
 
 def test_state_key_accepted(tmp_path):
-    state = config.load_yaml(config._named("state", "r900b_flip"))
+    state = config.load_yaml(config._named("state", "r900"))
     state["extraction"] = {"model": "nest", "shift_kV_cm": 0.25}
     config.check(state, "state", "test")
     mat = config.with_extraction(copy.deepcopy(_res().materials), state["extraction"])

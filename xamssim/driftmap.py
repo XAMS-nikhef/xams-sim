@@ -20,7 +20,7 @@ crossed the gate (False: it started above the gate), path length [mm], end point
 
 Registry file `<data>/maps/drift/<key>/drift_xyz.npz`; key = the field inputs + the transport model of the liquid.
 
-    xamssim maps --state sept --export drift          # needs the field map of the state; no COMSOL
+    xamssim maps --state r900 --export drift          # needs the field map of the state; no COMSOL
 """
 from __future__ import annotations
 

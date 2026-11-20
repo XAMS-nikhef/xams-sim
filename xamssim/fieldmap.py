@@ -12,7 +12,7 @@ Registry file `<data>/maps/field/<key>/efield_xyz.npz`:
 
 The meshes are solid discs in the full model (holes not resolved): close to a mesh the mesh-cell models apply (later).
 
-    xamssim maps --state sept --export field          # after efield/comsol/run.sh --states sept
+    xamssim maps --state r900 --export field          # after efield/comsol/run.sh --states r900
 """
 from __future__ import annotations
 

@@ -8,7 +8,7 @@ Plan: `docs/efield_plan.md`.
 
 ```bash
 conda activate xamssim
-efield/comsol/run.sh --states cmb50,sept           # full-TPC model -> <data>/efield/comsol/checks.json, maps_rz.npz
-python efield/comsol/plot_rz.py cmb50              # (r, z) plane through a SiPM with drift lines
-efield/comsol/run_cell.sh gate --states cmb50      # one mesh cell (gate | cathode | stack | stackx)
+efield/comsol/run.sh --states r900,d25           # full-TPC model -> <data>/efield/comsol/checks.json, maps_rz.npz
+python efield/comsol/plot_rz.py r900              # (r, z) plane through a SiPM with drift lines
+efield/comsol/run_cell.sh gate --states r900      # one mesh cell (gate | cathode | stack | stackx)
 ```

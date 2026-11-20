@@ -2,7 +2,7 @@
 yield against energy, as in the NEST review / C. Fuselli's thesis (ch. 4, Fig. 2 and 4), for the fields of XAMS states
 and with the NEST settings of run files (physics.nest), plus the Cs-137 photopeak in quanta.
 
-    xamssim nest --state sept --state cmb50_a36            # NEST defaults at the drift field of each state
+    xamssim nest --state d25 --state d140            # NEST defaults at the drift field of each state
     xamssim nest --field 23 --field 145                     # fields given directly [V/cm]
     xamssim nest --run runs/a.yaml --run runs/b.yaml        # each run file: its state's field and its physics.nest
     xamssim nest ... --types beta,gamma,nr --out nest.png

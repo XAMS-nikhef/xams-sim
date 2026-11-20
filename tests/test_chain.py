@@ -85,7 +85,7 @@ def uniform_cells(path, geo, ez_gate=-145.0, ez_cathode=-145.0):
 
 def test_composite_field(tmp_path):
     from xamssim import driftmap
-    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
     geo = driftmap.geometry_numbers(res)
     full = flat_map(tmp_path / "f.npz", ex=50.0)
     comp = driftmap._Composite(full, uniform_cells(tmp_path / "c.npz", geo), geo)
@@ -115,7 +115,7 @@ def uniform_stack(e_liq=-3920.0, e_gas=-7600.0):
 
 def test_el_map():
     from xamssim import elmap
-    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
     d = elmap.compute(res, cell=uniform_stack(), log=lambda *a: None)
     gm = elmap.gas_model(res)
     # at the hole centre the electron goes straight up through the anode hole to the top of the cell
@@ -125,8 +125,8 @@ def test_el_map():
     assert d["t_transit_us"][0, 0] == pytest.approx(path / elmap.gas_velocity(gm, 7600.0), rel=0.01)
     q = d["t_q_us"][0, 0]
     assert np.all(np.diff(q) > 0) and q[9] == pytest.approx(0.5 * d["t_transit_us"][0, 0], rel=0.02)   # uniform light
-    et, ee = elmap.extraction_table()
-    assert d["ext_eff"][0, 0] == pytest.approx(np.interp(3.92 * gm["eps_ratio"], et, ee, left=0.0), rel=1e-6)
+    # the state's extraction model (r900: NEST shifted by +0.30 kV/cm) at the liquid field below the surface
+    assert d["ext_eff"][0, 0] == pytest.approx(float(elmap.extraction_curve(res)(np.array([3.92]))[0]), rel=1e-6)
     assert d["end"][-1, 0] == 1                                            # under a bar: ends on the anode bar
 
 
@@ -142,7 +142,7 @@ def drift_map(tmp_path, res):
 
 def test_drift_map(tmp_path):
     from xamssim import driftmap
-    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
     p, d = drift_map(tmp_path, res)
     m = driftmap.DriftMap(p)
     v = np.interp(145.0, *driftmap.velocity_table(res))                     # mm/µs
@@ -186,7 +186,7 @@ def test_fieldmap_3d(tmp_path):
     assert m(18, 5, -25, "Ex")[0] == pytest.approx(50.0, rel=1e-5)            # x matters, not only r
     assert m(-18, 5, -25, "Ex")[0] == pytest.approx(-50.0, rel=1e-5)
     assert m(100, 0, -200)[0] == pytest.approx(m(36, 0, -65)[0])               # outside: grid edge
-    x, y, z = fieldmap.grid_axes(config.load_geometry("xams2026"))
+    x, y, z = fieldmap.grid_axes(config.load_geometry("xams_sr2026_3"))
     assert x[0] == -36 and z[0] == pytest.approx(-64.1) and z[-1] <= 22.5
 
 
@@ -203,7 +203,7 @@ def test_field_floor(tmp_path):
 
 
 def test_volumes_and_physics():
-    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
     v = chain.volumes(res)
     assert set(v) == {"z_liquid_cm", "r_field_cage_cm", "r_bucket_cm", "z_liquid_bottom_cm"}
     assert v["r_field_cage_cm"] == pytest.approx(3.1) and v["r_bucket_cm"] == pytest.approx(5.6)
@@ -219,7 +219,7 @@ def test_volumes_and_physics():
 def test_chain_end_to_end(tmp_path):
     pytest.importorskip("fuse")
     write_g4(tmp_path / "g4", ROWS, 6)
-    run = config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml"
+    run = config.ROOT / "config" / "runs" / "cs137_r900_001.yaml"
     dpath, _ = drift_map(tmp_path, config.resolve(run))
     st, rid = chain.context(run, g4_out=tmp_path / "g4", store=tmp_path / "strax",
                             xams_efield_map=str(flat_map(tmp_path / "f.npz")), xams_drift_map=str(dpath),
@@ -381,7 +381,7 @@ def test_dynamic_chunking_sorted_equals_fuse(seed):
 def test_el_map_mobility():
     """With a mobility, v = mu E: the transit through the uniform gas gap scales as 1 / E."""
     from xamssim import elmap
-    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
     gm = elmap.gas_model(res)
     mats = res.materials["materials"]["gas_xenon"]["transport"]
     mats.pop("drift_velocity_mm_us", None); mats.pop("drift_velocity_table", None)
@@ -398,7 +398,7 @@ def test_el_map_mobility():
 def test_el_map_velocity_table():
     """The default gas velocity is the Magboltz table v(E): interpolated, end values outside the table."""
     from xamssim import elmap
-    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_cmb50_001.yaml")
+    res = config.resolve(config.ROOT / "config" / "runs" / "cs137_r900_001.yaml")
     gm = elmap.gas_model(res)
     e_tab, v_tab = gm["v_table"]
     assert elmap.gas_velocity(gm, 4500.0) == pytest.approx(np.interp(4.5, e_tab, v_tab))

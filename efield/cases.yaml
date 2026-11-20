@@ -1,87 +1,72 @@
-# HV cases for the electric-field model (efield). One entry per setting; voltages in V.
+# HV cases of the SR-2026.3 science runs for the electric-field model (efield): one entry per HV configuration, voltages in V.
 # A = anode, G = gate, C = cathode, BS = bottom screen, TS = top screen, PMT_T / PMT_B = PMT bodies (photocathode HV,
-# assumption: the whole PMT box at that potential), SIPM = SiPM planes (grounded = 0).
-# Only voltages here: all geometry (incl. the SiPMs) comes from config/geometry.yaml, the liquid level from the state
-# (config/states/*.yaml); a solve takes HV case and level from the states (run.sh --states sept,cmb50).
+# assumption: the whole PMT box at that potential), SIPM = SiPM planes (the SiPM equaliser; 0 = off / grounded).
+# Only voltages here: all geometry comes from the detector of the states (config/detectors/<d>/geometry.yaml), the
+# liquid level from the state; a solve takes HV case and level from the states (run.sh --states d25,r900).
 # Field-cage rings between gate and cathode follow from the resistor chain (field_cage below).
-# Sources: measurements/run_overview.md (SR-2026.2 settings) and the short-fill run plan
-# (measurements/next_fill/plan/XAMS_runplan_short_fill.pdf, 2026-10-12).
+# Source: sc_snapshot (start of the run named per case: hv_*_vmon, SiPM = hv_sipm_eq_vmon), rounded to 1 V; sets with
+# the same anode / gate / cathode within 10 V share a case. Remade 2026-11-19 (all older cases removed: they belonged to
+# earlier fills and to geometries that were wrong).
 #
-# export: which field maps to write for this case (needs COMSOL "File system access: All files", see README):
-#   planes = the y = 0 and x = 0 planes through the TPC (step 0.2 mm; each contains one SiPM at 180° / 90°)
-#   sipm   = a 3D box around each SiPM (step 0.25 mm) for drift lines near the SiPMs
+# export: field maps written by COMSOL for this case:
+#   planes = the y = 0 and x = 0 planes through the TPC (step 0.2 mm), printed to the log (no file access needed)
 
 field_cage:
   resistors_gohm: [1.0, 1.0, 1.0, 1.0, 1.0]   # gate -> ring 1 -> ring 2 -> ring 3 -> ring 4 -> cathode (design 5 x 1 GOhm,
                                                # Flierman thesis p.102; ~5 GOhm in operation)
 
-
 cases:
-  zero:  {A: 0,    G: 0,     C: 0,     BS: 0,     TS: 0,    PMT_T: -900,  PMT_B: -950,  SIPM: 0, export: [],
-          note: "zero field (SR-2026.3 phase 2, 26-10-2026): all electrodes 0 V; no field map needed (state zero_field)"}
-  sept:  {A: 2500, G: -2500, C: -3250, BS: -1000, TS: -100, PMT_T: -950,  PMT_B: -800,  SIPM: 0, export: [planes, sipm],
-          note: "SR-2026.2 (Sept 2026, Δ750 V)"}
-  refa:  {A: 1550, G: -1200, C: -1700, BS: -1000, TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
-          note: "short fill REF-a (Oct-2024 fields)"}
-  refc:  {A: 2200, G: -1200, C: -1700, BS: -1000, TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
-          note: "short fill REF-c (May-2024 voltages)"}
-  bs2:   {A: 1550, G: -1200, C: -1700, BS: 0,     TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
-          note: "short fill BS2 (cathode–BS 1.7 kV)"}
-  bs3:   {A: 1550, G: -1200, C: -1700, BS: -1600, TS: -500, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
-          note: "short fill BS3 (cathode–BS 0.1 kV)"}
-  cma:   {A: 1000, G: -1200, C: -1718, BS: -1568, TS: 0,    PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
-          note: "short fill CM-A (SiPM height ≈ −1450 V)"}
-  cmb:   {A: 2453, G: 253,   C: -265,  BS: -115,  TS: 0,    PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
-          note: "short fill CM-B, SiPM-neutral (gate on the NaI channel)"}
-  s1d:   {A: 0,    G: 0,     C: -518,  BS: -368,  TS: 0,    PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes],
-          note: "short fill S1D (drift field, no extraction)"}
-  # sensitivity: CM-B with the SiPM planes off their local potential (≈ 0 V at CM-B); + = SiPM more positive (attracts electrons)
-  cmb_p100: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 100,  export: [planes], note: "CM-B, SiPM +100 V off"}
-  cmb_m100: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: -100, export: [planes], note: "CM-B, SiPM −100 V off"}
-  cmb_p300: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 300,  export: [planes], note: "CM-B, SiPM +300 V off"}
-  cmb_m300: {A: 2453, G: 253, C: -265, BS: -115, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: -300, export: [planes], note: "CM-B, SiPM −300 V off"}
-  cmb50: {A: 2503, G: 303, C: -215, BS: -65, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
-          note: "CM-B with margin: SiPM ≈ 50 V below its surroundings (short-fill plan, 2026-10-12)"}
-  cmb50_a36: {A: 3600, G: 303, C: -215, BS: -65, TS: 0, PMT_T: -1000, PMT_B: -1000, SIPM: 0, export: [planes, sipm],
-          note: "cmb50 with the anode at +3.6 kV (anode-gate 3.3 kV: g2 about as in the Flierman thesis, 2026-10-19)"}
-  # SR-2026.3 (fill of 26-10-2026): measured voltages (sc_snapshot medians per set, analysis_SR2026.3/config/runs);
-  # SIPM = SiPM equaliser hv_sipm_eq_vmon (in sc_snapshot since 7794, backfilled 2026-10-31; R900 before 7794: −900 V per
-  # the run notes; E27: 0 V). Same-field blocks share a case (R900 / R900S / F / P90 / M90 / B / U / T, BG16, P4B).
+  zero: {A: 0, G: 0, C: 0, BS: 0, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: 0, export: [],
+         note: "SR-2026.3 Z26 7762-7783: zero field (all electrodes 0 V); no field map needed (state zero_field); sc_snapshot run 7762"}
   e27: {A: 2401, G: 303, C: -215, BS: -65, TS: -25, PMT_T: -900, PMT_B: -800, SIPM: 0, export: [planes],
-          note: "SR-2026.3 E27 7784-7785: first test, gate positive; SiPM 0 V (no SC channel yet, user 2026-10-31)"}
-  e27b: {A: 2501, G: 303, C: -216, BS: -65, TS: -25, PMT_T: -900, PMT_B: -800, SIPM: 0, export: [planes],
-          note: "SR-2026.3 E27b 7786-7787: as e27, anode +2.5 kV"}
-  e27c: {A: 2801, G: 300, C: -215, BS: -65, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: 0, export: [planes, sipm],
-          note: "SR-2026.3 E27c 7788-7789: as e27, anode +2.8 kV, TS 0"}
-  r900: {A: 2101, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes, sipm],
-          note: "SR-2026.3 R900* 7790-7902, R900T 7929, BG16, P4B 7957-7980: standard ~97 V/cm, SiPM equalised (−890…−901 V measured; anode +2106 V from 7903 on)"}
-  r900_a22: {A: 2201, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes],
-          note: "SR-2026.3 R900A22 7838-7843: r900, anode +2.2 kV"}
-  r900_a23: {A: 2301, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes],
-          note: "SR-2026.3 R900A23 7844-7849: r900, anode +2.3 kV"}
-  d25: {A: 2106, G: -645, C: -775, BS: -74, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -709, export: [planes, sipm],
-          note: "SR-2026.3 D25 7909-7911: drift scan ~25 V/cm"}
+         note: "SR-2026.3 E27 7784-7785: CM-B with anode +2.4 kV; SiPMs off; sc_snapshot run 7784"}
+  e27b: {A: 2501, G: 303, C: -215, BS: -65, TS: -25, PMT_T: -900, PMT_B: -800, SIPM: 0, export: [planes],
+         note: "SR-2026.3 E27b 7786-7787: anode +2.5 kV; SiPMs off; sc_snapshot run 7786"}
+  e27c: {A: 2801, G: 300, C: -215, BS: -65, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: 0, export: [planes],
+         note: "SR-2026.3 E27c 7788-7789: anode +2.8 kV, TS 0 V; SiPMs off; sc_snapshot run 7788"}
+  r900: {A: 2101, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -900, export: [planes],
+         note: "SR-2026.3 R900 7790-7837 (+ R900S / F / P90 / M90 / B / T, BG16, P4B 7957-7980, MA 7984-7986: same anode / gate / cathode within 5 V); sc_snapshot run 7791"}
+  r900_a22: {A: 2201, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -901, export: [planes],
+         note: "SR-2026.3 R900A22 7838-7843: r900 with anode +2.2 kV; sc_snapshot run 7839"}
+  r900_a23: {A: 2301, G: -646, C: -1146, BS: -445, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -901, export: [planes],
+         note: "SR-2026.3 R900A23 7844-7849: r900 with anode +2.3 kV; sc_snapshot run 7845"}
+  d25: {A: 2106, G: -645, C: -775, BS: -74, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -709, export: [planes],
+         note: "SR-2026.3 D25 7909-7911 and FN25 7987-7995: drift field 25 V/cm; sc_snapshot run 7909"}
   d50: {A: 2106, G: -646, C: -905, BS: -204, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -773, export: [planes],
-          note: "SR-2026.3 D50 7912-7914: drift scan ~50 V/cm"}
-  d75: {A: 2106, G: -646, C: -1035, BS: -334, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -836, export: [planes],
-          note: "SR-2026.3 D75 7917-7919: drift scan ~75 V/cm"}
+         note: "SR-2026.3 D50 7912-7914 and FN50 8005-8011: drift field 50 V/cm; sc_snapshot run 7912"}
+  d75: {A: 2106, G: -645, C: -1035, BS: -334, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -836, export: [planes],
+         note: "SR-2026.3 D75 7917-7919 and FN75 8012-8020: drift field 75 V/cm; sc_snapshot run 7917"}
   d125: {A: 2106, G: -646, C: -1293, BS: -592, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -962, export: [planes],
-          note: "SR-2026.3 D125 7920-7922: drift scan ~125 V/cm"}
+         note: "SR-2026.3 D125 7920-7922: drift field 125 V/cm; sc_snapshot run 7920"}
   d135: {A: 2106, G: -646, C: -1345, BS: -644, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -987, export: [planes],
-          note: "SR-2026.3 D135 7923-7925: drift scan ~135 V/cm"}
+         note: "SR-2026.3 D135 7923-7925: drift field 135 V/cm; sc_snapshot run 7923"}
   d140: {A: 2106, G: -646, C: -1371, BS: -670, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1000, export: [planes],
-          note: "SR-2026.3 D140 7926-7928: drift scan ~140 V/cm (SiPM at its −1000 V limit)"}
-  d150: {A: 2106, G: -646, C: -1423, BS: -722, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -987, export: [planes, sipm],
-          note: "SR-2026.3 D150 7930-7932: drift scan ~150 V/cm (SiPM −987 V, below equalised)"}
+         note: "SR-2026.3 D140 7926-7928 and FN140 7996-8004: drift field 140 V/cm (SiPM at its -1000 V limit); sc_snapshot run 7926"}
+  d150: {A: 2106, G: -646, C: -1423, BS: -722, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -987, export: [planes],
+         note: "SR-2026.3 D150 7930-7932: drift field 150 V/cm; sc_snapshot run 7930"}
   pg1: {A: 2106, G: -696, C: -1196, BS: -495, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -940, export: [planes],
-          note: "SR-2026.3 PG1 7933-7935: gate −50 V vs r900 (drift field as r900)"}
+         note: "SR-2026.3 PG1 7933-7935: gate -0.7 kV, drift field 97 V/cm; sc_snapshot run 7933"}
   pg2: {A: 2106, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
-          note: "SR-2026.3 PG2 7936-7938: gate −100 V vs r900"}
+         note: "SR-2026.3 PG2 7936-7938: gate -0.75 kV; sc_snapshot run 7936"}
   pg3: {A: 2301, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
-          note: "SR-2026.3 PG3 7939-7941: pg2, anode +2.3 kV"}
+         note: "SR-2026.3 PG3 7939-7941: pg2 with anode +2.3 kV; sc_snapshot run 7939"}
   pg4: {A: 2501, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
-          note: "SR-2026.3 PG4 7942-7946: pg2, anode +2.5 kV"}
+         note: "SR-2026.3 PG4 7942-7946: pg2 with anode +2.5 kV; sc_snapshot run 7943"}
   pg4b: {A: 2601, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
-          note: "SR-2026.3 PG4b 7950: pg2, anode +2.6 kV"}
+         note: "SR-2026.3 PG4b 7950: pg2 with anode +2.6 kV; sc_snapshot run 7950"}
   pg5: {A: 2701, G: -746, C: -1246, BS: -545, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -990, export: [planes],
-          note: "SR-2026.3 PG5 7947-7949: pg2, anode +2.7 kV"}
+         note: "SR-2026.3 PG5 7947-7949: pg2 with anode +2.7 kV; sc_snapshot run 7948"}
+  mh2: {A: 2501, G: -846, C: -1346, BS: -645, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1090, export: [planes],
+         note: "SR-2026.3 MH2 8021-8025: anode +2.5 kV, gate -0.85 kV, drift field 97 V/cm; sc_snapshot run 8022"}
+  mh3: {A: 2501, G: -946, C: -1446, BS: -745, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1190, export: [planes],
+         note: "SR-2026.3 MH3 8026-8027: gate -0.95 kV; sc_snapshot run 8026"}
+  mh4: {A: 2501, G: -1046, C: -1546, BS: -845, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1290, export: [planes],
+         note: "SR-2026.3 MH4 8028-8029, MN1 / MN1col 8091-8109: gate -1.05 kV; sc_snapshot run 8028"}
+  mh5: {A: 2501, G: -1146, C: -1646, BS: -945, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1390, export: [planes],
+         note: "SR-2026.3 MH5 8030-8031: gate -1.15 kV; sc_snapshot run 8030"}
+  mh6: {A: 2501, G: -1246, C: -1746, BS: -1045, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1490, export: [planes],
+         note: "SR-2026.3 MH6 8032-8049, MN0 8050-8055, TH6 8059-8066: gate -1.25 kV; sc_snapshot run 8033"}
+  th85: {A: 2501, G: -1496, C: -1996, BS: -1296, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1740, export: [planes],
+         note: "SR-2026.3 TH85 8067-8079: gate -1.5 kV; sc_snapshot run 8068"}
+  th11: {A: 2501, G: -1746, C: -2246, BS: -1546, TS: 0, PMT_T: -900, PMT_B: -950, SIPM: -1990, export: [planes],
+         note: "SR-2026.3 TH11 8080-8090: gate -1.75 kV; sc_snapshot run 8081"}

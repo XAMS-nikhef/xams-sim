@@ -1,7 +1,7 @@
 """Per-run corrections of simulated runs, in their own run document (plan S10, decided 2026-10-23).
 
     xamssim corrections 990001                                     # show truth and calibrated
-    xamssim corrections --calibrated cal.json --from-run 990001 --state sept    # store a calibration
+    xamssim corrections --calibrated cal.json --from-run 990001 --state r900    # store a calibration
 
 A simulated run's run document (`<number>-metadata.json` next to its raw records; production runs also in
 run.runs_mc) holds:

@@ -6,9 +6,9 @@ setting comes from the run file and what it points to. Later steps of the [roadm
 extraction, light, waveforms) add plugins to the same context.
 
 ```bash
-xamssim particle config/runs/cs137_cmb50_001.yaml             # Geant4 first -> <data>/g4/cs137_cmb50_001/
-xamssim maps --state cmb50 --export field                      # once per state: the field map (below)
-xamssim chain config/runs/cs137_cmb50_001.yaml --target quanta # -> <data>/strax/
+xamssim particle config/runs/cs137_r900_001.yaml             # Geant4 first -> <data>/g4/cs137_r900_001/
+xamssim maps --state r900 --export field                      # once per state: the field map (below)
+xamssim chain config/runs/cs137_r900_001.yaml --target quanta # -> <data>/strax/
 ```
 
 `--target` is the last product: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`,
@@ -81,8 +81,8 @@ x, y, D_L in z, t = the cluster's drift time); the fraction f that reaches the s
 split; photopeak cS2 0.30 → 0.375.
 
 ```bash
-xamssim maps --state sept --export cells                          # once per state: gate and cathode cell fields (licence)
-xamssim maps --state sept --export drift                          # once per state, ~30 s, composite field
+xamssim maps --state r900 --export cells                          # once per state: gate and cathode cell fields (licence)
+xamssim maps --state r900 --export drift                          # once per state, ~30 s, composite field
 xamssim chain <run> --target drifted_electrons
 ```
 
@@ -105,7 +105,7 @@ electrons all end at the same place), time-dependent fields.
 ## Extraction and electroluminescence
 
 ```bash
-xamssim maps --state sept --export el                             # once per state (gate + anode cell model, licence)
+xamssim maps --state r900 --export el                             # once per state (gate + anode cell model, licence)
 xamssim chain <run> --target extracted_electrons
 ```
 
@@ -125,7 +125,7 @@ in the gas keep their electrons and emit the part of the path above them. Gas tr
 ## Light: photoelectrons per channel
 
 ```bash
-xamssim maps --state sept --export light                          # once per light key (Geant4 optical, ~5 min, 8 cores)
+xamssim maps --state r900 --export light                          # once per light key (Geant4 optical, ~5 min, 8 cores)
 xamssim chain <run> --target photoelectrons
 ```
 
@@ -160,7 +160,7 @@ xamssim chain <run> --target events
 `XamsSensorResponse` turns the photoelectrons of each channel into an area in PE, as the analysis calibrates it with
 the LED single-PE gain: a PMT photoelectron makes a second one with the double-PE probability (VUV light; the LED
 calibration has none), a SiPM adds crosstalk, and every PE has a Gaussian area with the channel's single-PE resolution.
-The parameters are in `config/detectors/<d>/sensors.yaml` (xams2026: SPE resolution from the LED fits of the analysis,
+The parameters are in `config/detectors/<d>/sensors.yaml` (xams_sr2026_3: SPE resolution from the LED fits of the analysis,
 0.51 bottom, 0.37–0.44 top; double-PE 0.2 and SiPM crosstalk 0.05 assumed). Not modelled yet: afterpulses, the
 non-linearity of the top PMT under load.
 
@@ -189,7 +189,7 @@ single-PE area resolution (`sensors.yaml`); area × single-PE gain convolved wit
 Gaussian noise, baseline, polarity, 14-bit range. Self-trigger as the DAW firmware: samples above the threshold, 32
 samples before the first and `post_samples` after the last crossing, at least 80 samples, overlapping pulses merged;
 cut into 110-sample records. PMTs → `xams_raw_records`, SiPMs → `xams_raw_records_sipm`. The DAQ description is the
-detector's `daq.yaml` and `spe_templates.npz` (xams2026: run 7719 / Science_Rev2.4; baselines, noise, pre / post samples
+detector's `daq.yaml` and `spe_templates.npz` (xams_sr2026_3, `daq.yaml`: run 7719 / Science_Rev2.4; baselines, noise, pre / post samples
 and pulse shapes measured from raw records of 7719 and the LED runs 7682 / 7723; gains of period P4).
 
 `xamssim.amstrax_io` copies them under amstrax's `raw_records` / `raw_records_sipm` keys into `<data>/amstrax/` and
@@ -245,8 +245,8 @@ NR) with the fluctuation bands, at the drift field of states (from their field m
 `physics.nest` of run files, and the Cs-137 photopeak in quanta (photons, electrons, their widths and correlation):
 
 ```bash
-xamssim nest --state sept --state cmb50_a36 --field 23
-xamssim nest --state sept --run runs/a_er_0.08.yaml --types gamma
+xamssim nest --state d25 --state d140 --field 23
+xamssim nest --state r900 --run runs/a_er_0.08.yaml --types gamma
 ``` The settings are part of
 the run file and so of the run key: another setting is another run (another number). The fast way to study them is the
 chain up to the events (`xamssim chain <run> --target events`: quanta → … → cS1 / cS2 of the simulation, no
@@ -255,8 +255,8 @@ waveforms); with the waveforms and amstrax (`stbc/submit_production.sh`) they ca
 ## Field map
 
 ```bash
-efield/comsol/run.sh --states sept                # solve the COMSOL model for the state's HV case (~2 min)
-xamssim maps --state sept --export field          # 3D field from the solved model -> <data>/maps/field/<key>/ (~30 s)
+efield/comsol/run.sh --states r900                # solve the COMSOL model for the state's HV case (~2 min)
+xamssim maps --state r900 --export field          # 3D field from the solved model -> <data>/maps/field/<key>/ (~30 s)
 ```
 
 The export opens the solved model (`efield/comsol/build/XAMS_efield.mph`) through COMSOL's own API (Python package
@@ -296,10 +296,10 @@ nothing outside it can reach a volume.
 
 ```python
 from xamssim import chain
-st, run_id = chain.context("config/runs/cs137_cmb50_001.yaml")
+st, run_id = chain.context("config/runs/cs137_r900_001.yaml")
 s = st.get_array(run_id, "microphysics_summary")     # x, y, z [cm], ed [keV], nestid, vol_id, e_field, photons, electrons
 c = st.get_array(run_id, ("clustered_interactions", "volume_properties"))   # all clusters, also outside the volumes
-st2, _ = chain.context("config/runs/cs137_cmb50_001.yaml", time_threshold=100, entry_stop=100000)  # option overrides
+st2, _ = chain.context("config/runs/cs137_r900_001.yaml", time_threshold=100, entry_stop=100000)  # option overrides
 ```
 
 ## Notes

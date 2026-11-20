@@ -8,13 +8,13 @@
     xamssim optical  <scan>.yaml --vis [--point N]         optical viewer for a point of the scan (--list: the points)
     xamssim chain    config/runs/<run>.yaml [--target T]   simulation chain on <data>/g4/<run> -> <data>/strax/ (up to raw_records)
     xamssim status   config/runs/<run>.yaml                resolved state / source, input hashes, map status
-    xamssim maps     --state cmb50                         map status for one detector state
-    xamssim maps     --state cmb50 --export field          3D field of the state from the solved COMSOL model (licence)
-    xamssim maps     --state cmb50 --export cells          gate and cathode mesh-cell fields from the cell models (licence)
-    xamssim maps     --state cmb50 --export drift          drift map in the composite field (field + mesh cells)
-    xamssim maps     --state cmb50 --export el             extraction / EL map from the gate + anode cell (licence)
-    xamssim maps     --state cmb50 --export light          S1 / S2 light maps per channel (Geant4 optical, ~5 min)
-    xamssim maps     --state cmb50 --export outer          S1 light map of the liquid outside the TPC (~15 min)
+    xamssim maps     --state r900                         map status for one detector state
+    xamssim maps     --state r900 --export field          3D field of the state from the solved COMSOL model (licence)
+    xamssim maps     --state r900 --export cells          gate and cathode mesh-cell fields from the cell models (licence)
+    xamssim maps     --state r900 --export drift          drift map in the composite field (field + mesh cells)
+    xamssim maps     --state r900 --export el             extraction / EL map from the gate + anode cell (licence)
+    xamssim maps     --state r900 --export light          S1 / S2 light maps per channel (Geant4 optical, ~5 min)
+    xamssim maps     --state r900 --export outer          S1 light map of the liquid outside the TPC (~15 min)
     xamssim validate config/runs/*.yaml                    check run files (and the states / sources they use)
     xamssim show     <run> [--hash H] [--diff] [--full]    with which parameters the run's data were made
     xamssim amstrax  <run> [--lifetime-us T]               simulated raw records -> amstrax store (process like data)
@@ -332,7 +332,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("posrec", help="position-reconstruction toy: uniform positions -> drift map -> S2 light pattern -> "
                                       "photon statistics -> (u, v) -> data map and an MC-built map; bias, resolution; "
                                       "writes the MC map in amstrax's format")
-    p.add_argument("--state", default="sept")
+    p.add_argument("--state", default="r900")
     p.add_argument("--n", default="300000", help="events (default 3e5)")
     p.add_argument("--sizes", default="30,300,3000,30000", help="S2 sizes in detected top photoelectrons")
     p.add_argument("--data-map", default="pos_rec_map_v1.json", help="amstrax_files position map (file or name)")

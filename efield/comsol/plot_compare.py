@@ -3,7 +3,7 @@
 electron drift lines (white: reach the gate, red: end on the wall / SiPM). Also the catchment: per start depth the
 smallest start radius whose drift line ends on the wall / SiPM (fine radial scan).
 
-    python efield/comsol/plot_compare.py cmb_m300 cmb_m100 cmb cmb_p100 cmb_p300 sept  ->  <data>/efield/comsol/compare_<first>_<last>.png
+    python efield/comsol/plot_compare.py d25 d50 d75 d140  ->  <data>/efield/comsol/compare_<first>_<last>.png
 """
 import json
 import sys
@@ -28,8 +28,8 @@ OUT = DATA / "efield" / "comsol"
 def main():
     names = sys.argv[1:]
     C = yaml.safe_load(open(ROOT / "efield" / "cases.yaml"))
-    from xamssim.config import load_geometry
-    zs = load_geometry("xams2026")["sipms"]["z_mm"][0]           # the SiPM height of the current detector
+    from xamssim.config import DEFAULT_DETECTOR, load_geometry
+    zs = load_geometry(DEFAULT_DETECTOR)["sipms"]["z_mm"][0]           # the SiPM height of the current detector
     M = np.load(OUT / "maps_rz.npz")
     r, z = M["r"], M["z"]
     fig, ax = plt.subplots(1, len(names), figsize=(3.6 * len(names), 7.2), sharey=True)
