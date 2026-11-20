@@ -80,13 +80,16 @@ def gas_velocity(gm: dict, e_v_cm):
     return np.full(np.shape(e_v_cm), gm["v_gas"])
 
 
-def extraction_table():
-    """(E_gas [kV/cm], extraction efficiency) from NEST."""
+def extraction_table(t_k: float):
+    """(E_gas [kV/cm], extraction efficiency) from NEST CalculateG2 at liquid temperature t_k [K]. The temperature
+    matters (NEST's default detector is at 177 K: at 172 K the curve sits ~0.2 kV/cm lower in E_liq); the gas pressure
+    in the detector does not enter the extraction efficiency."""
     import nestpy
     e = np.linspace(3.2, 25.0, 110)
     eff = []
     for x in e:
         d = nestpy.VDetector()
+        d.set_T_Kelvin(float(t_k))
         d.set_E_gas(float(x))
         eff.append(nestpy.NESTcalc(d).CalculateG2(False)[1])
     return e, np.clip(np.array(eff), 0, 1)
@@ -95,7 +98,8 @@ def extraction_table():
 def extraction_curve(res: Resolved):
     """The extraction efficiency as a function of the liquid field just below the surface [kV/cm] (array -> array), from
     liquid_xenon.transport.extraction (with the state's `extraction`, config.with_extraction):
-        nest                                         NEST CalculateG2 (its E_gas = E_liq x eps_liq / eps_gas)
+        nest                                         NEST CalculateG2 (its E_gas = E_liq x eps_liq / eps_gas) at the
+                                                     liquid temperature of the state (saturation at pressure_bar)
         {model: nest, shift_kV_cm: s}                NEST at E_liq + s (s > 0: threshold s lower, same shape)
         {model: table, E_liq_kV_cm: [..], eff: [..]} linear in the table, 0 below it, the last value above it"""
     mats = res.materials["materials"]
@@ -109,7 +113,7 @@ def extraction_curve(res: Resolved):
         unknown = set(spec) - {"model", "shift_kV_cm", "note"}
         if unknown:
             raise ValueError(f"extraction (nest): unknown key(s) {sorted(unknown)}")
-        et, ee = extraction_table()
+        et, ee = extraction_table(mats["liquid_xenon"]["temperature_k"])
         shift = float(spec.get("shift_kV_cm", 0.0))
         return lambda e_liq: np.interp((np.asarray(e_liq, float) + shift) * eps, et, ee, left=0.0)
     unknown = set(spec) - {"model", "E_liq_kV_cm", "eff", "note"}
