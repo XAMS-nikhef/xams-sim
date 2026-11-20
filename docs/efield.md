@@ -56,7 +56,12 @@ python efield/comsol/plot_cell3d.py cathode r900                # interactive 3D
 ```
 
 A quarter of one cell of the etched mesh (holes 2.45 mm, bars 0.15 × 0.15 mm, pitch 2.6 mm) with mirror-symmetric
-side walls is exact for the periodic mesh. The drift side has a fixed field (not a fixed potential), so field
+side walls is exact for the periodic mesh. The bars have sharp rectangular edges, where |E| is singular in the FE
+solution (stack cell, state ma: up to 24.7 kV/cm). Orientation: all meshes at 29.4° to the top-PMT anodes (gate from the
+data lattice); the survey of 2026-11-17 confirmed that the anode has the same orientation as the gate, so the `stack`
+cell has the anode holes aligned above the gate holes (their lateral offset was not measured; `stackx` is the
+half-pitch shifted variant, unused). The top screen is rotated with respect to gate / anode (angle not recorded), not
+modelled. Physics of the fields: [Physics of the chain](physics.md#electric-fields). The drift side has a fixed field (not a fixed potential), so field
 leaking through the holes shows up correctly. Outputs: `<data>/efield/comsol/cell_<electrode>_<case>.png` (|E|,
 equipotentials, drift lines through the hole centres), `cell_<electrode>.json`, and with `--map3d` the 3D views
 `cell3d_*.html` (10–25 MB, not in git).

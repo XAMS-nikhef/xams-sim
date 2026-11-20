@@ -51,6 +51,7 @@ nav:
       - Output formats: output.md
       - Reading the output: analysis.md
   - Reference:
+      - Physics of the chain: physics.md
       - xamsg4 program: xamsg4.md
       - xamssim package: xamssim.md
       - Geometry: geometry.md

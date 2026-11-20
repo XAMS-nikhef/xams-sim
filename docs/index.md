@@ -29,8 +29,9 @@ source ──xamsg4 particle──► energy deposits ──► clusters ──�
 
 Available now: the optical mode (with fitted optics), the particle mode, the field models (full TPC in 3D and the mesh
 cells), configuration and map registry, and the event chain from Geant4 deposits through clustering, local field and
-NEST quanta to the electrons at the liquid surface (drift in the composite field). Extraction, light and waveforms
-follow — see the [roadmap](xams_sim_plan.md). Studies made with xams-sim (run files, analysis, results, PDF notes) are
+NEST quanta, the drift in the composite field, extraction and electroluminescence, light, sensors and waveforms
+(raw records for amstrax) — see the [roadmap](xams_sim_plan.md). The physics of every step, with its parameters,
+sources and open issues: [Physics of the chain](physics.md). Studies made with xams-sim (run files, analysis, results, PDF notes) are
 not in this repository: they live in `../simulations/` (own repository), their outputs in `../simulations/data/`.
 
 ## Where to start

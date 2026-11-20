@@ -78,16 +78,19 @@ boundary between field lines that reach the surface and field lines that end on 
 `XamsElectronDrift` reads the map at `cloud_samples` points around the cluster (Gaussian, σ = √(track² + 2Dt), D_T in
 x, y, D_L in z, t = the cluster's drift time); the fraction f that reaches the surface multiplies the survival
 (`surface_fraction`), and drift time and gate crossing are averaged over those points. Sept: 8.5 % of the clusters are
-split; photopeak cS2 0.30 → 0.375.
+split; photopeak cS2 0.30 → 0.375. The mean gate crossing also sets the S2 position: a cloud wider than the focused
+bundle of one gate hole (~0.26 mm) reaches several holes, and its mean lands between them, which washes out the
+mesh-hole lattice in the S2 positions (coherence at the gate 0.21 with 16 samples vs 0.79 with `cloud_samples: 1`,
+state ma). The cloud size (track σ, D_T) is not fitted yet; see [Physics of the chain](physics.md#drift-in-the-liquid).
 
 ```bash
 xamssim maps --state r900 --export cells                          # once per state: gate and cathode cell fields (licence)
-xamssim maps --state r900 --export drift                          # once per state, ~30 s, composite field
+xamssim maps --state r900 --export drift                          # once per state, ~1 h (0.25 mm grid), composite field
 xamssim chain <run> --target drifted_electrons
 ```
 
-The drift map is a look-up table made once per state (`xamssim/driftmap.py`, ~30 s): from every point of a
-1 × 1 × 0.5 mm grid inside the field cage one test electron is moved against the **composite field** (0.1 mm steps,
+The drift map is a look-up table made once per state (`xamssim/driftmap.py`, ~1 h: 0.37 ms per track, ~8.4 M
+tracks): from every point of a 0.25 × 0.25 × 0.5 mm grid (x, y, z) inside the field cage one test electron is moved against the **composite field** (0.1 mm steps,
 0.02 mm within 1 mm of a mesh; drift velocity v(\|E\|) of the liquid from NEST) until it reaches the liquid surface
 (`surface`), the bottom screen (`bottom`), the PTFE wall (`wall`), a SiPM opening (`sipm`) or a mesh bar (`mesh`);
 points in the gas are `gas`. The composite field is the full-TPC 3D map (meshes as solid discs) with, near the gate
@@ -96,11 +99,15 @@ over the mesh with its rotation and hole pattern: E = E_cell + (E_full − cell 
 the foil. So the hole structure sits on top of the large-scale field, and focusing through the gate holes, the layer
 above the cathode pulled down through its holes and losses on the bars follow from the field. Stored per point: end code, drift time to
 the surface, where it crosses the gate, path length. In the chain each cluster takes the values of its grid point
-(drift time and gate position shifted to the exact position): all electrons of a cluster follow the same field line;
+(drift time and gate position shifted to the exact position; with `cloud_samples` > 1 the mean over the cloud, above);
 lifetime (binomial with exp(−t/τ)) and diffusion (σ_t from D_L, σ_xy from D_T) act statistically. `drifted_electrons`:
 `n_electron_interface`, `drift_time_mean`, `drift_time_spread` [ns], `x_obs`, `y_obs` (at the gate) [cm],
-`xy_spread`, `drift_end`, `survival`. Not in the map: partial losses at the edges of a catchment area (a cluster's
-electrons all end at the same place), time-dependent fields.
+`xy_spread`, `drift_end`, `survival`. Not in the map: time-dependent fields (charge-up).
+
+**Grid:** 0.25 mm in x, y since 2026-11-20 (PR #49; was 1 mm). The catchment of each gate hole (pitch 2.6 mm) needs a
+fine start grid: at 1 mm the hole of a start point was decided at ±0.5 mm and the catchments came out 2.3 and once
+3.45 mm wide instead of 2.6 mm; at 0.25 mm 2.55–2.85 mm. The grid is part of the drift key (maps made before keep
+their key "grid 1 x 1 x 0.5 mm").
 
 ## Extraction and electroluminescence
 
@@ -112,15 +119,25 @@ xamssim chain <run> --target extracted_electrons
 The extraction / EL map (`xamssim/elmap.py`) comes from the stack cell model of the state (gate, liquid surface,
 anode, top screen; real etched meshes, anode aligned with the gate). Electrons start on a 0.025 mm grid over one
 quarter of a gate-hole cell just above the liquid surface and are tracked through the gas to the anode bars. Per
-start point: the **extraction efficiency** from the field just below the surface (NEST `CalculateG2`, as a function
-of the field just above it), the **EL photons per electron** along the path (140 E[kV/cm] − 116 p_eq[bar] per cm,
+start point: the **extraction efficiency** from the field just below the surface (NEST `CalculateG2`, moved along
+the liquid field by the state's `extraction: {model: nest, shift_kV_cm: 0.21}`, at the state's liquid temperature;
+fit 2026-11-20), the **EL photons per
+electron** along the path (140 E[kV/cm] − 116 p_eq[bar] per cm,
 Monteiro et al. 2007; p_eq = the pressure at 293 K with the density of the gas), the **transit time** with the gas
 drift velocity and the **emission-time quantiles** (5 … 95 % of the electron's light). `XamsExtractionEL` takes the
 values at the cluster's gate crossing (`x_obs`, `y_obs` of `drifted_electrons` in the gate-hole lattice):
 extracted = binomial(electrons at the surface, efficiency), S2 photons = Poisson(extracted × photons per electron),
 S2 time = drift time + emission, `s2_width50` = 25–75 % of the cluster's light (EL profile and diffusion). Clusters
 in the gas keep their electrons and emit the part of the path above them. Gas transport in `materials.yaml`
-(`gas_xenon.transport`); the gas drift velocity is tuned on the measured S2 width (no measurement at ~9 Td found).
+(`gas_xenon.transport`): the drift velocity v(|E|) and the diffusion D_L, D_T from PyBoltz (Magboltz) at 1118 Torr,
+172.3 K, 0.1–7 kV/cm, not tuned (`drift_velocity_table`, `diffusion_table`).
+
+**Gas diffusion (EL model v3, PR #50, 2026-11-20):** from every start point 64 electrons random-walk along the field
+(each 0.01 mm step a Gaussian displacement √(2 D Δt), D_L along and D_T across the field); the map holds their mean
+photons and transit and the quantiles of their pooled emission times. Without it all electrons focused into the
+gate-hole centre ran into the field null in the aligned anode hole above it: an EL gap of 0.5–0.9 µs and a sharp
+burst at the bar edge, which amstrax split off as a separate peak (not seen in data). All EL keys changed with v3.
+Physics and numbers: [Physics of the chain](physics.md#the-el-map-gas-transport-and-gas-diffusion).
 
 ## Light: photoelectrons per channel
 
