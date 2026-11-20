@@ -10,6 +10,12 @@ focuses them near u = v = 0) and are tracked against the gas field to the anode 
                (Monteiro et al. 2007; p_eq = pressure at 293 K with the density of the gas)
     t_transit  time from the surface to the anode [µs], with the gas drift velocity of materials.yaml
     t_q        times [µs] at which 5 %, 10 %, ..., 95 % of the electron's EL light has been emitted (S2 shape)
+Gas diffusion (materials gas_xenon.transport.diffusion_table, PyBoltz D_L, D_T vs |E|): from every start point
+EL_ELECTRONS electrons random-walk along the field (each step a Gaussian displacement sqrt(2 D dt), D_L along the field,
+D_T across it); the map holds their mean photons, transit time and path, and the quantiles of their pooled emission
+times. Without diffusion every electron of a start point follows the same field line, and the electrons focused into
+the gate-hole centre all run into the field null in the aligned anode hole above it: an EL gap and a sharp burst at the
+anode bar edge that the data do not show (2026-11-20).
 Registry file `<data>/maps/extraction_el/<key>/el.npz`.
 
     xamssim maps --state r900 --export el
@@ -29,6 +35,9 @@ FILE = "el.npz"
 QUANTILES = np.round(np.arange(0.05, 0.951, 0.05), 3)
 STEP_MM = 0.01
 START_STEP_MM = 0.025
+EL_ELECTRONS = 64                  # electrons per start point with gas diffusion
+T_BIN_US = 0.005                   # emission-time histogram for the quantiles
+T_MAX_US = 12.0
 R_293K_1BAR = 131.29 * 1e5 / (8.314462 * 293.15) / 1e6       # g/cm³ of xenon at 1 bar, 293.15 K (ideal gas)
 
 
@@ -42,11 +51,23 @@ def gas_model(res: Resolved) -> dict:
     # (drift_mobility_mm_us_per_kV_cm), or a constant (drift_velocity_mm_us)
     tab = tr.get("drift_velocity_table")
     mu = tr.get("drift_mobility_mm_us_per_kV_cm")
-    return dict(v_gas=float(tr["drift_velocity_mm_us"]) if tab is None and mu is None else None,
+    dif = tr.get("diffusion_table")
+    return dict(d_table=None if dif is None else tuple(np.asarray(dif[k], float) for k in ("E_kV_cm", "DL_cm2_s", "DT_cm2_s")),
+                v_gas=float(tr["drift_velocity_mm_us"]) if tab is None and mu is None else None,
                 mu_gas=None if mu is None else float(mu),
                 v_table=None if tab is None else (np.asarray(tab["E_kV_cm"], float), np.asarray(tab["v_mm_us"], float)),
                 p_eq=g["density_g_cm3"] / R_293K_1BAR,
                 eps_ratio=lq["electrical"]["relative_permittivity"] / g["electrical"]["relative_permittivity"])
+
+
+def gas_diffusion(gm: dict, e_v_cm):
+    """D_L, D_T of the electrons in the gas [mm²/µs] at |E| [V/cm] (array); zeros without a diffusion table."""
+    if gm.get("d_table") is None:
+        z = np.zeros(np.shape(e_v_cm))
+        return z, z
+    e_tab, dl, dt = gm["d_table"]
+    e = np.asarray(e_v_cm) / 1e3
+    return np.interp(e, e_tab, dl) * 1e-4, np.interp(e, e_tab, dt) * 1e-4          # cm²/s -> mm²/µs
 
 
 def gas_velocity(gm: dict, e_v_cm):
@@ -127,16 +148,21 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
     e_liq = np.linalg.norm(field(np.stack([U.ravel(), V.ravel(), np.full(n, level - 0.05)], axis=1)), axis=1) / 1e3
     e_gas_surf = np.linalg.norm(field(np.stack([U.ravel(), V.ravel(), np.full(n, level + 0.05)], axis=1)), axis=1) / 1e3
     ext = extraction_curve(res)(e_liq)
-    # gas: track to the anode bars
-    p = np.stack([U.ravel(), V.ravel(), np.full(n, level + 0.01)], axis=1)
-    photons = np.zeros(n)
-    t = np.zeros(n)
-    path = np.zeros(n)
-    end = np.zeros(n, np.int8)                       # 0 stuck, 1 anode bar, 2 top of the cell
-    hist_t, hist_y = [np.zeros(n)], [np.zeros(n)]
-    active = np.arange(n)
+    # gas: track to the anode bars; with a diffusion table EL_ELECTRONS random-walking electrons per start point
+    ne = EL_ELECTRONS if gm.get("d_table") is not None else 1
+    rng = np.random.default_rng(20261120)
+    owner = np.repeat(np.arange(n), ne)
+    m = len(owner)
+    p = np.stack([np.repeat(U.ravel(), ne), np.repeat(V.ravel(), ne), np.full(m, level + 0.01)], axis=1)
+    photons = np.zeros(m)
+    t = np.zeros(m)
+    path = np.zeros(m)
+    end = np.zeros(m, np.int8)                       # 0 stuck, 1 anode bar, 2 top of the cell
+    nb = int(T_MAX_US / T_BIN_US)
+    light_t = np.zeros((n, nb))                      # emitted light per start point in time bins (quantiles)
+    active = np.arange(m)
     t0 = time.time()
-    for k in range(4000):
+    for k in range(4000 + 4000 * (ne > 1)):
         if not len(active):
             break
         q = p[active]
@@ -144,32 +170,42 @@ def compute(res: Resolved, cell: dict | None = None, log=print) -> dict:
         emag = np.linalg.norm(f, axis=1)                                  # V/cm
         d = -f / np.maximum(emag, 1e-6)[:, None]
         dy = np.clip(140.0 * emag / 1e3 - 116.0 * gm["p_eq"], 0, None) * STEP_MM / 10.0   # photons in this step
+        dt = STEP_MM / gas_velocity(gm, emag)
         q = q + d * STEP_MM
+        if ne > 1:                                                        # diffusion: D_L along d, D_T across it
+            dl, dtr = gas_diffusion(gm, emag)
+            g = rng.normal(size=(len(q), 3))
+            along = (g * d).sum(axis=1)
+            perp = g - along[:, None] * d
+            q = q + d * (along * np.sqrt(2 * dl * dt))[:, None] + perp * np.sqrt(2 * dtr * dt)[:, None]
         q[:, :2] = np.abs(q[:, :2])                                       # mirror walls of the quarter cell
         over = q[:, :2] > h
         q[:, :2][over] = 2 * h - q[:, :2][over]
         p[active] = q
         photons[active] += dy
-        t[active] += STEP_MM / gas_velocity(gm, emag)
+        t[active] += dt
         path[active] += STEP_MM
-        tt, yy = np.zeros(n), np.zeros(n)
-        tt[active], yy[active] = t[active], photons[active]
-        hist_t.append(np.where(np.isin(np.arange(n), active), tt, np.nan))
-        hist_y.append(np.where(np.isin(np.arange(n), active), yy, np.nan))
+        tb = np.clip((t[active] / T_BIN_US).astype(int), 0, nb - 1)
+        np.add.at(light_t, (owner[active], tb), dy)
         on_bar = (np.abs(q[:, 2] - z_anode) <= foil / 2) & ((q[:, 0] > hole / 2) | (q[:, 1] > hole / 2))
         top = q[:, 2] >= zc[-1] - dz
         end[active[on_bar]] = 1
         end[active[top & ~on_bar]] = 2
         active = active[~(on_bar | top)]
-    # emission-time quantiles per electron from the cumulative light
-    T, Y = np.array(hist_t), np.array(hist_y)
+    # per start point: means over its electrons; emission-time quantiles from the pooled light
+    photons_e, t_e, path_e, end_e = photons, t, path, end
+    photons = photons_e.reshape(n, ne).mean(axis=1)
+    t = t_e.reshape(n, ne).mean(axis=1)
+    path = path_e.reshape(n, ne).mean(axis=1)
+    end = np.where((end_e.reshape(n, ne) == 1).mean(axis=1) >= 0.5, 1, np.where((end_e.reshape(n, ne) == 2).any(axis=1), 2, 0)).astype(np.int8)
+    cum = np.cumsum(light_t, axis=1)
     tq = np.full((n, len(QUANTILES)), np.nan)
+    tc = (np.arange(nb) + 1) * T_BIN_US
     for i in range(n):
-        ok = np.isfinite(T[:, i])
-        if photons[i] > 0:
-            tq[i] = np.interp(QUANTILES * photons[i], Y[ok, i], T[ok, i])
+        if cum[i, -1] > 0:
+            tq[i] = np.interp(QUANTILES * cum[i, -1], np.r_[0.0, cum[i]], np.r_[0.0, tc])
     shape = U.shape
-    log(f"  EL map: {n} start points, {(end == 1).mean():.2f} end on anode bars, photons / e "
+    log(f"  EL map: {n} start points x {ne} electrons, {(end_e == 1).mean():.2f} end on anode bars, photons / e "
         f"{np.median(photons):.0f} (median), transit {np.median(t):.2f} µs, extraction {np.median(ext):.3f} "
         f"({time.time() - t0:.0f} s)")
     return dict(u=us, ext_eff=ext.reshape(shape), n_el=photons.reshape(shape), t_transit_us=t.reshape(shape),
@@ -254,8 +290,8 @@ def export(res: Resolved) -> dict:
     rel = f"extraction_el/{key}/{FILE}"
     (MAPS / rel).parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(MAPS / rel, **d)
-    return register(res, "extraction_el", [rel], producer_version="xamssim elmap v1 (stack cell, NEST extraction, "
-                                                                   "Monteiro EL)")
+    return register(res, "extraction_el", [rel], producer_version="xamssim elmap v3 (stack cell, NEST extraction, "
+                                                                   f"Monteiro EL, gas diffusion {EL_ELECTRONS} electrons per start point)")
 
 
 def path(res: Resolved) -> Path:
