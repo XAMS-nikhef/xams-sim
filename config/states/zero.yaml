@@ -1,4 +1,4 @@
-# Detector state of SR-2026.3 on detector xams_sr2026_3 (survey 2026-11-17: anode foil up, gate-anode 9.65 mm; SiPMs 128 / 52 deg).
+# Detector state of SR-2026.3 on detector xams_sr2026_3 (survey 2026-11-17: anode foil up, gate-anode 9.30 mm, drawing 9.15 between the foil faces; SiPMs 128 / 52 deg).
 # Data: Z26 7762-7783 (26-10), zero field. HV case zero. Made 2026-11-19.
 description: "SR-2026.3 zero: zero field, all electrodes 0 V; PMTs -900 / -950 V; S1 only"
 detector: xams_sr2026_3

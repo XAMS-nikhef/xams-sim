@@ -20,7 +20,7 @@ E_gas = f_mesh × ΔV / (d_g + d_l / 1.96), with f_mesh ≈ 0.92 for the etched 
 
 | parameter | where | how known |
 |---|---|---|
-| gate–anode gap | `config/detectors/<d>/geometry.yaml` (`meshes`: z, `foil_side`) | survey 2026-11-17: up to SR-2026.3 the anode foil was up, 9.65 mm (`xams_sr2026_3`); flipped back at that opening, 8 mm (`xams_sr2026_4`) |
+| gate–anode gap | `config/detectors/<d>/geometry.yaml` (`meshes`: z, `foil_side`) | survey 2026-11-17: up to SR-2026.3 the anode foil was up, 9.30 mm (`xams_sr2026_3` v8: drawing 9.15 mm between the foil faces; v7 had 9.65 from the survey estimate); flipped back at that opening, 8 mm (`xams_sr2026_4`) |
 | liquid level above the gate | `config/states/<s>.yaml` `liquid_level_mm` | **not measured directly**; from the S2 width (below) |
 | gas pressure / temperature | state `pressure_bar`; Magboltz table at 1118 Torr, 172.3 K | sc_snapshot (pmain absolute), PT100s |
 | gas drift velocity v_gas(E) | `config/materials.yaml` `gas_xenon.transport.drift_velocity_table` (0.1–7 kV/cm) | PyBoltz (Magboltz, Biagi cross sections) |
@@ -42,7 +42,7 @@ The S2 size vs ΔV alone does not choose the geometry: with a free shift both 2.
 4.0 + 5.65 mm fit (NEST at 177 K: 0.09 / 0.30 kV/cm; at 172 K: 0.00 / 0.21); the widths and the survey (9.5 mm gap,
 ~4 mm liquid) choose the flipped anode.
 
-**SR-2026.3 (current):** gate–anode 9.65 mm (anode foil up, survey 2026-11-17), 4.0 mm liquid + 5.65 mm gas, extraction
+**SR-2026.3 (geometry v7, superseded by v8 with 9.30 mm / 5.30 mm gas, extraction to be refitted):** gate–anode 9.65 mm (anode foil up, survey 2026-11-17), 4.0 mm liquid + 5.65 mm gas, extraction
 NEST at the liquid temperature (172.07 K, saturation at pmain 1.49 bar) + 0.212 kV/cm (0.210–0.215, chi2 8.7 / 7): EE
 0.078 at E_liq 1.70 kV/cm (R900 / MA voltages). Until 2026-11-20 NEST ran at its default 177 K with + 0.30 kV/cm (EE
 0.060). NEST's extraction depends on temperature: always fit and simulate with the same liquid temperature. Physics: [Physics of the chain](physics.md#extraction).
