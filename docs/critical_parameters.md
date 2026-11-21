@@ -42,7 +42,9 @@ The S2 size vs ΔV alone does not choose the geometry: with a free shift both 2.
 4.0 + 5.65 mm fit (NEST at 177 K: 0.09 / 0.30 kV/cm; at 172 K: 0.00 / 0.21); the widths and the survey (9.5 mm gap,
 ~4 mm liquid) choose the flipped anode.
 
-**SR-2026.3 (geometry v7, superseded by v8 with 9.30 mm / 5.30 mm gas, extraction to be refitted):** gate–anode 9.65 mm (anode foil up, survey 2026-11-17), 4.0 mm liquid + 5.65 mm gas, extraction
+**SR-2026.3 geometry v8 (current, 2026-11-21):** gate–anode 9.30 mm (drawing: 9.15 mm between the foil faces), 4.0 mm liquid + 5.30 mm gas, f_mesh 0.930; extraction NEST at 172.07 K + **0.13 kV/cm** (fit 0.134, 0.130–0.140, χ² 9.9 / 7).
+
+**SR-2026.3 geometry v7 (superseded):** gate–anode 9.65 mm (anode foil up, survey 2026-11-17), 4.0 mm liquid + 5.65 mm gas, extraction
 NEST at the liquid temperature (172.07 K, saturation at pmain 1.49 bar) + 0.212 kV/cm (0.210–0.215, chi2 8.7 / 7): EE
 0.078 at E_liq 1.70 kV/cm (R900 / MA voltages). Until 2026-11-20 NEST ran at its default 177 K with + 0.30 kV/cm (EE
 0.060). NEST's extraction depends on temperature: always fit and simulate with the same liquid temperature. Physics: [Physics of the chain](physics.md#extraction).
