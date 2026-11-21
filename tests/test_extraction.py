@@ -9,7 +9,7 @@ from xamssim import config, elmap, maps
 
 
 def _res(spec=None):
-    res = config.resolve_state("r900")                          # r900 has NEST + 0.21; tests start from plain NEST
+    res = config.resolve_state("r900")                          # r900 has NEST + 0.13; tests start from plain NEST
     res.materials = config.with_extraction(res.materials, spec if spec is not None else "nest")
     return res
 

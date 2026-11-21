@@ -98,6 +98,9 @@ def main():
             Ef[i] = np.hypot(Ex[k], Ez[k]) / 100
             Vf[i] = V[k]
         c = meta["cases"][n]
+        if not np.any(Ef > 0):                       # zero-field case (state zero): nothing to plot
+            print(f"{n}: no field, no plot")
+            continue
         fig, ax = plt.subplots(1, 2, figsize=(15, 7.5), gridspec_kw={"width_ratios": [1, 1]})
         res = {}
         for k, a_ in enumerate(ax):
