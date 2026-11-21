@@ -1,6 +1,7 @@
 # Detector xams_sr2026_3 = XAMS as it was up to and including SR-2026.3 (until the opening of 2026-11-17), from the survey
 # of 2026-11-17 (measurements/survey_20261117/README.md): anode ring side down (foil on the upper face of its ring):
-# gate–anode ~9.5 mm foil to foil (survey) = 9.65 mm here (ring + foil 1.8 − foil 0.15 on top of the 8 mm spacers);
+# gate–anode 9.15 mm between the foil faces (design drawing, user 2026-11-21) = 9.30 mm foil mid to mid here (was 9.65
+# from the survey estimate "8 + about 1.5" until v7);
 # SiPMs at 128° / 52°, z −25 mm (survey pictures, user 2026-11-17: the truth). Copy of xams2026_flip (2026-11-18), which
 # had the same anode as a hypothesis (2026-11-01); xams2026 (anode 8 mm, SiPMs from the data fit) is not this detector.
 # XAMS optical simulation — geometry and optical parameters (model v1)
@@ -25,17 +26,18 @@
 #               H = reference/LightSensors/R12699.pdf (Hamamatsu datasheet R12699-406-M4, 2017).
 
 meta:
-  version: 7                 # v7 (2026-11-18): survey 2026-11-17 (anode foil up, 9.65 mm; SiPMs 128° / 52°, z −25 mm)
+  version: 8                 # v8 (2026-11-21): anode foil z 9.30 (drawing: 9.15 mm gate–anode between the foil faces)
+                             # v7 (2026-11-18): survey 2026-11-17 (anode foil up, 9.65 mm; SiPMs 128° / 52°, z −25 mm)
                              # v6 (2026-10-22): SiPM azimuths and heights from the data (were the assembly sheet)
                              # v5 (2026-10-18): data frame (x mirrored vs v4: top-PMT sectors, SiPM azimuths)
-  date: 2026-11-18
+  date: 2026-11-21
   status: draft — to be completed by AP
 
 # ------------------------------------------------------------------------------------------------ liquid level
 liquid:
   level_above_gate_mm:
     sr2026_2: 4.0          # 4 mm LXe + 4 mm GXe between gate and anode (user, 2026-10-01)
-    sr2026_3: 4.0          # 4 mm LXe + 5.65 mm GXe in the middle (user 2026-11-01: S2 widths; weir unchanged)
+    sr2026_3: 4.0          # 4 mm LXe + 5.30 mm GXe in the middle (5.65 until v7) (user 2026-11-01: S2 widths; weir unchanged)
     oct_2024: 2.0          # user: 2 mm LXe + 6 mm GXe. NOTE: thesis T p.145 says "3 mm above the gate" — which is right?
   scenarios_to_simulate: [2.0, 3.0, 4.0]   # cover the doubt and the change
 
@@ -67,10 +69,10 @@ meshes:                      # z = foil mid-plane
                              #   8 mm above the anode it hardly matters (user)
     foil_side: down          # user, 2026-10-05 (ring body on the other side)
   - name: anode
-    z_mm: 9.65               # SURVEY 2026-11-17: anode hangs ring side down, the foil on the upper face of its ring (was
-                             #   the hypothesis of 2026-11-01). Foil 1.65 mm (ring + foil 1.8 − foil 0.15) above the 8 mm of
-                             #   the spacers; survey "8 + about 1.5 = 9.5 mm" agrees. The ring body below the foil, its
-                             #   lower face at ~8 mm: gate–anode 9.65 mm in the middle, ~8 mm at the ring
+    z_mm: 9.30               # DRAWING (user 2026-11-21): gate–anode 9.15 mm between the foil faces -> 9.30 mid to mid.
+                             #   Anode hangs ring side down, the foil on the upper face of its ring (SURVEY 2026-11-17).
+                             #   Was 9.65 (v7: survey estimate "8 + about 1.5 = 9.5 mm", ring + foil 1.8 − foil 0.15 on the
+                             #   8 mm spacers). The top screen stays at z 18.0 (user 2026-11-21): 8.70 mm above the anode
     angle_to_anodes_deg: 29.4  # aligned with the gate: confirmed by the SURVEY 2026-11-17 (user 2026-11-20: same
                              #   orientation of the anode and gate meshes). Lateral offset of the two hole lattices not measured
     foil_side: up            # survey 2026-11-17 (xams2026: down)

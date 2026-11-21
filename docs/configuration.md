@@ -19,7 +19,7 @@ config/runs/<run>.yaml ─┬─ state ──► config/states/<state>.yaml ─�
 One folder per detector: `geometry.yaml` and the files it refers to (`mesh_holes.json`), and `sensors.yaml` (the
 sensor response per channel; separate, so a change there renews only the sensor step), `daq.yaml` and
 `spe_templates.npz` (digitizer, channels, thresholds, baselines, noise, gains, single-PE pulse shapes: the waveforms, S8). Detectors:
-`xams_sr2026_3` (XAMS up to and including SR-2026.3 from the survey of 2026-11-17: anode foil up, gate–anode 9.65 mm,
+`xams_sr2026_3` (XAMS up to and including SR-2026.3 from the survey of 2026-11-17: anode foil up, gate–anode 9.30 mm (drawing: 9.15 between the foil faces),
 SiPMs at 128° / 52°, z −25 mm; the default, `config.DEFAULT_DETECTOR`) and `xams_sr2026_4` (after the 2026-11-17
 opening: anode foil down, 8 mm, no SiPMs; DAQ a placeholder). The older detectors `xams2026` / `xams2026_flip` were
 removed on 2026-11-19 (wrong geometry; in git history). A detector without a `sipms` section has no SiPMs in Geant4,

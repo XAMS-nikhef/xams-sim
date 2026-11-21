@@ -1,10 +1,10 @@
-# Detector state of SR-2026.3 on detector xams_sr2026_3 (survey 2026-11-17: anode foil up, gate-anode 9.65 mm; SiPMs 128 / 52 deg).
+# Detector state of SR-2026.3 on detector xams_sr2026_3 (survey 2026-11-17: anode foil up, gate-anode 9.30 mm, drawing 9.15 between the foil faces; SiPMs 128 / 52 deg).
 # Data: D125 7920-7922. HV case d125 (efield/cases.yaml, from sc_snapshot). Made 2026-11-19.
 description: "SR-2026.3 d125: anode +2106, gate -646, cathode -1293 V (125 V/cm), BS -592, SiPM -962 V; PMTs -900 / -950 V"
 detector: xams_sr2026_3
 hv_case: d125
 daq: sr2026_3_p4           # detectors/xams_sr2026_3/daq_sr2026_3_p4.yaml (gains P4, ch0 threshold 60, Science_Rev2.5)
-liquid_level_mm: 4.0         # above the gate: 4 mm LXe + 5.65 mm GXe (S2 widths, 2026-11-01)
+liquid_level_mm: 4.0         # above the gate: 4 mm LXe + 5.30 mm GXe (S2 widths, 2026-11-01)
 pressure_bar: 1.49           # pmain in sc_snapshot (absolute)
 electron_lifetime_us: 706.0    # SR2026.3_v4 time model
 extraction: {model: nest, shift_kV_cm: 0.21, note: "NEST at the liquid temperature (saturation at pressure_bar: 172.07 K at 1.49 bar), moved by 0.21 kV/cm: fit to cS2 vs dV of the SR-2026.3 anode / gate scan (2026-11-20; 0.212, 0.210-0.215, chi2 8.7/7; was 0.30 at NEST default 177 K, 2026-11-02). Effective correction of the NEST threshold: field model checked (uniform surface field, top screen 0 V at 8.35 mm)"}
