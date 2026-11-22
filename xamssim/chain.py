@@ -183,6 +183,26 @@ def _light_settings(res: Resolved) -> dict:
     return out
 
 
+RUN_SENSOR_KEYS = ("efficiency",)      # sensor properties a run file may override (run file `sensors:`)
+
+
+def _run_sensor_override(res: Resolved, channels: dict) -> dict:
+    """The detector's sensor channels with the run file's `sensors: {<channel>: {efficiency: x}}` on top (a test of the
+    detection efficiency without a new detector: the light maps do not depend on it)."""
+    over = res.run.get("sensors") or {}
+    out = {n: dict(c) for n, c in channels.items()}
+    for name, props in over.items():
+        if name not in out:
+            raise ConfigError(f"{res.run_path}: sensors.{name}: unknown channel (known: {sorted(out)})")
+        if not isinstance(props, dict) or set(props) - set(RUN_SENSOR_KEYS):
+            raise ConfigError(f"{res.run_path}: sensors.{name}: only {list(RUN_SENSOR_KEYS)} can be set")
+        for k, v in props.items():
+            if not isinstance(v, (int, float)) or not 0 <= v <= 1:
+                raise ConfigError(f"{res.run_path}: sensors.{name}.{k} must be a number between 0 and 1")
+            out[name][k] = float(v)
+    return out
+
+
 def _sensor_settings(res: Resolved) -> dict:
     """Sensor response of the detector (sensors.yaml), in the channel order of the light maps; the gate / cathode z
     for the cS1 reference (events)."""
@@ -195,7 +215,7 @@ def _sensor_settings(res: Resolved) -> dict:
         out["xams_daq"] = load_daq(res)                                    # waveforms (S8)
     s = res.sensors
     if s:
-        ch = s["channels"]
+        ch = _run_sensor_override(res, s["channels"])
         missing = [n for n in CHANNEL_NAMES if n not in ch]
         if missing:
             raise ConfigError(f"{res.geometry_path.parent / 'sensors.yaml'}: channels {missing} missing")

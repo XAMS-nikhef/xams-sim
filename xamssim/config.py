@@ -69,7 +69,7 @@ NUM = (int, float)
 OPT_NUM = (int, float, type(None))
 SCHEMA = {
     "run": ({"state": str, "source": str, "n_events": int, "seed": int, "stop_after": str, "physics": dict,
-             "run_number": int, "tags": list, "supersedes": int, "position": str},
+             "run_number": int, "tags": list, "supersedes": int, "position": str, "sensors": dict},
             {"state", "source", "n_events", "seed"}),
     "state": ({"description": str, "detector": str, "hv_case": str, "liquid_level_mm": NUM, "pressure_bar": OPT_NUM,
                "electron_lifetime_us": OPT_NUM, "sensors": dict, "zero_field": bool, "daq": str,

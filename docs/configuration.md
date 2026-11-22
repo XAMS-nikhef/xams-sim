@@ -131,6 +131,7 @@ Named places of a source outside the cryostat, by the height on the z tape of th
 | `n_events` | yes | number of primaries (decays or gammas) |
 | `seed` | yes | random seed |
 | `stop_after` | | last product of the chain: `geant4_interactions`, `clustered_interactions`, `quanta`, `drifted_electrons`, `extracted_electrons`, `s2_photons`, `photoelectrons`, `events`, `raw_records` (default; digitizer output for amstrax) |
+| `sensors` | | test override of the detector's `sensors.yaml` per channel, only `efficiency` (detection efficiency relative to the light maps), e.g. `bottom: {efficiency: 0.62}`; the light maps do not depend on it |
 | `physics` | | options: `clustering`, `source_rate_hz`, lineage / DBSCAN cluster settings, `production_cut_mm` (list and defaults: [Simulation chain](chain.md#physics-options-run-file)) |
 
 Unknown keys are rejected.
