@@ -230,6 +230,12 @@ def test_volumes_and_physics():
     assert v["z_liquid_bottom_cm"] == pytest.approx(v["z_liquid_cm"] - 11.722)
     assert v["z_liquid_cm"] == pytest.approx(res.state["liquid_level_mm"] / 10)
     assert chain.physics(res)["clustering"] == "lineage"
+    assert chain.physics(res)["el_yield_scale"] == 1.0
+    res.run["physics"] = {"el_yield_scale": 0.661}
+    assert chain.physics(res)["el_yield_scale"] == pytest.approx(0.661)
+    res.run["physics"] = {"el_yield_scale": 0.0}
+    with pytest.raises(ConfigError):
+        chain.physics(res)
     res.run["physics"] = {"clustering": "lineage", "bogus": 1}
     with pytest.raises(ConfigError):
         chain.physics(res)

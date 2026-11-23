@@ -3,7 +3,7 @@
 From the state's extraction / EL map (xamssim.elmap) at the position where the cluster's electrons cross the gate
 (x_obs, y_obs of drifted_electrons -> coordinates (u, v) in the gate-hole cell; the anode is aligned with the gate):
     extracted     binomial(electrons at the surface, extraction efficiency)
-    S2 photons    Poisson(extracted x EL photons per electron)
+    S2 photons    Poisson(extracted x EL photons per electron x el_yield_scale)
     S2 time       drift time + the electron's EL emission profile (quantiles), its width combined with the
                   longitudinal diffusion of the drift
 Clusters in the gas (vol_id 3) keep their electrons and emit the part of the EL path that lies above them.
@@ -25,7 +25,7 @@ NQ = len(QUANTILES)
 class XamsExtractionEL(FuseBasePlugin):
     """Extracted electrons, S2 photons and the S2 time profile per cluster."""
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     depends_on = ("drifted_electrons", "microphysics_summary")
     provides = "extracted_electrons"
     data_kind = "interactions_in_roi"
@@ -46,6 +46,8 @@ class XamsExtractionEL(FuseBasePlugin):
     mesh_pitch_mm = straxen.URLConfig(type=(int, float), help="mesh pitch (geometry.yaml)")
     z_anode_cm = straxen.URLConfig(type=(int, float), help="anode mesh z [cm] (geometry.yaml)")
     z_liquid_cm = straxen.URLConfig(type=(int, float), help="liquid surface z [cm] (gate + liquid level of the state)")
+    el_yield_scale = straxen.URLConfig(default=1.0, type=(int, float),
+                                       help="factor on the EL photons per extracted electron (run file physics.el_yield_scale)")
 
     def setup(self):
         super().setup()
@@ -68,7 +70,7 @@ class XamsExtractionEL(FuseBasePlugin):
             return out
         u, v = self.cell_uv(d["x_obs"] * 10.0, d["y_obs"] * 10.0)
         ext = self.el(u, v, "ext_eff").astype(float)
-        nel = self.el(u, v, "n_el").astype(float)
+        nel = self.el(u, v, "n_el").astype(float) * float(self.el_yield_scale)
         tq = self.el(u, v, "t_q_us").astype(float) * 1e3                       # ns
         gas = d["vol_id"] == 3
         ext[gas] = 1.0
