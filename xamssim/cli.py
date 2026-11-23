@@ -231,6 +231,21 @@ def cmd_corrections(a) -> int:
     return 0
 
 
+def cmd_summary(a) -> int:
+    from . import amstrax_io, corrections, rundb
+    if rundb.configured() and a.write:
+        print(f"this account has an [mc] run-database account ({rundb.CONFIG_FILE}): production run documents are also in "
+              "run.runs_mc, which this command never updates; not written (private stores only)", file=sys.stderr)
+        return 2
+    rng = tuple(int(x) for x in a.runs.split("-")) if a.runs else None
+    numbers = sorted(set(a.run) | (set(corrections.runs(rng)) if (rng or a.all) else set()))
+    if not numbers:
+        print("no runs given (run numbers, --runs A-B or --all)", file=sys.stderr)
+        return 2
+    amstrax_io.backfill_summary(numbers, write=a.write)
+    return 0
+
+
 def cmd_posrec(a) -> int:
     from .posrec import run
     run(state=a.state, n=int(a.n), sizes=tuple(int(x) for x in a.sizes.split(",")), data_map_name=a.data_map, out=a.out)
@@ -371,6 +386,14 @@ def main(argv=None) -> int:
     p.add_argument("--tag", help="also all runs with this tag")
     p.add_argument("--dry-run", action="store_true", help="only show what would be stored")
     p.set_defaults(func=cmd_corrections)
+
+    p = sub.add_parser("summary", help="add xamssim.summary (state, voltages, fields, source, physics; the dashboard's "
+                                       "run page) to the run documents of older simulated runs in the store (files only)")
+    p.add_argument("run", nargs="*", type=int, help="run number(s)")
+    p.add_argument("--runs", metavar="A-B", help="all runs in this number range")
+    p.add_argument("--all", action="store_true", help="all runs with a run document in the store")
+    p.add_argument("--write", action="store_true", help="write (default: dry run, only report)")
+    p.set_defaults(func=cmd_summary)
 
     p = sub.add_parser("rundb", help="run documents of simulated runs in run.runs_mc (S10): list, or delete with --delete")
     p.add_argument("--range", help="run numbers LO-HI (default all of 900000-999999)")

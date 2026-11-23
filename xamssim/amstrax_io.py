@@ -84,6 +84,93 @@ def condition(res: Resolved) -> str:
     return short_hash({"state": {k: v for k, v in res.state.items() if k != "description"}, "maps": res.map_keys()})
 
 
+def run_summary(res: Resolved) -> dict:
+    """What the simulated conditions were, grouped for display (the dashboard's run page): the state, the electrode
+    voltages, the uniform field estimates from the geometry, the source and the run's physics settings. Stored in the
+    run document, so a run stays readable after the config files change."""
+    st, hv, src = res.state, res.hv_case, res.source
+    z = {m["name"]: m["z_mm"] for m in res.geometry.get("meshes", [])}
+    mats = res.materials.get("materials", {})
+    eps = ((mats.get("liquid_xenon", {}).get("electrical") or {}).get("relative_permittivity") or 1.96) / \
+          ((mats.get("gas_xenon", {}).get("electrical") or {}).get("relative_permittivity") or 1.0)
+    level = st.get("liquid_level_mm")
+    fields = {}
+    if not res.zero_field and {"gate", "cathode", "anode"} <= set(z) and level is not None:
+        d_drift = (z["gate"] - z["cathode"]) / 10                                   # cm
+        d_l, d_g = level / 10, (z["anode"] - z["gate"] - level) / 10
+        e_l = (hv["A"] - hv["G"]) / (d_l + eps * d_g) / 1e3                         # kV/cm
+        fields = {"drift field [V/cm]": round((hv["G"] - hv["C"]) / d_drift, 1),
+                  "extraction field, liquid [kV/cm]": round(e_l, 3), "extraction field, gas [kV/cm]": round(eps * e_l, 3),
+                  "ΔV gate − cathode [V]": hv["G"] - hv["C"], "ΔV anode − gate [V]": hv["A"] - hv["G"],
+                  "gate − anode gap [mm]": round(z["anode"] - z["gate"], 2)}
+    state = {"state": res.state_name, "detector": res.detector,
+             "geometry version": res.geometry.get("meta", {}).get("version"),
+             "liquid level above gate [mm]": level, "pressure [bar]": st.get("pressure_bar"),
+             "electron lifetime [µs]": st.get("electron_lifetime_us"), "HV case": st.get("hv_case"),
+             "zero field": True if res.zero_field else None,
+             "extraction model": (st.get("extraction") or {}).get("model"),
+             "extraction shift [kV/cm]": (st.get("extraction") or {}).get("shift_kV_cm"), **fields}
+    volts = {lab: hv.get(k) for k, lab in (("TS", "TS"), ("A", "A"), ("G", "G"), ("C", "C"), ("BS", "BS"),
+                                           ("PMT_T", "PMT top"), ("PMT_B", "PMT bottom"), ("SIPM", "SiPM"))}
+    source = {"source": res.source_name, "isotope": src.get("isotope"), "position [mm]": src.get("position_mm"),
+              "collimator": src.get("collimator"), "description": src.get("description")}
+    keep = lambda d: {k: v for k, v in d.items() if v is not None}                 # noqa: E731
+    return {"state": keep(state), "voltages [V]": keep(volts), "source": keep(source),
+            "physics": dict(res.run.get("physics") or {}),
+            "description": st.get("description", "")}
+
+
+def backfill_summary(numbers, write: bool = False, log=print) -> dict:
+    """Add xamssim.summary to the run documents (files in XAMSSIM_AMSTRAX_STORE) of runs made before it existed.
+
+    The run file named in the document is resolved with the current config; the summary is written only when the
+    condition key (state + maps) equals the one stored at the time: else the config changed since and the run is
+    skipped. Only that one field changes; the run database (run.runs_mc) is never touched here.
+    Returns {"written": [...], "has": [...], "skipped": {number: reason}}."""
+    import datetime as dt
+
+    from . import corrections
+    out = {"written": [], "has": [], "skipped": {}}
+    for n in numbers:
+        try:
+            doc = corrections.load(n)
+        except ConfigError as e:
+            out["skipped"][n] = str(e)
+            continue
+        xs = doc.get("xamssim") or {}
+        if xs.get("summary"):
+            out["has"].append(n)
+            continue
+        run_file = xs.get("run_file")
+        if not run_file or not Path(run_file).exists():
+            out["skipped"][n] = f"run file not found: {run_file}"
+            continue
+        try:
+            res = resolve(run_file)
+        except Exception as e:                                      # noqa: BLE001 (any config problem: skip the run)
+            out["skipped"][n] = f"cannot resolve {run_file}: {str(e)[:200]}"
+            continue
+        if res.state_name != xs.get("state"):
+            out["skipped"][n] = f"state now {res.state_name}, run made with {xs.get('state')}"
+            continue
+        cond = condition(res)
+        if xs.get("condition") and cond != xs["condition"]:
+            out["skipped"][n] = f"condition changed since the run ({xs['condition']} -> {cond}): state or maps edited"
+            continue
+        summ = run_summary(res)
+        summ["backfilled"] = (f"{dt.date.today().isoformat()} from the config of that day"
+                              + ("" if xs.get("condition") else " (run without a condition key: not checked)"))
+        if write:
+            doc.setdefault("xamssim", {})["summary"] = summ
+            corrections._save(doc)
+        out["written"].append(n)
+    log(f"summary {'written' if write else 'would be written (dry run)'}: {len(out['written'])}, already there: "
+        f"{len(out['has'])}, skipped: {len(out['skipped'])}")
+    for n, why in sorted(out["skipped"].items()):
+        log(f"  {n:06d} skipped: {why}")
+    return out
+
+
 def processing_config(processing) -> dict:
     """Processing settings of an analysis (its processing.json: base_config + event_config)."""
     if processing is None:
@@ -208,6 +295,7 @@ def _write_run_metadata(sf, res: Resolved, rid: str, sim_id: str, sim, lifetime_
                     "state": res.state_name, "source": res.source_name, "source_position_mm": res.source.get("position_mm"),
                     "detector": res.detector, "n_events": res.run["n_events"], "seed": res.run["seed"],
                     "supersedes": res.run.get("supersedes"), "maps": res.map_keys(), "condition": condition(res),
+                    "summary": run_summary(res),          # the conditions for display (dashboard run page)
                     # per-run corrections (xamssim.corrections): truth now, calibrated after a calibration on the
                     # reconstructed MC; amstrax reads them with an MC global version (MC2) and for_mc_run
                     "corrections": {"truth": truth_constants(res, lifetime_us)}},
