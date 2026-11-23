@@ -89,3 +89,32 @@ def test_nest_at_the_liquid_temperature():
     e = np.array([2.0])
     assert f172(e)[0] == pytest.approx(0.112, abs=0.005) and f177(e)[0] == pytest.approx(0.060, abs=0.005)
     assert res.map_keys()["extraction_el"] != hot.map_keys()["extraction_el"]
+
+
+def test_el_yield_scale_scales_s2_photons():
+    """physics.el_yield_scale multiplies the EL photons per extracted electron (2026-11-23)."""
+    pytest.importorskip("fuse")
+    import strax
+    from xamssim.elmap import QUANTILES
+    from xamssim.plugins.extraction import XamsExtractionEL
+
+    def fake_el(u, v, key):
+        n = len(u)
+        return {"ext_eff": np.ones(n), "n_el": np.full(n, 100.0),
+                "t_q_us": np.tile(np.linspace(0.1, 1.0, len(QUANTILES)), (n, 1))}[key]
+
+    dt = strax.time_fields + [(k, np.float32) for k in ("x_obs", "y_obs", "z", "drift_time_mean", "drift_time_spread")] + \
+        [("vol_id", np.int16), ("n_electron_interface", np.int32)]
+    d = np.zeros(2000, dtype=dt)
+    d["z"], d["vol_id"], d["n_electron_interface"] = -2.0, 1, 50
+    out = {}
+    for scale in (1.0, 0.5):
+        p = XamsExtractionEL()
+        p.el, p.cos, p.sin = fake_el, 1.0, 0.0
+        p.iq = {q: int(np.argmin(abs(QUANTILES - q))) for q in (0.25, 0.5, 0.75)}
+        p.rng = np.random.default_rng(1)
+        p.config = dict(mesh_pitch_mm=2.6, z_anode_cm=0.9, z_liquid_cm=0.4, el_yield_scale=scale, gate_angle_deg=0.0)
+        r = p.compute(d)
+        out[scale] = (r["n_s2_photons"].mean(), r["el_photons_per_electron"][0])
+    assert out[1.0][1] == pytest.approx(100.0) and out[0.5][1] == pytest.approx(50.0)
+    assert out[0.5][0] / out[1.0][0] == pytest.approx(0.5, rel=0.01)

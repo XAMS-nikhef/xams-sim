@@ -229,10 +229,18 @@ physics:
   production_cut_mm: 0.1         # Geant4 particle mode
   cloud_samples: 16              # drift: points per cluster for the cloud splitting (1: one fate per cluster)
   cloud_track_sigma_mm: 0.2      # drift: ionization-track size for the cloud splitting
+  el_yield_scale: 1.0            # extraction / EL: factor on the EL photons per extracted electron (> 0)
   nest: {}                       # NEST settings, see below ({} = NEST's defaults)
 ```
 
 Unknown keys are rejected. The values above are the defaults (`xamssim.chain.PHYSICS_DEFAULTS`).
+
+`el_yield_scale` multiplies the EL photons per extracted electron of the extraction / EL map (Monteiro et al. 2007 along
+the field line) before the Poisson draw of the S2 photons. It is an effective factor: it stands for the EL yield and the
+S2 light collection on the PMTs together, which the S2 of the photopeak alone cannot separate from each other (the
+extraction efficiency is fixed by the shape of cS2 versus ΔV, see the state's `extraction`). A single-electron gain
+measurement would split it. SR-2026.3 (2026-11-23): 0.661 with the PMT detection efficiencies 0.80 / 0.75, from the
+anchor on the low-field single Doke line (g1 0.0686, g2_top 0.264).
 
 ### NEST settings
 

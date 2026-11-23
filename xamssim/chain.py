@@ -54,6 +54,9 @@ PHYSICS_DEFAULTS = {
     "production_cut_mm": 0.1,          # Geant4 (particle mode), not used here
     "cloud_samples": 16,               # drift: points per cluster for the cloud splitting (1: whole cluster one fate)
     "cloud_track_sigma_mm": 0.2,       # drift: size of the ionization track (Gaussian sigma) for the cloud splitting
+    "el_yield_scale": 1.0,             # extraction / EL: factor on the EL photons per extracted electron (Monteiro) --
+                                       # an effective factor (EL yield x S2 light collection) until a single-electron
+                                       # gain splits it; SR-2026.3 re-anchoring 2026-11-23: 0.661
     "nest": {},                        # NEST settings (NEST_KEYS); {} = NEST's defaults
     "zero_field_yields": "nest_gamma",  # zero-field states only: nest_gamma | proportional (plugins/zero.py)
     "zero_field_light_fraction": 0.9,  # zero_field_yields = proportional: photons / (photons + electrons) per cluster
@@ -102,6 +105,8 @@ def physics(res: Resolved) -> dict:
         raise ConfigError(f"{res.run_path}: physics.zero_field_yields must be one of {ZERO_FIELD_YIELDS}")
     if not 0.0 <= float(out["zero_field_light_fraction"]) <= 1.0:
         raise ConfigError(f"{res.run_path}: physics.zero_field_light_fraction must be between 0 and 1")
+    if not float(out["el_yield_scale"]) > 0.0:
+        raise ConfigError(f"{res.run_path}: physics.el_yield_scale must be > 0")
     if out["clustering"] not in ("lineage", "dbscan"):
         raise ConfigError(f"{res.run_path}: physics.clustering must be lineage or dbscan, not '{out['clustering']}'")
     return out
@@ -274,7 +279,7 @@ def settings(res: Resolved, g4_dir: Path, xams_efield_map: str | None = None, g4
         diffusion_transverse_cm2_s=mats["liquid_xenon"]["transport"]["diffusion_transverse_cm2_s"],
         cloud_samples=int(p["cloud_samples"]), cloud_track_sigma_mm=float(p["cloud_track_sigma_mm"]),
         # extraction and EL (S5)
-        **_el_settings(res, xams_el_map),
+        **_el_settings(res, xams_el_map), el_yield_scale=float(p["el_yield_scale"]),
         # light (S6), incl. the liquid outside the TPC (s1_outer) and the preselection radius that goes with it
         **_light_settings(res),
         **_outer_settings(res),
