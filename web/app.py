@@ -14,7 +14,7 @@ from flask import Flask, abort, g, redirect, render_template, request, send_file
 from xamssim import compose
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
-from web import access  # noqa: E402
+from web import access, view  # noqa: E402
 
 access.install(app)                  # token (private) / key for actions (central) on a shared host: web/access.py
 # The reconstruction of an MC run is shown in Processing (xams-dashboard run page), opened through the XAMS launcher,
@@ -40,6 +40,48 @@ def _fmt(v):
 
 
 app.jinja_env.filters["fmt"] = _fmt
+
+
+@app.context_processor
+def _showing():
+    return {"showing": view.showing()}
+
+
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    """Whose simulations the app shows: your own or (read-only) someone else's (web/view.py). The folder fills the
+    five paths; each can be changed by hand."""
+    if not view.allowed():
+        abort(404)
+    paths, bad = view.load(), {}
+    if request.method == "POST":                     # private app: web/access.py has checked the token already
+        f = request.form
+        if f.get("own"):
+            paths = {}
+            own = view._own(dict(os.environ)).get("XAMSSIM_DATA")
+            if not own and not view.own_settings():
+                bad = {"XAMSSIM_DATA": "you have no simulations of your own (no XAMSSIM_DATA in ~/.config/xamssim/env)"}
+                return render_template("settings.html", paths=view.load(), folder="", bad=bad, parts=view.PARTS,
+                                       candidates=view.candidates(), switching=False, page="settings")
+        elif f.get("fill"):                          # the folder button: fill the five fields, save nothing yet
+            paths = view.paths_for((f.get("folder") or "").strip())
+            return render_template("settings.html", paths=paths, folder=f.get("folder", ""), bad=view.check(paths),
+                                   parts=view.PARTS, candidates=view.candidates(), switching=False, page="settings")
+        else:
+            paths = {k: (f.get(k) or "").strip().rstrip("/") for k in view.PARTS}
+            paths = {k: v for k, v in paths.items() if v}
+        bad = view.check(paths)
+        if not bad:
+            view.save(paths)
+            new = view.environment(dict(os.environ), paths)
+            if new is not None:
+                view.restart(new, delay=0.5)         # after this answer: the app comes back with the other paths
+                return render_template("settings.html", paths=paths, folder="", bad={}, parts=view.PARTS,
+                                       candidates=[], switching=True, page="settings")
+            return redirect(url_for("overview"))
+    shown = paths or {k: v for k, v in view.showing()["paths"].items() if v}
+    return render_template("settings.html", paths=shown, folder="", bad=bad, parts=view.PARTS,
+                           candidates=view.candidates(), switching=False, page="settings")
 
 
 @app.route("/")

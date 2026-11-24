@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Whose simulations{% endblock %}
+{% block heading %}Whose simulations{% endblock %}
+{% block content %}
+{% if switching %}
+  <p>Switching to {{ paths.XAMSSIM_DATA or "your own simulations" }}: the app restarts.
+    <a href="{{ url_for('overview') }}">Back to the overview</a> (the list fills in after a minute).</p>
+  <script>setTimeout(function () { location.href = "{{ url_for('overview') }}"; }, 4000);</script>
+{% else %}
+  <p>Now showing: <span class="mono">{{ showing.viewing or showing.data }}</span>
+    {% if showing.viewing %}(someone else's, read-only: no rerun){% else %}(your own){% endif %}</p>
+  <p>Only this page uses these paths: your own xamssim commands and jobs keep your settings.
+    Someone else's simulations are shown read-only.</p>
+  <form method="post">
+    <p><b>Simulation folder</b> (fills the five paths below; on STBC every user has one:
+      <span class="mono">/data/xenon/xams_v2/users/&lt;name&gt;/xamssim</span>)<br />
+      <input name="folder" list="folders" size="70" class="mono" value="{{ folder }}" placeholder="/data/xenon/xams_v2/users/<name>/xamssim" />
+      <datalist id="folders">{% for c in candidates %}<option value="{{ c }}">{% endfor %}</datalist>
+      <button type="submit" name="fill" value="1">fill in</button></p>
+  </form>
+  <form method="post">
+    <table>
+      {% for k, (sub, label) in parts.items() %}
+      <tr><td>{{ label }}</td>
+          <td><input name="{{ k }}" size="70" class="mono" value="{{ paths.get(k, '') }}" /></td>
+          <td>{% if bad.get(k) %}<span class="note">{{ bad[k] }}</span>{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+    <button type="submit">show these simulations</button>
+    {% if showing.viewing %}<button type="submit" name="own" value="1">back to my own</button>{% endif %}
+  </form>
+{% endif %}
+{% endblock %}
