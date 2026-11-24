@@ -185,6 +185,8 @@ def cmd_web(a) -> int:
     from .config import ROOT
     sys.path.insert(0, str(ROOT))                    # the app lives next to the package (web/), not inside it
     try:
+        from web import view
+        view.apply_at_start()                        # someone else's simulations (settings page): restarts itself
         from web.app import main
     except ImportError as e:
         print(f"the simulation app needs its web extra: pip install -e '{ROOT}[web]' ({e})")

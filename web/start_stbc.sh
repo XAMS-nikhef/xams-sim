@@ -10,6 +10,9 @@
 #                        sim_port of ~/.xams/private.json, else of users.yaml (xams-dashboard), else 8077; every
 #                        request needs your token (the one of the private dashboard). Production (xamsdata): actions
 #                        need a key of a user with central_actions (web/access.py).
+#   Someone else's simulations, read-only (e.g. a student, the private simulations of a colleague):
+#     cd /data/xenon/xams_v2/software/xams-sim && python3 -m web.view set /data/xenon/xams_v2/users/<name>/xamssim
+#     XAMSSIM_WEB_PRIVATE=1 web/start_stbc.sh          (or change it later on the app's settings page)
 SETUP=/data/xenon/xams_v2/setup_xamssim.sh
 WEB_DIR=$(cd "$(dirname "$0")/.." && pwd)
 if [ "${XAMSSIM_WEB_PRIVATE:-0}" = 1 ]; then
@@ -35,7 +38,11 @@ case "${1:-start}" in
     start)
         if running; then echo "$SCREEN_NAME already running (port $PORT)"; exit 0; fi
         # XAMSSIM_WEB_SUBMIT=1: the rerun button may submit condor jobs (as the user running the app; 0 to switch off)
-        screen -S "$SCREEN_NAME" -dm bash -lc "source $SETUP && export XAMSSIM_WEB_SUBMIT=${XAMSSIM_WEB_SUBMIT:-1} XAMSSIM_WEB_ACCESS=${XAMSSIM_WEB_ACCESS:-$ACCESS} && exec xamssim web --host 127.0.0.1 --port $PORT >> $LOG 2>&1"
+        # private: whose simulations (web/view.py, the app's settings page) before the setup: someone without
+        # simulations of their own has no XAMSSIM_DATA, and the setup refuses to run without one
+        VIEW=""
+        [ "$ACCESS" = private ] && VIEW="eval \"\$(cd $WEB_DIR && python3 -m web.view exports)\" && "
+        screen -S "$SCREEN_NAME" -dm bash -lc "export XAMSSIM_WEB_SUBMIT=${XAMSSIM_WEB_SUBMIT:-1} XAMSSIM_WEB_ACCESS=${XAMSSIM_WEB_ACCESS:-$ACCESS} && ${VIEW}source $SETUP && exec xamssim web --host 127.0.0.1 --port $PORT >> $LOG 2>&1"
         sleep 5
         running && echo "started $SCREEN_NAME on 127.0.0.1:$PORT (log $LOG)" || { echo "failed to start; see $LOG"; exit 1; } ;;
     *)

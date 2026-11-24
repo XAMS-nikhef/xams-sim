@@ -36,6 +36,10 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></li>
       </ul>
       <div class="rail-spacer"></div>
+      {% if showing.allowed %}
+      <a class="rail-btn solo {% if page == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}" data-tip="Whose simulations" aria-label="Choose whose simulations to show">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/><circle cx="16" cy="14" r="2.2"/></svg></a>
+      {% endif %}
       <a class="rail-btn solo" href="{{ url_for('reload') }}" data-tip="Read the data folder again" aria-label="Reload the data folder">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></a>
       <button class="rail-btn solo" type="button" onclick="toggleTheme()" data-tip="Light / dark" aria-label="Switch between light and dark">
@@ -51,6 +55,10 @@
         </div>
         <div class="aside">{% block aside %}{% endblock %}</div>
       </header>
+      {% if showing.viewing %}
+      <p class="note">Showing the simulations in {{ showing.viewing }} (read-only: no rerun).
+        <a href="{{ url_for('settings') }}">Change</a></p>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
   </div>

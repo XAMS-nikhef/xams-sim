@@ -15,6 +15,7 @@ from __future__ import annotations
 import getpass
 import hashlib
 import json
+import os
 import pickle
 import tempfile
 import threading
@@ -36,6 +37,20 @@ _REFRESHING = threading.Event()
 ROWS_VERSION = 2                     # part of the disk cache name: raise it when a row gets new fields (2: chain steps)
 _DISK = Path(tempfile.gettempdir()) / f"xamssim_web_{getpass.getuser()}_{hashlib.md5(str(DATA).encode()).hexdigest()[:8]}_v{ROWS_VERSION}.pkl"
 _EMPTY = dict(runs=[], rows=[], maps=dict(states={}, old=[], kinds=[]), loading=True)
+
+
+def _figure_file(out: Path) -> Path:
+    """Where a figure PNG is kept: next to its source, or (someone else's simulations: not writable for this user)
+    in a temporary folder of this user."""
+    if out.exists():
+        return out
+    d = out.parent
+    while not d.exists() and d != d.parent:              # the nearest folder that exists: may we write there?
+        d = d.parent
+    if os.access(d, os.W_OK):
+        return out
+    tmp = Path(tempfile.gettempdir()) / f"xamssim_figures_{getpass.getuser()}"
+    return tmp / f"{hashlib.md5(str(out).encode()).hexdigest()[:12]}_{out.name}"
 
 
 def _refresh() -> None:
@@ -760,10 +775,10 @@ def figure(run_id: str, name: str) -> Path:
     if not recs:
         raise FileNotFoundError(f"no provenance for {run_id}")
     f, rec = recs[-1]
-    out = f.parent / "figures" / f"{name}_v{FIGURE_VERSION}_{f.stem}.png"
+    out = _figure_file(f.parent / "figures" / f"{name}_v{FIGURE_VERSION}_{f.stem}.png")
     if not out.exists():
         plotstyle.apply()
-        out.parent.mkdir(exist_ok=True)
+        out.parent.mkdir(parents=True, exist_ok=True)
         fig = {**FIGURES, **RESULT_FIGURES}[name][1](rec)
         plotstyle.finish(fig)
         fig.savefig(out, dpi=110, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.15)
@@ -1071,7 +1086,7 @@ def map_figure(kind: str, key: str) -> Path:
     src = _map_file(kind, key)
     name = f"{kind}_v{MAP_FIGURE_VERSION}.png"
     out = src.parent / "figures" / name
-    cached = DATA / "cache" / "map_figures" / kind / src.parent.name / name
+    cached = _figure_file(DATA / "cache" / "map_figures" / kind / src.parent.name / name)
     for p in (out, cached):
         if p.exists():
             return p
@@ -1672,7 +1687,7 @@ def reconstruction_figure(run_id: str, number, ev_hash: str) -> Path:
         raise FileNotFoundError(f"no events / event_info {ev_hash} for run {number}")
     recs = records(run_id)
     base = recs[-1][0].parent if recs else DATA / "provenance" / run_id
-    out = base / "figures" / f"reconstruction_v{FIGURE_VERSION}_{ev_hash}.png"
+    out = _figure_file(base / "figures" / f"reconstruction_v{FIGURE_VERSION}_{ev_hash}.png")
     if not out.exists():
         out.parent.mkdir(parents=True, exist_ok=True)
         plotstyle.apply()
@@ -1771,6 +1786,8 @@ def rerun(run_id: str) -> dict:
     import os
     import subprocess
     plan = rerun_plan(run_id)
+    if os.environ.get("XAMSSIM_WEB_VIEWING"):
+        raise PermissionError("these are someone else's simulations (read-only here): no rerun")
     if os.environ.get("XAMSSIM_WEB_SUBMIT") != "1":
         raise PermissionError("submitting is off here (XAMSSIM_WEB_SUBMIT is not 1); run by hand: "
                               f"{SUBMIT} {plan['dst']}")
