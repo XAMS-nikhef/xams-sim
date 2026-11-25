@@ -54,7 +54,7 @@ mesh_common:                 # all five meshes identical and aligned the same wa
                              #   whole Ø72 bore 456 × 2.45² / (π 36²) = 0.67
   ring:                      # mesh support ring (drawing "XAMS_XAMS grid assy.pdf", 2026-10-05)
     outer_diameter_mm: 92.6  # G, drawing
-    inner_diameter_mm: 72.0  # drawing: bore R36 = open mesh aperture; the PTFE cylinder (outer Ø72) fits in it
+    inner_diameter_mm: 72.0  # drawing: bore R36 = open mesh aperture; the PTFE cylinder (outer Ø71) fits in it
     thickness_mm: 1.8        # drawing: whole assembly (ring + foil); the foil (Ø80) lies on one face, overlapping the
                              #   ring from R36 to R40 (4.1 mm)
   # which face of its ring carries the foil (user, 2026-10-05): the ring body lies on the other side of the foil
@@ -87,10 +87,12 @@ meshes:                      # z = foil mid-plane
     foil_side: up          # user, 2026-10-05 (ring body on the other side)
 
 # ------------------------------------------------------------------------------------------------ PTFE cylinder
-ptfe_cylinder:                 # drawing "PTFE_cylinder.pdf" (2026-10-05)
+ptfe_cylinder:                 # drawing "PTFE_cylinder.pdf" (2026-10-05); SR-2026.4: ID 61 / OD 71 (user, 2026-11-25)
   material: ptfe
-  inner_diameter_mm: 62.0    # drawing
-  wall_thickness_mm: 5.0     # drawing: outer Ø72, fits in the bores of the gate and cathode rings
+  inner_diameter_mm: 61.0    # SR-2026.4 (was 62.0): Ø 1 mm smaller so the cylinder slides into the copper rings (ID 72);
+                             #   radial clearance 0.5 mm warm, ~1 mm cold (PTFE shrinks ~1.5 %, Cu ~0.3 %); centring
+                             #   not critical (user). Wall kept at 5 mm: VUV transmission ~4e-4 (arXiv:2006.05827)
+  wall_thickness_mm: 5.0     # outer Ø71, in the bores (Ø72) of the gate and cathode rings and the field-shaping rings
   length_mm: 50.85           # drawing
   z_top_mm: -0.075           # against the gate foil (lower face); the bottom end is then at -50.925 mm.
                              # Gate–cathode 51.8 mm is correct (user, 2026-10-05): the 0.8 mm gap between the PTFE
@@ -101,7 +103,7 @@ ptfe_cylinder:                 # drawing "PTFE_cylinder.pdf" (2026-10-05)
 
 field_shaping_rings:         # drawing "XAMS_field_shaper.pdf" (2026-10-05): copper, around the PTFE cylinder
   material: copper
-  inner_diameter_mm: 72.0    # around the PTFE (outer Ø72)
+  inner_diameter_mm: 72.0    # around the PTFE (outer Ø71 in SR-2026.4: 0.5 mm radial gap, liquid xenon)
   outer_diameter_mm: 92.6    # drawn as wide as the mesh rings
   thickness_mm: 1.8          # drawing
   # gaps between faces from the gate ring downwards: gate ring -> ring 1 not dimensioned (assumed 8), then 8, 8, 8;
