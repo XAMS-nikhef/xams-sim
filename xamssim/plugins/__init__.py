@@ -13,6 +13,7 @@ from .input import XamsG4Input, XamsG4Loader  # noqa: E402
 from .light import XamsS1Light, XamsS2Light  # noqa: E402
 from .sensors import XamsEvents, XamsSensorResponse  # noqa: E402
 from .rawrecords import XamsRawRecords  # noqa: E402
+from .yields import XamsGammaERYields  # noqa: E402
 from .zero import XamsNoDrift, XamsNoExtraction, XamsZeroField, XamsZeroFieldVolumes, XamsZeroFieldYields  # noqa: E402
 from .volumes import VOLUME_NAMES, XAMS_VOLUME_IDS, XamsVolumeProperties, XamsVolumeSelection  # noqa: E402
 
