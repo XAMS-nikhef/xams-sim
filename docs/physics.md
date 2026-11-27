@@ -63,11 +63,16 @@ defaults (A_ER = 0.046452; fuse's comment 0.096452 is wrong). Zero-field states 
 | β-ER (used) | 25 / 97 / 150 | 42.1 / 34.0 / 30.6 | 32.2 / 40.3 / 43.7 |
 | γ-ER (reference) | 25 / 97 / 150 | 54.8 / 42.5 / 38.4 | 19.5 / 31.8 / 35.9 |
 
-Sum 74.3 quanta per keV at every field (W = 13.5 eV at this density). **Against the data:** at 97 V/cm the data (Doke
-fit) give 45.8 photons + 27.3 electrons per keV: β-ER has too few photons, γ-ER is closer. The charge follows NEST at
-the effective field between 25 and 140 V/cm, the light does not (mostly a PMT non-linearity; field-scan note). In
-quanta the 662 keV peak is 7–9 % wide per channel and 0.5 % in the sum: recombination fluctuations dominate. A_ER is
-not tuned to the data.
+Sum 74.3 quanta per keV at every field (W = 13.5 eV at this density). **Against the data:** with the bottom-PMT S1
+non-linearity corrected, the SR-2026.3 lines of all sources and fields lie on one Doke line (g1 0.0686, g2_top 0.264);
+at 662 keV the data give 50.2 / 38.7 / 35.0 photons and 23.1 / 34.3 / 37.9 electrons per keV at 25 / 97 / 140 V/cm,
+between β-ER and γ-ER and with a stronger field dependence than either. The SR-2026.3 MC calibration ("calib v1",
+2026-11-23) keeps β-ER and sets only m10 (`physics.nest.er_yields[9]`, one value per run) per field: 0.0424 / 0.0605 /
+0.0668 / 0.0711 / 0.0776 at 25 / 50 / 75 / 97 / 140 V/cm (0.63–0.93 × the default); with it NEST gives the measured
+electrons, and ~5 % too many photons at the γ lines. In quanta the 662 keV peak is 7–9 % wide per channel and 0.5 %
+in the sum: recombination fluctuations dominate. The default A_ER reproduces the measured width of log(cS2/cS1)
+(0.107 vs 0.105), so it is not tuned. Detector factors of the same calibration (run file): PMT light detection
+`sensors.*.efficiency` 0.80 / 0.75, `physics.el_yield_scale` 0.661.
 
 ## Electric fields
 
